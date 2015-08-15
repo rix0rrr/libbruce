@@ -14,47 +14,54 @@
 
 namespace bruce {
 
-NodeReader::NodeReader(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn)
-    : m_input(input), m_keySizeFn(keySizeFn), m_valueSizeFn(valueSizeFn)
+Node::Node(const range &input, fn::sizeinator *keySizeFn)
+    : m_input(input), m_keySizeFn(keySizeFn), m_offset(sizeof(flags_t) + sizeof(keycount_t))
 {
-    // Skip flags and count header
-    m_offset = sizeof(flags_t) + sizeof(keycount_t);
-
-    if (input.size() < m_offset)
+    if (m_input.size() < m_offset)
         throw std::runtime_error("Node data too small to parse");
-
-    if (isLeafNode())
-    {
-        m_k_offsets.reserve(count());
-        m_v_offsets.reserve(count());
-        findLeafOffsets();
-    }
-    else
-    {
-        m_k_offsets.reserve(count() - 1);
-        m_v_offsets.reserve(count());
-        m_c_offsets.reserve(count());
-        findInternalOffsets();
-    }
 }
 
-bool NodeReader::isLeafNode() const
+Node::~Node()
 {
-    return (flags() & TYPE_INTERNAL) == 0;
 }
 
-flags_t NodeReader::flags() const
-{
-    return *(flags_t*)m_input.ptr();
-}
-
-void NodeReader::validateOffset()
+void Node::validateOffset()
 {
     if (m_offset >= m_input.size())
         throw std::runtime_error("Unexpected end of block while parsing");
 }
 
-void NodeReader::findLeafOffsets()
+//----------------------------------------------------------------------
+
+node_ptr ParseNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn)
+{
+    if (*input.at<flags_t>(0) & TYPE_INTERNAL)
+        return boost::make_shared<InternalNode>(input, keySizeFn);
+    else
+        return boost::make_shared<LeafNode>(input, keySizeFn, valueSizeFn);
+}
+
+//----------------------------------------------------------------------
+
+LeafNode::LeafNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn)
+    : Node(input, keySizeFn), m_valueSizeFn(valueSizeFn)
+{
+    m_k_offsets.reserve(count());
+    m_v_offsets.reserve(count());
+    parse();
+}
+
+bool LeafNode::isLeafNode() const
+{
+    return true;
+}
+
+range LeafNode::value(keycount_t i) const
+{
+    return m_v_offsets[i];
+}
+
+void LeafNode::parse()
 {
     // Read N keys
     for (keycount_t i = 0; i < count(); i++)
@@ -78,7 +85,33 @@ void NodeReader::findLeafOffsets()
         throw std::runtime_error("Last item truncated");
 }
 
-void NodeReader::findInternalOffsets()
+//----------------------------------------------------------------------
+
+InternalNode::InternalNode(const range &input, fn::sizeinator *keySizeFn)
+    : Node(input, keySizeFn)
+{
+    m_k_offsets.reserve(count());
+    m_i_offsets.reserve(count());
+    m_c_offsets.reserve(count());
+    parse();
+}
+
+bool InternalNode::isLeafNode() const
+{
+    return false;
+}
+
+nodeident_t InternalNode::id(keycount_t i) const
+{
+    return *m_i_offsets[i].at<nodeident_t>(0);
+}
+
+itemcount_t InternalNode::itemCount(keycount_t i) const
+{
+    return *m_c_offsets[i].at<itemcount_t>(0);
+}
+
+void InternalNode::parse()
 {
     // Read N-1 keys, starting at 1
     m_k_offsets.push_back(range());
@@ -95,7 +128,7 @@ void NodeReader::findInternalOffsets()
     {
         validateOffset();
         uint32_t size = sizeof(nodeident_t);
-        m_v_offsets.push_back(m_input.slice(m_offset, size));
+        m_i_offsets.push_back(m_input.slice(m_offset, size));
         m_offset += size;
     }
 
@@ -110,29 +143,6 @@ void NodeReader::findInternalOffsets()
 
     if (m_offset > m_input.size())
         throw std::runtime_error("Last item truncated");
-}
-
-range NodeReader::key(keycount_t i) const
-{
-    return m_k_offsets[i];
-}
-
-range NodeReader::value(keycount_t i) const
-{
-    if (!isLeafNode()) throw std::runtime_error("Values only in leaves");
-    return m_v_offsets[i];
-}
-
-nodeident_t NodeReader::id(keycount_t i) const
-{
-    if (isLeafNode()) throw std::runtime_error("IDs only in internal nodes");
-    return *m_v_offsets[i].at<nodeident_t>(0);
-}
-
-itemcount_t NodeReader::itemCount(keycount_t i) const
-{
-    if (isLeafNode()) throw std::runtime_error("Counts only in internal nodes");
-    return *m_c_offsets[i].at<itemcount_t>(0);
 }
 
 //----------------------------------------------------------------------

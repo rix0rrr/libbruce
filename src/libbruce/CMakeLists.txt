@@ -1,6 +1,7 @@
 project(libbruce VERSION 0.1 LANGUAGES CXX)
 
 #----------------------------------------------------------------------
+
 add_library(bruce
     src/bruce.cpp
     src/be/mem.cpp
@@ -22,6 +23,7 @@ install(TARGETS bruce
 install(DIRECTORY include/ DESTINATION include)
 
 #----------------------------------------------------------------------
+
 add_executable(testbruce
     test/testserializing.cpp
     test/testbruce.cpp)

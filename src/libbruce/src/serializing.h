@@ -2,7 +2,7 @@
 #define BRUCE_SERIALIZING_H
 
 /**
- * Serialization/deserialization routines for blocks
+ * Serialization/deserialization routines for nodes
  *
  * In principle, we try to be as 0-copy and as tight as possible. Serialization
  * may be type-specific though, so we need function pointers.
@@ -43,6 +43,8 @@
 #include <stdint.h>
 #include <vector>
 
+#include <boost/make_shared.hpp>
+
 namespace bruce {
 
 namespace fn {
@@ -56,43 +58,69 @@ typedef uint64_t nodeident_t;
 typedef uint32_t itemcount_t;
 
 /**
- * Parse a node's serialization
- *
- * As 0-copy as possible, only one iteration is used during parsing to
- * establish offsets, after that we index into the block.
+ * Base class for Nodes
  */
-class NodeReader {
-public:
-    NodeReader(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn);
+struct Node
+{
+    virtual ~Node();
+
+    virtual bool isLeafNode() const = 0;
+
+    range key(keycount_t i) const { return m_k_offsets[i]; }
+    keycount_t count() const { return *(keycount_t*)(m_input.byte_ptr() + sizeof(flags_t)); }
+protected:
+    Node(const range &input, fn::sizeinator *keySizeFn);
+
+    range m_input;
+    fn::sizeinator *m_keySizeFn;
+    uint32_t m_offset; // Used while parsing in the children
+
+    std::vector<range> m_k_offsets; // Key offsets (leftmost key is worthless for internal nodes)
+
+    void validateOffset();
+};
+
+/**
+ * Leaf node type
+ */
+struct LeafNode : public Node
+{
+    LeafNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn);
+
+    bool isLeafNode() const;
+    range value(keycount_t i) const;
+
+    keycount_t count() const { return *(keycount_t*)(m_input.byte_ptr() + sizeof(flags_t)); }
+private:
+    fn::sizeinator *m_valueSizeFn;
+    std::vector<range> m_v_offsets; // Value offsets for leaves, identifier offsets for internals
+
+    void parse();
+};
+
+/**
+ * Internal node type
+ */
+struct InternalNode : public Node
+{
+    InternalNode(const range &input, fn::sizeinator *keySizeFn);
 
     bool isLeafNode() const;
 
-    keycount_t count() const { return *(keycount_t*)(m_input.byte_ptr() + sizeof(flags_t)); }
-
-    // For both node types. For internal nodes, the first key is empty.
-    range key(keycount_t i) const;
-
-    // For leaf types
-    range value(keycount_t i) const;
-
-    // For internal types
     nodeident_t id(keycount_t i) const;
     itemcount_t itemCount(keycount_t i) const;
 private:
-    range m_input;
-    fn::sizeinator *m_keySizeFn;
-    fn::sizeinator *m_valueSizeFn;
-    uint32_t m_offset; // Used while parsing
+    std::vector<range> m_i_offsets;
+    std::vector<range> m_c_offsets;
 
-    std::vector<range> m_k_offsets; // Key offsets, [0..count) for leaves, [0..count-1) for internals
-    std::vector<range> m_v_offsets; // Value offsets for leaves, identifier offsets for internals
-    std::vector<range> m_c_offsets; // Count offsets for internals
-
-    flags_t flags() const;
-    void findLeafOffsets();
-    void findInternalOffsets();
-    void validateOffset();
+    void parse();
 };
+
+typedef boost::shared_ptr<Node> node_ptr;
+typedef boost::shared_ptr<LeafNode> leafnode_ptr;
+typedef boost::shared_ptr<InternalNode> internalnode_ptr;
+
+node_ptr ParseNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn);
 
 /**
  * Serialize an internal node

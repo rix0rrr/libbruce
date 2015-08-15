@@ -28,15 +28,15 @@ TEST_CASE("serializing a leaf node is symmetric", "[serializing]" ) {
     w.writePair(two_r, one_r);
 
     bruce::range serialized = w.get();
-    bruce::NodeReader r(serialized, &intSize, &intSize);
-    REQUIRE(r.isLeafNode());
-    REQUIRE(r.count() == 2);
+    bruce::leafnode_ptr r = boost::dynamic_pointer_cast<bruce::LeafNode>(ParseNode(serialized, &intSize, &intSize));
+    REQUIRE(r->isLeafNode());
+    REQUIRE(r->count() == 2);
 
-    REQUIRE( rngcmp(r.key(0), one_r) == 0 );
-    REQUIRE( rngcmp(r.value(0), two_r) == 0 );
+    REQUIRE( rngcmp(r->key(0), one_r) == 0 );
+    REQUIRE( rngcmp(r->value(0), two_r) == 0 );
 
-    REQUIRE( rngcmp(r.key(1), two_r) == 0 );
-    REQUIRE( rngcmp(r.value(1), one_r) == 0 );
+    REQUIRE( rngcmp(r->key(1), two_r) == 0 );
+    REQUIRE( rngcmp(r->value(1), one_r) == 0 );
 }
 
 TEST_CASE("serializing an internal node is symmetric", "[serializing]" ) {
@@ -54,23 +54,23 @@ TEST_CASE("serializing an internal node is symmetric", "[serializing]" ) {
     w.writeNode(three_r, 3, 3);
 
     bruce::range serialized = w.get();
-    bruce::NodeReader r(serialized, &intSize, &intSize);
-    REQUIRE(!r.isLeafNode());
-    REQUIRE(r.count() == 3);
+    bruce::internalnode_ptr r = boost::dynamic_pointer_cast<bruce::InternalNode>(ParseNode(serialized, &intSize, &intSize));
+    REQUIRE(!r->isLeafNode());
+    REQUIRE(r->count() == 3);
 
     /**/
-    REQUIRE( r.key(0).empty() );
-    REQUIRE( r.id(0) == 1 );
-    REQUIRE( r.itemCount(0) == 1 );
+    REQUIRE( r->key(0).empty() );  // Exception
+    REQUIRE( r->id(0) == 1 );
+    REQUIRE( r->itemCount(0) == 1 );
 
     /**/
-    REQUIRE( rngcmp(r.key(1), two_r) == 0 );
-    REQUIRE( r.id(1) == 2 );
-    REQUIRE( r.itemCount(1) == 2 );
+    REQUIRE( rngcmp(r->key(1), two_r) == 0 );
+    REQUIRE( r->id(1) == 2 );
+    REQUIRE( r->itemCount(1) == 2 );
 
     /**/
-    REQUIRE( rngcmp(r.key(2), three_r) == 0 );
-    REQUIRE( r.id(2) == 3 );
-    REQUIRE( r.itemCount(2) == 3 );
+    REQUIRE( rngcmp(r->key(2), three_r) == 0 );
+    REQUIRE( r->id(2) == 3 );
+    REQUIRE( r->itemCount(2) == 3 );
 
 }
