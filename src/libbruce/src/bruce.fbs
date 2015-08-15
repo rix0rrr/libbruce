@@ -1,0 +1,29 @@
+namespace bruce_fb;
+
+table Item {
+    key: [ubyte] (required);
+    value: [ubyte] (required);
+}
+
+table LeafNode {
+    items: [Item] (required);
+}
+
+table NodeRef {
+    id: ulong;
+    firstKey: [ubyte] (required);
+    count: uint;
+}
+
+table InternalNode {
+    refs: [NodeRef] (required);
+}
+
+union AnyNode { InternalNode, LeafNode }
+
+// Only exists because we can't use a union as a root type
+table Node {
+    node: AnyNode (required);
+}
+
+root_type Node;
