@@ -14,7 +14,7 @@
 
 namespace bruce {
 
-Node::Node(const range &input, fn::sizeinator *keySizeFn)
+Node::Node(const memory &input, fn::sizeinator *keySizeFn)
     : m_input(input), m_keySizeFn(keySizeFn), m_offset(sizeof(flags_t) + sizeof(keycount_t))
 {
     if (m_input.size() < m_offset)
@@ -33,7 +33,7 @@ void Node::validateOffset()
 
 //----------------------------------------------------------------------
 
-node_ptr ParseNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn)
+node_ptr ParseNode(const memory &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn)
 {
     if (*input.at<flags_t>(0) & TYPE_INTERNAL)
         return boost::make_shared<InternalNode>(input, keySizeFn);
@@ -43,7 +43,7 @@ node_ptr ParseNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator
 
 //----------------------------------------------------------------------
 
-LeafNode::LeafNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn)
+LeafNode::LeafNode(const memory &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn)
     : Node(input, keySizeFn), m_valueSizeFn(valueSizeFn)
 {
     m_k_offsets.reserve(count());
@@ -56,7 +56,7 @@ bool LeafNode::isLeafNode() const
     return true;
 }
 
-range LeafNode::value(keycount_t i) const
+memory LeafNode::value(keycount_t i) const
 {
     return m_v_offsets[i];
 }
@@ -87,7 +87,7 @@ void LeafNode::parse()
 
 //----------------------------------------------------------------------
 
-InternalNode::InternalNode(const range &input, fn::sizeinator *keySizeFn)
+InternalNode::InternalNode(const memory &input, fn::sizeinator *keySizeFn)
     : Node(input, keySizeFn)
 {
     m_k_offsets.reserve(count());
@@ -114,7 +114,7 @@ itemcount_t InternalNode::itemCount(keycount_t i) const
 void InternalNode::parse()
 {
     // Read N-1 keys, starting at 1
-    m_k_offsets.push_back(range());
+    m_k_offsets.push_back(memory());
     for (keycount_t i = 1; i < count(); i++)
     {
         validateOffset();
@@ -147,7 +147,7 @@ void InternalNode::parse()
 
 //----------------------------------------------------------------------
 
-void LeafNodeWriter::writePair(const range &key, const range &value)
+void LeafNodeWriter::writePair(const memory &key, const memory &value)
 {
     m_keys.push_back(key);
     m_values.push_back(value);
@@ -163,11 +163,11 @@ uint32_t LeafNodeWriter::size() const
     return size;
 }
 
-range LeafNodeWriter::get() const
+memory LeafNodeWriter::get() const
 {
     uint32_t s = size();
 
-    range mem(range::memptr(new char[s]), s);
+    memory mem(memory::memptr(new char[s]), s);
 
     uint32_t offset = 0;
 
@@ -198,7 +198,7 @@ range LeafNodeWriter::get() const
 
 //----------------------------------------------------------------------
 
-void InternalNodeWriter::writeNode(const range &min_key, nodeident_t id, itemcount_t count)
+void InternalNodeWriter::writeNode(const memory &min_key, nodeident_t id, itemcount_t count)
 {
     m_keys.push_back(min_key);
     m_ids.push_back(id);
@@ -218,11 +218,11 @@ uint32_t InternalNodeWriter::size() const
     return size;
 }
 
-range InternalNodeWriter::get() const
+memory InternalNodeWriter::get() const
 {
     uint32_t s = size();
 
-    range mem(range::memptr(new char[s]), s);
+    memory mem(memory::memptr(new char[s]), s);
 
     uint32_t offset = 0;
 

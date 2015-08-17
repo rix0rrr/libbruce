@@ -17,14 +17,14 @@ public:
     mem();
     ~mem();
 
-    virtual blockid newIdentifier();
+    virtual nodeident_t newIdentifier();
 
-    virtual range get(const blockid &id);
-    virtual void put(const blockid &id, const range &b);
-    virtual void del(const blockid &id);
+    virtual memory get(const nodeident_t &id);
+    virtual void put(const nodeident_t &id, const memory &b);
+    virtual void del(const nodeident_t &id);
 private:
-    blockid m_ctr;
-    typedef std::map<blockid, std::vector<uint8_t> > blockmap;
+    nodeident_t m_ctr;
+    typedef std::map<nodeident_t, std::vector<uint8_t> > blockmap;
     blockmap m_blocks;
 };
 

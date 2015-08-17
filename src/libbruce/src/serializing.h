@@ -39,11 +39,14 @@
  *       right node.
  */
 
-#include <libbruce/memory.h>
 #include <stdint.h>
 #include <vector>
 
 #include <boost/make_shared.hpp>
+
+#include <libbruce/memory.h>
+#include <libbruce/types.h>
+
 
 namespace bruce {
 
@@ -54,7 +57,6 @@ typedef uint32_t sizeinator(const void *);
 // Sizes of types inside the block
 typedef uint16_t flags_t;
 typedef uint16_t keycount_t;
-typedef uint64_t nodeident_t;
 typedef uint32_t itemcount_t;
 
 /**
@@ -66,16 +68,16 @@ struct Node
 
     virtual bool isLeafNode() const = 0;
 
-    range key(keycount_t i) const { return m_k_offsets[i]; }
+    memory key(keycount_t i) const { return m_k_offsets[i]; }
     keycount_t count() const { return *(keycount_t*)(m_input.byte_ptr() + sizeof(flags_t)); }
 protected:
-    Node(const range &input, fn::sizeinator *keySizeFn);
+    Node(const memory &input, fn::sizeinator *keySizeFn);
 
-    range m_input;
+    memory m_input;
     fn::sizeinator *m_keySizeFn;
     uint32_t m_offset; // Used while parsing in the children
 
-    std::vector<range> m_k_offsets; // Key offsets (leftmost key is worthless for internal nodes)
+    std::vector<memory> m_k_offsets; // Key offsets (leftmost key is worthless for internal nodes)
 
     void validateOffset();
 };
@@ -85,15 +87,15 @@ protected:
  */
 struct LeafNode : public Node
 {
-    LeafNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn);
+    LeafNode(const memory &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn);
 
     bool isLeafNode() const;
-    range value(keycount_t i) const;
+    memory value(keycount_t i) const;
 
     keycount_t count() const { return *(keycount_t*)(m_input.byte_ptr() + sizeof(flags_t)); }
 private:
     fn::sizeinator *m_valueSizeFn;
-    std::vector<range> m_v_offsets; // Value offsets for leaves, identifier offsets for internals
+    std::vector<memory> m_v_offsets; // Value offsets for leaves, identifier offsets for internals
 
     void parse();
 };
@@ -103,15 +105,15 @@ private:
  */
 struct InternalNode : public Node
 {
-    InternalNode(const range &input, fn::sizeinator *keySizeFn);
+    InternalNode(const memory &input, fn::sizeinator *keySizeFn);
 
     bool isLeafNode() const;
 
     nodeident_t id(keycount_t i) const;
     itemcount_t itemCount(keycount_t i) const;
 private:
-    std::vector<range> m_i_offsets;
-    std::vector<range> m_c_offsets;
+    std::vector<memory> m_i_offsets;
+    std::vector<memory> m_c_offsets;
 
     void parse();
 };
@@ -120,7 +122,7 @@ typedef boost::shared_ptr<Node> node_ptr;
 typedef boost::shared_ptr<LeafNode> leafnode_ptr;
 typedef boost::shared_ptr<InternalNode> internalnode_ptr;
 
-node_ptr ParseNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn);
+node_ptr ParseNode(const memory &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn);
 
 /**
  * Serialize an internal node
@@ -135,10 +137,10 @@ node_ptr ParseNode(const range &input, fn::sizeinator *keySizeFn, fn::sizeinator
 class InternalNodeWriter
 {
 public:
-    void writeNode(const range &min_key, nodeident_t id, itemcount_t count);
-    range get() const;
+    void writeNode(const memory &min_key, nodeident_t id, itemcount_t count);
+    memory get() const;
 private:
-    std::vector<range> m_keys;
+    std::vector<memory> m_keys;
     std::vector<nodeident_t> m_ids;
     std::vector<itemcount_t> m_counts;
 
@@ -155,11 +157,11 @@ private:
 class LeafNodeWriter
 {
 public:
-    void writePair(const range &key, const range &value);
-    range get() const;
+    void writePair(const memory &key, const memory &value);
+    memory get() const;
 private:
-    std::vector<range> m_keys;
-    std::vector<range> m_values;
+    std::vector<memory> m_keys;
+    std::vector<memory> m_values;
 
     uint32_t size() const;
 };

@@ -52,27 +52,15 @@
 
 #include <libbruce/mutation.h>
 #include <libbruce/be/be.h>
-#include <libbruce/types.h>
+#include <libbruce/traits.h>
 #include <libbruce/tree.h>
 #include "serializing.h"
 
 namespace bruce {
 
-/**
- * Pending mutation class
- */
-struct pending_mutations
-{
-private:
-    struct mutation_action {
-    };
-
-    //std::vector<mut>
-};
-
 struct insert_operation
 {
-    insert_operation(be::be &be, maybe_blockid id, const range &key, const range &value, types::comparison_fn *compareKeys);
+    insert_operation(be::be &be, maybe_blockid id, const memory &key, const memory &value, types::comparison_fn *compareKeys);
 
     mutation mut;
 
@@ -80,12 +68,12 @@ struct insert_operation
 private:
     maybe_blockid m_id;
     be::be &m_be;
-    const range &m_key;
-    const range &m_value;
+    const memory &m_key;
+    const memory &m_value;
     types::comparison_fn *m_compareKeys;
 
-    be::blockid createNewLeafNode(const be::blockid &newId);
-    be::blockid writeBuilderToPage(const be::blockid &newId);
+    nodeident_t createNewLeafNode(const nodeident_t &newId);
+    nodeident_t writeBuilderToPage(const nodeident_t &newId);
     //maybe_blockid findNextBlock(const bruce_fb::InternalNode *);
 };
 

@@ -9,7 +9,7 @@ unsafe_tree::unsafe_tree(const maybe_blockid &id, be::be &be, types::comparison_
 {
 }
 
-mutation unsafe_tree::insert(const range &key, const range &value)
+mutation unsafe_tree::insert(const memory &key, const memory &value)
 {
     insert_operation insert(m_be, m_id, key, value, m_compareKeys);
 

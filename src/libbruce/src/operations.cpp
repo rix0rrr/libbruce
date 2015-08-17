@@ -2,7 +2,7 @@
 
 namespace bruce {
 
-insert_operation::insert_operation(be::be &be, maybe_blockid id, const range &key, const range &value, types::comparison_fn *compareKeys)
+insert_operation::insert_operation(be::be &be, maybe_blockid id, const memory &key, const memory &value, types::comparison_fn *compareKeys)
     : m_be(be), m_id(id), m_key(key), m_value(value), m_compareKeys(compareKeys)
 {
 }
@@ -17,16 +17,16 @@ void insert_operation::do_it()
     }
 
     // Else search for the page where we're going to insert
-    range b = m_be.get(*m_id);
+    memory b = m_be.get(*m_id);
 }
 
-be::blockid insert_operation::writeBuilderToPage(const be::blockid &newId)
+nodeident_t insert_operation::writeBuilderToPage(const nodeident_t &newId)
 {
     mut.addCreated(newId);
     return newId;
 }
 
-be::blockid insert_operation::createNewLeafNode(const be::blockid &newId)
+nodeident_t insert_operation::createNewLeafNode(const nodeident_t &newId)
 {
     return newId;
 }

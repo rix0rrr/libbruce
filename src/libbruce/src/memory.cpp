@@ -2,7 +2,7 @@
 
 const char* g_hex = "0123456789abcdef";
 
-std::ostream &operator <<(std::ostream &os, const bruce::range &m)
+std::ostream &operator <<(std::ostream &os, const bruce::memory &m)
 {
     for (int i = 0; i < m.size(); i++)
     {

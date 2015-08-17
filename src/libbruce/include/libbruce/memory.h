@@ -23,26 +23,26 @@ namespace bruce {
  * We could have used std::vector<> for this, but that would always require
  * copying, even when it's not necessary.
  */
-struct range
+struct memory
 {
     typedef boost::shared_ptr<char> memptr;
 
-    range()
+    memory()
         : m_ptr(NULL), m_size(0)
     {
     }
 
-    range(const void *ptr, size_t size)
+    memory(const void *ptr, size_t size)
         : m_ptr(ptr), m_size(size)
     {
     }
 
-    range(const void *ptr, size_t size, memptr mem)
+    memory(const void *ptr, size_t size, memptr mem)
         : m_ptr(ptr), m_size(size), m_mem(mem)
     {
     }
 
-    range(memptr mem, size_t size)
+    memory(memptr mem, size_t size)
         : m_ptr(mem.get()), m_size(size), m_mem(mem)
     {
     }
@@ -57,9 +57,9 @@ struct range
      *
      * Ownership will be shared if possible.
      */
-    range slice(size_t offset, size_t size)
+    memory slice(size_t offset, size_t size)
     {
-        return range(byte_ptr() + offset, size, m_mem);
+        return memory(byte_ptr() + offset, size, m_mem);
     }
 
     /**
@@ -92,6 +92,6 @@ private:
 
 }
 
-std::ostream &operator <<(std::ostream &os, const bruce::range &m);
+std::ostream &operator <<(std::ostream &os, const bruce::memory &m);
 
 #endif

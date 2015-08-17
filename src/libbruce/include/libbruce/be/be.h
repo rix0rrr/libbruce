@@ -5,14 +5,14 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+
+#include <libbruce/types.h>
 #include <libbruce/memory.h>
 
 namespace bruce { namespace be {
 
-typedef uint64_t blockid;
-
 struct block_not_found : public std::runtime_error {
-    block_not_found(const blockid &id) : std::runtime_error("Block not found: " + std::to_string(id)) { }
+    block_not_found(const nodeident_t &id) : std::runtime_error("Block not found: " + std::to_string(id)) { }
 };
 
 /**
@@ -23,10 +23,10 @@ class be
 public:
     virtual ~be() {}
 
-    virtual blockid newIdentifier() = 0;
-    virtual range get(const blockid &id) = 0;
-    virtual void put(const blockid &id, const range &b) = 0;
-    virtual void del(const blockid &id) = 0;
+    virtual nodeident_t newIdentifier() = 0;
+    virtual memory get(const nodeident_t &id) = 0;
+    virtual void put(const nodeident_t &id, const memory &b) = 0;
+    virtual void del(const nodeident_t &id) = 0;
 };
 
 }}
