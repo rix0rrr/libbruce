@@ -79,7 +79,7 @@ struct NodeParser
             validateOffset();
             uint32_t size = sizeof(nodeid_t);
 
-            ret->branches()[i].nodeId = *m_input.at<nodeid_t>(m_offset);
+            ret->branches()[i].nodeID = *m_input.at<nodeid_t>(m_offset);
 
             m_offset += size;
         }
@@ -147,10 +147,82 @@ node_ptr ParseNode(memory &input, const tree_functions &fns)
 
 //----------------------------------------------------------------------
 
+NodeSize::NodeSize(uint32_t blockSize)
+    : m_blockSize(blockSize), m_size(sizeof(flags_t) + sizeof(keycount_t))
+{
+}
+
+bool NodeSize::shouldSplit()
+{
+    return m_blockSize < m_size;
+}
+
+keycount_t NodeSize::splitIndex()
+{
+    return m_splitIndex;
+}
+
+LeafNodeSize::LeafNodeSize(const leafnode_ptr &node, uint32_t blockSize)
+    : NodeSize(blockSize)
+{
+    uint32_t splitSize = m_size;
+
+    // Calculate size
+    BOOST_FOREACH(const kv_pair &p, node->pairs())
+    {
+        m_size += p.key.size() + p.value.size();
+    }
+
+    if (shouldSplit())
+    {
+        uint32_t pieceSize = std::ceil(m_size / 2.0);
+
+        for (m_splitIndex = 1; m_splitIndex < node->count(); m_splitIndex++)
+        {
+            splitSize += node->pair(m_splitIndex-1).key.size() + node->pair(m_splitIndex-1).value.size();
+            if (splitSize >= pieceSize)
+                return;
+        }
+    }
+}
+
+InternalNodeSize::InternalNodeSize(const internalnode_ptr &node, uint32_t blockSize)
+    : NodeSize(blockSize)
+{
+    uint32_t splitSize = m_size;
+    bool first = true;
+
+    BOOST_FOREACH(const node_branch &b, node->branches())
+    {
+        // We never store the first key
+        if (!first)
+            m_size += b.minKey.size();
+        m_size += sizeof(nodeid_t) + sizeof(itemcount_t);
+        first = false;
+    }
+
+    if (shouldSplit())
+    {
+        uint32_t pieceSize = std::ceil(m_size / 2.0);
+
+        for (m_splitIndex = 1; m_splitIndex < node->count(); m_splitIndex++)
+        {
+            if (m_splitIndex != 1) m_size += node->branch(m_splitIndex-1).minKey.size();
+            splitSize += sizeof(nodeid_t) + sizeof(itemcount_t);
+            first = false;
+
+            if (splitSize >= pieceSize)
+                return;
+        }
+    }
+}
+
+//----------------------------------------------------------------------
+
 memory SerializeLeafNode(const leafnode_ptr &node)
 {
-    uint32_t s = NodeSize(node, 0, node->count());
-    memory mem(memory::memptr(new char[s]), s);
+    LeafNodeSize size(node, 0);
+    memory mem(memory::memptr(new char[size.size()]), size.size());
 
     uint32_t offset = 0;
 
@@ -181,8 +253,8 @@ memory SerializeLeafNode(const leafnode_ptr &node)
 
 memory SerializeInternalNode(const internalnode_ptr &node)
 {
-    uint32_t s = NodeSize(node, 0, node->count());
-    memory mem(memory::memptr(new char[s]), s);
+    InternalNodeSize size(node, 0);
+    memory mem(memory::memptr(new char[size.size()]), size.size());
 
     uint32_t offset = 0;
 
@@ -209,7 +281,7 @@ memory SerializeInternalNode(const internalnode_ptr &node)
     // IDs
     BOOST_FOREACH(const node_branch &b, node->branches())
     {
-        *mem.at<nodeid_t>(offset) = b.nodeId;
+        *mem.at<nodeid_t>(offset) = b.nodeID;
         offset += sizeof(nodeid_t);
     }
 
@@ -229,58 +301,6 @@ memory SerializeNode(const node_ptr &node)
         return SerializeLeafNode(boost::static_pointer_cast<LeafNode>(node));
     else
         return SerializeInternalNode(boost::static_pointer_cast<InternalNode>(node));
-}
-
-//----------------------------------------------------------------------
-
-size_t LeafNodeSize(const leafnode_ptr &leaf, keycount_t start, keycount_t end)
-{
-    size_t ret = 0;
-    for (keycount_t i = start; i < end; i++)
-    {
-        ret += leaf->pairs()[i].key.size() + leaf->pairs()[i].value.size();
-    }
-    return ret;
-}
-
-size_t InternalNodeSize(const internalnode_ptr &node, keycount_t start, keycount_t end)
-{
-    size_t ret = 0;
-    for (keycount_t i = start; i < end; i++)
-    {
-        // We never store the first key
-        if (i != start)
-            ret += node->branches()[i].minKey.size();
-        ret += sizeof(nodeid_t) + sizeof(itemcount_t);
-    }
-    return ret;
-}
-
-size_t NodeSize(const node_ptr &node, keycount_t start, keycount_t end)
-{
-    size_t body = 0;
-
-    if (node->isLeafNode())
-        body = LeafNodeSize(boost::static_pointer_cast<LeafNode>(node), start, end);
-    else
-        body = InternalNodeSize(boost::static_pointer_cast<InternalNode>(node), start, end);
-
-    return body + sizeof(flags_t) + sizeof(keycount_t);
-}
-
-int FindSplit(const node_ptr &node)
-{
-    int pieceSize = std::ceil(NodeSize(node, 0, node->count()) / 2);
-
-    size_t size = 0;
-    for (int i = 1; i < node->count(); i++)
-    {
-        size += NodeSize(node, i, i+1);
-        if (size >= pieceSize)
-            return i+1;
-    }
-
-    throw std::runtime_error("Node didn't need to be split");
 }
 
 }

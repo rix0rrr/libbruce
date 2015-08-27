@@ -11,6 +11,11 @@ mem::~mem()
 {
 }
 
+nodeid_t mem::blockCount() const
+{
+    return m_ctr;
+}
+
 std::vector<nodeid_t> mem::newIdentifiers(int n)
 {
     std::vector<nodeid_t> ret;
@@ -25,17 +30,21 @@ memory mem::get(const nodeid_t &id)
 {
     blockmap::iterator i = m_blocks.find(id);
     if (i == m_blocks.end()) throw block_not_found(id);
-    return memory(i->second.data(), i->second.size());
+    return i->second;
 }
 
 void mem::put_all(putblocklist_t &blocklist)
 {
     for (putblocklist_t::iterator it = blocklist.begin(); it != blocklist.end(); ++it)
     {
+        if (m_ctr < it->id)
+            throw std::runtime_error("Illegal ID");
+
         if (it->mem.size() > m_maxBlockSize)
             throw std::runtime_error("Block too large");
 
-        m_blocks[it->id].assign(it->mem.size(), *it->mem.byte_ptr());
+        m_blocks[it->id] = it->mem;
+
         it->success = true;
     }
 }

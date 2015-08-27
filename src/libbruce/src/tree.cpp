@@ -4,7 +4,7 @@
 
 namespace bruce {
 
-unsafe_tree::unsafe_tree(const maybe_blockid &id, be::be &be, tree_functions fns)
+unsafe_tree::unsafe_tree(const maybe_nodeid &id, be::be &be, tree_functions fns)
     : m_id(id), m_be(be), m_fns(fns)
 {
 }
@@ -30,7 +30,7 @@ mutation unsafe_tree::insert(const memory &key, const memory &value)
     return insert.mut;
     */
 
-    return mutation();
+    return mutation(maybe_nodeid());
 }
 
 }

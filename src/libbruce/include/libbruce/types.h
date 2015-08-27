@@ -2,6 +2,7 @@
 #define BRUCE_TYPES_H
 
 #include <utility>
+#include <boost/optional.hpp>
 
 #include <libbruce/memory.h>
 
@@ -12,6 +13,8 @@ namespace bruce {
 typedef uint16_t keycount_t;
 typedef uint64_t nodeid_t;
 typedef uint32_t itemcount_t;
+
+typedef boost::optional<nodeid_t> maybe_nodeid;
 
 namespace fn {
 

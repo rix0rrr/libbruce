@@ -22,7 +22,7 @@ public:
     template<typename K, typename V>
     tree<K, V> create()
     {
-        return tree<K, V>(maybe_blockid(), m_blockEngine);
+        return tree<K, V>(maybe_nodeid(), m_blockEngine);
     }
 
     /**

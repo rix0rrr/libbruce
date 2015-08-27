@@ -26,15 +26,15 @@ struct kv_pair
 typedef std::vector<kv_pair> pairlist_t;
 
 struct node_branch {
-    node_branch(const memory &minKey, nodeid_t nodeId, itemcount_t itemCount)
-        : minKey(minKey), nodeId(nodeId), itemCount(itemCount) { }
-    node_branch(const memory &minKey, nodeid_t nodeId, itemcount_t itemCount, const node_ptr &child)
-        : minKey(minKey), nodeId(nodeId), itemCount(itemCount), child(child) { }
+    node_branch(const memory &minKey, nodeid_t nodeID, itemcount_t itemCount)
+        : minKey(minKey), nodeID(nodeID), itemCount(itemCount) { }
+    node_branch(const memory &minKey, const node_ptr &child, itemcount_t itemCount)
+        : minKey(minKey), nodeID(0), itemCount(itemCount), child(child) { }
 
     void inc() { itemCount++; }
 
     memory minKey;
-    nodeid_t nodeId;
+    nodeid_t nodeID;
     itemcount_t itemCount;
     node_ptr child; // Only valid while mutating the tree
 };
@@ -92,6 +92,7 @@ struct InternalNode : public Node
 
     keycount_t itemCount() const;
 
+    node_branch &branch(keycount_t i) { return m_branches[i]; }
     branchlist_t &branches() { return m_branches; }
 private:
     branchlist_t m_branches;

@@ -73,9 +73,11 @@ struct splitresult_t {
     itemcount_t rightCount;
 };
 
+// FIXME: Reject duplicate inserts?
+
 struct mutable_tree
 {
-    mutable_tree(be::be &be, maybe_blockid rootID, tree_functions fns);
+    mutable_tree(be::be &be, maybe_nodeid rootID, tree_functions fns);
 
     // Operation can be called multiple times
     void insert(const memory &key, const memory &value);
@@ -86,17 +88,18 @@ struct mutable_tree
      * Returns a mutation containing the IDs of the blocks that can be garbage
      * collected. After calling this, mutable_tree is frozen.
      */
-    void flush();
+    mutation flush();
 private:
     typedef std::map<nodeid_t, uint32_t> idmap_t;
 
     be::be &m_be;
-    maybe_blockid m_rootID;
+    maybe_nodeid m_rootID;
     tree_functions m_fns;
 
     bool m_frozen;
     node_ptr m_root;
     uint32_t m_newIDsRequired;
+    std::vector<nodeid_t> m_oldIDs;
     std::vector<nodeid_t> m_newIDs;
     be::putblocklist_t m_putBlocks;
 
@@ -110,6 +113,7 @@ private:
 
     void collectNewIDsRec(node_ptr &node);
     void collectBlocksToPutRec(node_ptr &node, nodeid_t id);
+    mutation collectMutation();
 };
 
 }

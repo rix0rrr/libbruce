@@ -23,11 +23,8 @@
 #include <libbruce/mutation.h>
 #include <libbruce/be/be.h>
 #include <libbruce/traits.h>
-#include <boost/optional.hpp>
 
 namespace bruce {
-
-typedef boost::optional<nodeid_t> maybe_blockid;
 
 /**
  * Type-unsafe tree
@@ -36,11 +33,11 @@ typedef boost::optional<nodeid_t> maybe_blockid;
  */
 struct unsafe_tree
 {
-    unsafe_tree(const maybe_blockid &id, be::be &be, tree_functions fns);
+    unsafe_tree(const maybe_nodeid &id, be::be &be, tree_functions fns);
 
     mutation insert(const memory &key, const memory &value);
 private:
-    maybe_blockid m_id;
+    maybe_nodeid m_id;
     be::be &m_be;
     tree_functions m_fns;
 };
@@ -51,7 +48,7 @@ private:
 template<typename K, typename V>
 struct tree
 {
-    tree(const maybe_blockid &id, be::be &be)
+    tree(const maybe_nodeid &id, be::be &be)
         : m_unsafe(id, be, types::convert<K>::compare) { }
 
     mutation insert(K key, V value)

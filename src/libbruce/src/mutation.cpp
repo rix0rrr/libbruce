@@ -2,8 +2,8 @@
 
 namespace bruce {
 
-mutation::mutation()
-    : m_success(true)
+mutation::mutation(maybe_nodeid newRootID)
+    : m_success(true), m_newRootID(newRootID)
 {
 }
 
@@ -13,9 +13,9 @@ void mutation::fail(const std::string &reason)
     m_failureReason = reason;
 }
 
-void mutation::setRoot(const nodeid_t &id)
+void mutation::setRoot(const maybe_nodeid &id)
 {
-    m_newRootId = id;
+    m_newRootID = id;
 }
 
 void mutation::addCreated(const nodeid_t &id)

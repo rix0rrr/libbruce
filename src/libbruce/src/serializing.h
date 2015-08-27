@@ -58,14 +58,31 @@ node_ptr ParseNode(memory &input, const tree_functions &fns);
 
 memory SerializeNode(const node_ptr &node);
 
-size_t NodeSize(const node_ptr &node, keycount_t start, keycount_t end);
 
-/**
- * Cleave this node in twain, s.t. the larger half is on the left.
- *
- * Returns the start index of the second half.
- */
-int FindSplit(const node_ptr &node);
+struct NodeSize
+{
+    bool shouldSplit();
+    keycount_t splitIndex();
+    uint32_t size() const { return m_size; }
+protected:
+    NodeSize(uint32_t blockSize);
+
+    uint32_t m_blockSize;
+    uint32_t m_size;
+    keycount_t m_splitIndex;
+};
+
+
+struct LeafNodeSize : public NodeSize
+{
+    LeafNodeSize(const leafnode_ptr &node, uint32_t blockSize);
+};
+
+struct InternalNodeSize : public NodeSize
+{
+    InternalNodeSize(const internalnode_ptr &node, uint32_t blockSize);
+};
+
 
 }
 

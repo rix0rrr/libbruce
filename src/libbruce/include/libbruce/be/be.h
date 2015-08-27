@@ -22,7 +22,7 @@ struct putblock_t
     putblock_t(nodeid_t id, const memory &mem) : id(id), mem(mem), success(false) { }
 
     nodeid_t id;
-    const memory &mem;
+    memory mem;
     bool success;
 };
 
