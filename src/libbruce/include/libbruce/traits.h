@@ -67,8 +67,6 @@ struct convert<std::string>
     }
 };
 
-typedef int comparison_fn(const memory &, const memory &);
-
 }}
 
 #endif

@@ -4,39 +4,43 @@
 
 #include <stdio.h>
 
+using namespace bruce;
+
 /**
  * Return the size of a 32-bit int
  */
 uint32_t intSize(const void *) { return sizeof(uint32_t); }
 
-int rngcmp(const bruce::memory &a, const bruce::memory &b)
+int rngcmp(const memory &a, const memory &b)
 {
     int ret = memcmp(a.ptr(), b.ptr(), std::min(a.size(), b.size()));
     if (ret != 0) return ret;
     return a.size() - b.size();
 }
 
+tree_functions intToIntTree(NULL, &intSize, &intSize);
+
 TEST_CASE("serializing a leaf node is symmetric", "[serializing]" ) {
     // Making a map of ints to ints
     uint32_t one = 1;
     uint32_t two = 2;
-    bruce::memory one_r(&one, sizeof(one));
-    bruce::memory two_r(&two, sizeof(two));
+    memory one_r(&one, sizeof(one));
+    memory two_r(&two, sizeof(two));
 
-    bruce::LeafNodeWriter w;
-    w.writePair(one_r, two_r);
-    w.writePair(two_r, one_r);
+    leafnode_ptr leaf = boost::make_shared<LeafNode>();
+    leaf->insert(0, kv_pair(one_r, two_r));
+    leaf->insert(1, kv_pair(two_r, one_r));
+    memory serialized = SerializeNode(leaf);
 
-    bruce::memory serialized = w.get();
-    bruce::leafnode_ptr r = boost::dynamic_pointer_cast<bruce::LeafNode>(ParseNode(serialized, &intSize, &intSize));
+    leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(serialized, intToIntTree));
     REQUIRE(r->isLeafNode());
     REQUIRE(r->count() == 2);
 
-    REQUIRE( rngcmp(r->key(0), one_r) == 0 );
-    REQUIRE( rngcmp(r->value(0), two_r) == 0 );
+    REQUIRE( rngcmp(r->pair(0).key, one_r) == 0 );
+    REQUIRE( rngcmp(r->pair(0).value, two_r) == 0 );
 
-    REQUIRE( rngcmp(r->key(1), two_r) == 0 );
-    REQUIRE( rngcmp(r->value(1), one_r) == 0 );
+    REQUIRE( rngcmp(r->pair(1).key, two_r) == 0 );
+    REQUIRE( rngcmp(r->pair(1).value, one_r) == 0 );
 }
 
 TEST_CASE("serializing an internal node is symmetric", "[serializing]" ) {
@@ -44,33 +48,33 @@ TEST_CASE("serializing an internal node is symmetric", "[serializing]" ) {
     uint32_t one = 1;
     uint32_t two = 2;
     uint32_t three = 3;
-    bruce::memory one_r(&one, sizeof(one));
-    bruce::memory two_r(&two, sizeof(two));
-    bruce::memory three_r(&three, sizeof(three));
+    memory one_r(&one, sizeof(one));
+    memory two_r(&two, sizeof(two));
+    memory three_r(&three, sizeof(three));
 
-    bruce::InternalNodeWriter w;
-    w.writeNode(one_r, 1, 1);
-    w.writeNode(two_r, 2, 2);
-    w.writeNode(three_r, 3, 3);
+    internalnode_ptr internal = boost::make_shared<InternalNode>();
+    internal->insert(0, node_branch(one_r, 1, 1));
+    internal->insert(1, node_branch(two_r, 2, 2));
+    internal->insert(2, node_branch(three_r, 3, 3));
+    memory serialized = SerializeNode(internal);
 
-    bruce::memory serialized = w.get();
-    bruce::internalnode_ptr r = boost::dynamic_pointer_cast<bruce::InternalNode>(ParseNode(serialized, &intSize, &intSize));
+    internalnode_ptr r = boost::dynamic_pointer_cast<InternalNode>(ParseNode(serialized, intToIntTree));
     REQUIRE(!r->isLeafNode());
     REQUIRE(r->count() == 3);
 
     /**/
-    REQUIRE( r->key(0).empty() );  // Exception
-    REQUIRE( r->id(0) == 1 );
-    REQUIRE( r->itemCount(0) == 1 );
+    REQUIRE( r->branches()[0].minKey.empty() );  // Exception
+    REQUIRE( r->branches()[0].nodeId == 1 );
+    REQUIRE( r->branches()[0].itemCount == 1 );
 
     /**/
-    REQUIRE( rngcmp(r->key(1), two_r) == 0 );
-    REQUIRE( r->id(1) == 2 );
-    REQUIRE( r->itemCount(1) == 2 );
+    REQUIRE( rngcmp(r->branches()[1].minKey, two_r) == 0 );
+    REQUIRE( r->branches()[1].nodeId == 2 );
+    REQUIRE( r->branches()[1].itemCount == 2 );
 
     /**/
-    REQUIRE( rngcmp(r->key(2), three_r) == 0 );
-    REQUIRE( r->id(2) == 3 );
-    REQUIRE( r->itemCount(2) == 3 );
+    REQUIRE( rngcmp(r->branches()[2].minKey, three_r) == 0 );
+    REQUIRE( r->branches()[2].nodeId == 3 );
+    REQUIRE( r->branches()[2].itemCount == 3 );
 
 }

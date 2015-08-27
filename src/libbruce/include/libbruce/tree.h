@@ -27,7 +27,7 @@
 
 namespace bruce {
 
-typedef boost::optional<nodeident_t> maybe_blockid;
+typedef boost::optional<nodeid_t> maybe_blockid;
 
 /**
  * Type-unsafe tree
@@ -36,13 +36,13 @@ typedef boost::optional<nodeident_t> maybe_blockid;
  */
 struct unsafe_tree
 {
-    unsafe_tree(const maybe_blockid &id, be::be &be, types::comparison_fn *compareKeys);
+    unsafe_tree(const maybe_blockid &id, be::be &be, tree_functions fns);
 
     mutation insert(const memory &key, const memory &value);
 private:
     maybe_blockid m_id;
     be::be &m_be;
-    types::comparison_fn *m_compareKeys;
+    tree_functions m_fns;
 };
 
 /**
@@ -62,7 +62,6 @@ struct tree
 private:
     unsafe_tree m_unsafe;
 };
-
 
 }
 

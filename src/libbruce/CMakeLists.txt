@@ -9,7 +9,8 @@ add_library(bruce
     src/mutation.cpp
     src/memory.cpp
     src/operations.cpp
-    src/serializing.cpp)
+    src/serializing.cpp
+    src/nodes.cpp)
 
 target_include_directories(bruce
     INTERFACE include

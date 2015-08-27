@@ -13,17 +13,17 @@ void mutation::fail(const std::string &reason)
     m_failureReason = reason;
 }
 
-void mutation::setRoot(const nodeident_t &id)
+void mutation::setRoot(const nodeid_t &id)
 {
     m_newRootId = id;
 }
 
-void mutation::addCreated(const nodeident_t &id)
+void mutation::addCreated(const nodeid_t &id)
 {
     m_createdIDs.push_back(id);
 }
 
-void mutation::addObsolete(const nodeident_t &id)
+void mutation::addObsolete(const nodeid_t &id)
 {
     m_obsoleteIDs.push_back(id);
 }

@@ -54,27 +54,62 @@
 #include <libbruce/be/be.h>
 #include <libbruce/traits.h>
 #include <libbruce/tree.h>
-#include "serializing.h"
+#include "nodes.h"
+
+#include <map>
 
 namespace bruce {
 
-struct insert_operation
+struct splitresult_t {
+    splitresult_t(itemcount_t leftCount) : didSplit(false), leftCount(leftCount) { }
+    splitresult_t(node_ptr left, itemcount_t leftCount, const memory &splitKey, node_ptr right, itemcount_t rightCount)
+        : didSplit(true), left(left), leftCount(leftCount), splitKey(splitKey), right(right), rightCount(rightCount) { }
+
+    bool didSplit;
+    node_ptr left;
+    itemcount_t leftCount;
+    memory splitKey;
+    node_ptr right;
+    itemcount_t rightCount;
+};
+
+struct mutable_tree
 {
-    insert_operation(be::be &be, maybe_blockid id, const memory &key, const memory &value, types::comparison_fn *compareKeys);
+    mutable_tree(be::be &be, maybe_blockid rootID, tree_functions fns);
 
-    mutation mut;
+    // Operation can be called multiple times
+    void insert(const memory &key, const memory &value);
 
-    void do_it();
+    /**
+     * Flush changes to the block engine (this only writes new blocks).
+     *
+     * Returns a mutation containing the IDs of the blocks that can be garbage
+     * collected. After calling this, mutable_tree is frozen.
+     */
+    void flush();
 private:
-    maybe_blockid m_id;
-    be::be &m_be;
-    const memory &m_key;
-    const memory &m_value;
-    types::comparison_fn *m_compareKeys;
+    typedef std::map<nodeid_t, uint32_t> idmap_t;
 
-    nodeident_t createNewLeafNode(const nodeident_t &newId);
-    nodeident_t writeBuilderToPage(const nodeident_t &newId);
-    //maybe_blockid findNextBlock(const bruce_fb::InternalNode *);
+    be::be &m_be;
+    maybe_blockid m_rootID;
+    tree_functions m_fns;
+
+    bool m_frozen;
+    node_ptr m_root;
+    uint32_t m_newIDsRequired;
+    std::vector<nodeid_t> m_newIDs;
+    be::putblocklist_t m_putBlocks;
+
+    node_ptr &root();
+    const node_ptr &child(node_branch &branch);
+    node_ptr load(nodeid_t id);
+
+    splitresult_t insertRec(const node_ptr &node, const memory &key, const memory &value);
+    void validateKVSize(const memory &key, const memory &value);
+    void checkNotFrozen();
+
+    void collectNewIDsRec(node_ptr &node);
+    void collectBlocksToPutRec(node_ptr &node, nodeid_t id);
 };
 
 }

@@ -14,18 +14,20 @@ namespace bruce { namespace be {
 class mem : public be
 {
 public:
-    mem();
+    mem(uint32_t maxBlockSize);
     ~mem();
 
-    virtual nodeident_t newIdentifier();
+    virtual std::vector<nodeid_t> newIdentifiers(int n);
 
-    virtual memory get(const nodeident_t &id);
-    virtual void put(const nodeident_t &id, const memory &b);
-    virtual void del(const nodeident_t &id);
+    virtual memory get(const nodeid_t &id);
+    virtual void put_all(putblocklist_t &blocklist);
+    virtual void del_all(delblocklist_t &ids);
+    virtual uint32_t maxBlockSize();
 private:
-    nodeident_t m_ctr;
-    typedef std::map<nodeident_t, std::vector<uint8_t> > blockmap;
+    nodeid_t m_ctr;
+    typedef std::map<nodeid_t, std::vector<uint8_t> > blockmap;
     blockmap m_blocks;
+    uint32_t m_maxBlockSize;
 };
 
 

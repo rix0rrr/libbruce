@@ -6,14 +6,37 @@
 #include <vector>
 #include <stdexcept>
 
+#include <boost/range.hpp>
+
 #include <libbruce/types.h>
 #include <libbruce/memory.h>
 
 namespace bruce { namespace be {
 
 struct block_not_found : public std::runtime_error {
-    block_not_found(const nodeident_t &id) : std::runtime_error("Block not found: " + std::to_string(id)) { }
+    block_not_found(const nodeid_t &id) : std::runtime_error("Block not found: " + std::to_string(id)) { }
 };
+
+struct putblock_t
+{
+    putblock_t(nodeid_t id, const memory &mem) : id(id), mem(mem), success(false) { }
+
+    nodeid_t id;
+    const memory &mem;
+    bool success;
+};
+
+typedef std::vector<putblock_t> putblocklist_t;
+
+struct delblock_t
+{
+    delblock_t(nodeid_t id) : id(id), success(false) { }
+
+    nodeid_t id;
+    bool success;
+};
+
+typedef std::vector<delblock_t> delblocklist_t;
 
 /**
  * Base block engine class
@@ -23,10 +46,11 @@ class be
 public:
     virtual ~be() {}
 
-    virtual nodeident_t newIdentifier() = 0;
-    virtual memory get(const nodeident_t &id) = 0;
-    virtual void put(const nodeident_t &id, const memory &b) = 0;
-    virtual void del(const nodeident_t &id) = 0;
+    virtual std::vector<nodeid_t> newIdentifiers(int n) = 0;
+    virtual memory get(const nodeid_t &id) = 0;
+    virtual void put_all(putblocklist_t &blocklist) = 0;
+    virtual void del_all(delblocklist_t &ids) = 0;
+    virtual uint32_t maxBlockSize() = 0;
 };
 
 }}

@@ -47,125 +47,25 @@
 #include <libbruce/memory.h>
 #include <libbruce/types.h>
 
+#include "nodes.h"
 
 namespace bruce {
 
-namespace fn {
-typedef uint32_t sizeinator(const void *);
-}
-
 // Sizes of types inside the block
 typedef uint16_t flags_t;
-typedef uint16_t keycount_t;
-typedef uint32_t itemcount_t;
+
+node_ptr ParseNode(memory &input, const tree_functions &fns);
+
+memory SerializeNode(const node_ptr &node);
+
+size_t NodeSize(const node_ptr &node, keycount_t start, keycount_t end);
 
 /**
- * Base class for Nodes
- */
-struct Node
-{
-    virtual ~Node();
-
-    virtual bool isLeafNode() const = 0;
-
-    memory key(keycount_t i) const { return m_k_offsets[i]; }
-    keycount_t count() const { return *(keycount_t*)(m_input.byte_ptr() + sizeof(flags_t)); }
-protected:
-    Node(const memory &input, fn::sizeinator *keySizeFn);
-
-    memory m_input;
-    fn::sizeinator *m_keySizeFn;
-    uint32_t m_offset; // Used while parsing in the children
-
-    std::vector<memory> m_k_offsets; // Key offsets (leftmost key is worthless for internal nodes)
-
-    void validateOffset();
-};
-
-/**
- * Leaf node type
- */
-struct LeafNode : public Node
-{
-    LeafNode(const memory &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn);
-
-    bool isLeafNode() const;
-    memory value(keycount_t i) const;
-
-    keycount_t count() const { return *(keycount_t*)(m_input.byte_ptr() + sizeof(flags_t)); }
-private:
-    fn::sizeinator *m_valueSizeFn;
-    std::vector<memory> m_v_offsets; // Value offsets for leaves, identifier offsets for internals
-
-    void parse();
-};
-
-/**
- * Internal node type
- */
-struct InternalNode : public Node
-{
-    InternalNode(const memory &input, fn::sizeinator *keySizeFn);
-
-    bool isLeafNode() const;
-
-    nodeident_t id(keycount_t i) const;
-    itemcount_t itemCount(keycount_t i) const;
-private:
-    std::vector<memory> m_i_offsets;
-    std::vector<memory> m_c_offsets;
-
-    void parse();
-};
-
-typedef boost::shared_ptr<Node> node_ptr;
-typedef boost::shared_ptr<LeafNode> leafnode_ptr;
-typedef boost::shared_ptr<InternalNode> internalnode_ptr;
-
-node_ptr ParseNode(const memory &input, fn::sizeinator *keySizeFn, fn::sizeinator *valueSizeFn);
-
-/**
- * Serialize an internal node
+ * Cleave this node in twain, s.t. the larger half is on the left.
  *
- * Serializing involves a little more copying, under the assumption it's not
- * done as often. We keep copies of the data in memory until we can copy it all
- * into a block.
- *
- * We don't write the leftmost key into the target block, it's there only
- * for a uniform API.
+ * Returns the start index of the second half.
  */
-class InternalNodeWriter
-{
-public:
-    void writeNode(const memory &min_key, nodeident_t id, itemcount_t count);
-    memory get() const;
-private:
-    std::vector<memory> m_keys;
-    std::vector<nodeident_t> m_ids;
-    std::vector<itemcount_t> m_counts;
-
-    uint32_t size() const;
-};
-
-/**
- * Serialize a leaf node.
- *
- * Serializing involves a little more copying, under the assumption it's not
- * done as often. We keep copies of the data in memory until we can copy it all
- * into a block.
- */
-class LeafNodeWriter
-{
-public:
-    void writePair(const memory &key, const memory &value);
-    memory get() const;
-private:
-    std::vector<memory> m_keys;
-    std::vector<memory> m_values;
-
-    uint32_t size() const;
-};
-
+int FindSplit(const node_ptr &node);
 
 }
 

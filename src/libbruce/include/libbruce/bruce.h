@@ -29,7 +29,7 @@ public:
      * Open an existing bruce tree
      */
     template<typename K, typename V>
-    tree<K, V> open(const nodeident_t &id);
+    tree<K, V> open(const nodeid_t &id);
 
     void cleanup(/*nodelist*/);
 private:
