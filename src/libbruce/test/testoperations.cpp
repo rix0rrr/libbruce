@@ -168,4 +168,39 @@ TEST_CASE("inserting then deleting from an internal node")
 
 TEST_CASE("inserting a bunch of values with the same key and selective removal works")
 {
+    be::mem mem(1024);
+    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    for (uint32_t i = 0; i < 128; i++)
+        tree.insert(two_r, intCopy(i));
+
+    SECTION("deleting a low key & value")
+    {
+        REQUIRE( tree.remove(two_r, intCopy(40)) );
+        mutation mut = tree.flush();
+
+        memory rootPage = mem.get(*mut.newRootID());
+        internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
+        REQUIRE( rootNode->itemCount() == 127 );
+    }
+
+    SECTION("deleting a high key & value")
+    {
+        REQUIRE( tree.remove(two_r, intCopy(80)) );
+        mutation mut = tree.flush();
+
+        memory rootPage = mem.get(*mut.newRootID());
+        internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
+        REQUIRE( rootNode->itemCount() == 127 );
+    }
+
+
+    SECTION("deleting a nonexistent value")
+    {
+        REQUIRE( !tree.remove(two_r, intCopy(130)) );
+        mutation mut = tree.flush();
+
+        memory rootPage = mem.get(*mut.newRootID());
+        internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
+        REQUIRE( rootNode->itemCount() == 128 );
+    }
 }
