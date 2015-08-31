@@ -25,10 +25,11 @@ typedef int comparinator(const memory &, const memory &);
 
 struct tree_functions
 {
-    tree_functions(fn::comparinator *keyCompare, fn::sizeinator *keySize, fn::sizeinator *valueSize)
-        : keyCompare(keyCompare), keySize(keySize), valueSize(valueSize) { }
+    tree_functions(fn::comparinator *keyCompare, fn::comparinator *valueCompare, fn::sizeinator *keySize, fn::sizeinator *valueSize)
+        : keyCompare(keyCompare), valueCompare(valueCompare), keySize(keySize), valueSize(valueSize) { }
 
     fn::comparinator *keyCompare;
+    fn::comparinator *valueCompare;
     fn::sizeinator *keySize;
     fn::sizeinator *valueSize;
 };

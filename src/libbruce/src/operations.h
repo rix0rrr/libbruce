@@ -79,8 +79,21 @@ struct mutable_tree
 {
     mutable_tree(be::be &be, maybe_nodeid rootID, tree_functions fns);
 
-    // Operation can be called multiple times
+    /**
+     * Insert an item into the tree.
+     *
+     * The key and value are NOT copied. If the memory slice is borrowed, the
+     * borrowed memory must live until this mutable_tree has been flushed.  If
+     * the memory slice is shared, the shared_ptr will make sure the memory is
+     * not released prematurely.
+     */
     void insert(const memory &key, const memory &value);
+
+    // Remove any element with the given key
+    bool remove(const memory &key);
+
+    // Remove only the element with the given key and value
+    bool remove(const memory &key, const memory &value);
 
     /**
      * Flush changes to the block engine (this only writes new blocks).
@@ -89,6 +102,8 @@ struct mutable_tree
      * collected. After calling this, mutable_tree is frozen.
      */
     mutation flush();
+
+    node_ptr theRoot() const { return m_root; }
 private:
     typedef std::map<nodeid_t, uint32_t> idmap_t;
 
@@ -108,6 +123,7 @@ private:
     node_ptr load(nodeid_t id);
 
     splitresult_t insertRec(const node_ptr &node, const memory &key, const memory &value);
+    itemcount_t removeRec(const node_ptr &node, const memory &key, const memory *value);
     void validateKVSize(const memory &key, const memory &value);
     void checkNotFrozen();
 

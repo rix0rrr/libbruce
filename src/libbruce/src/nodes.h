@@ -72,6 +72,7 @@ struct LeafNode : public Node
 
     kv_pair &pair(keycount_t i) { return m_pairs[i]; }
     pairlist_t &pairs() { return m_pairs; }
+    const pairlist_t &pairs() const { return m_pairs; }
 private:
     pairlist_t m_pairs;
 };
@@ -94,6 +95,7 @@ struct InternalNode : public Node
 
     node_branch &branch(keycount_t i) { return m_branches[i]; }
     branchlist_t &branches() { return m_branches; }
+    const branchlist_t &branches() const { return m_branches; }
 private:
     branchlist_t m_branches;
 };
@@ -109,13 +111,21 @@ typedef boost::shared_ptr<InternalNode> internalnode_ptr;
 keycount_t FindLeafKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns);
 
 /**
- * Return the index where the subtree for a particular key is located
+ * Return the first index where the subtree for a particular key might be located
  *
- * POST: branch[ret].key <= key < branch[ret+1].key
- *       \/ (ret == 0  && key < branch[1].key)
+ * POST: branch[ret-1] <= branch[ret].key <= key
  */
-keycount_t FindInternalKey(const internalnode_ptr &leaf, const memory &key, const tree_functions &fns);
+keycount_t FindInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns);
+
+/**
+ * Find the index where this item can go with the least amount of child nodes.
+ *
+ * POST: branch[ret].key <= key <= branch[ret+1].key
+ */
+keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns);
 
 }
+
+std::ostream &operator <<(std::ostream &os, const bruce::Node &x);
 
 #endif

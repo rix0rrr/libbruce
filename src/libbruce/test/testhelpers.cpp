@@ -1,6 +1,7 @@
 #include "testhelpers.h"
 
 #include <algorithm>
+#include <boost/make_shared.hpp>
 
 uint32_t intSize(const void *)
 {
@@ -16,10 +17,22 @@ int rngcmp(const bruce::memory &a, const bruce::memory &b)
 
 int intCompare(const bruce::memory &a, const bruce::memory &b)
 {
-    return *a.at<uint32_t>(0) - *b.at<uint32_t>(0);
+    uint32_t aa = *a.at<uint32_t>(0);
+    uint32_t bb = *b.at<uint32_t>(0);
+
+    if (aa < bb) return -1;
+    if (aa > bb) return 1;
+    return 0;
 }
 
-bruce::tree_functions intToIntTree(&intCompare, &intSize, &intSize);
+bruce::memory intCopy(uint32_t i)
+{
+    boost::shared_ptr<char> x(new char[sizeof(i)]);
+    *(uint32_t*)x.get() = i;
+    return bruce::memory(x, sizeof(i));
+}
+
+bruce::tree_functions intToIntTree(&intCompare, &intCompare, &intSize, &intSize);
 
 uint32_t one = 1;
 uint32_t two = 2;

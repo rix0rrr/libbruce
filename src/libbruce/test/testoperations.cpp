@@ -13,7 +13,6 @@ TEST_CASE("writing a new single leaf tree")
 {
     be::mem mem(1024);
     mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
-
     tree.insert(one_r, two_r);
 
     mutation mut = tree.flush();
@@ -60,7 +59,7 @@ TEST_CASE("inserting a lot of keys leads to split nodes")
     mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
 
     for (uint32_t i = 0; i < 140; i++)
-        tree.insert(memory(&i, sizeof(i)), memory(&i, sizeof(i)));
+        tree.insert(intCopy(i), intCopy(i));
 
     mutation mut = tree.flush();
 
@@ -81,4 +80,92 @@ TEST_CASE("inserting a lot of keys leads to split nodes")
     REQUIRE( rightNode->count() == rootNode->branch(1).itemCount );
 
     REQUIRE( leftNode->itemCount() + rightNode->itemCount() == rootNode->itemCount() );
+}
+
+TEST_CASE("split is kosher")
+{
+    be::mem mem(1024);
+    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+
+    for (uint32_t i = 0; i < 128; i++)
+        tree.insert(intCopy(i), intCopy(i));
+
+    mutation mut = tree.flush();
+
+    memory rootPage = mem.get(*mut.newRootID());
+    internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
+
+    REQUIRE( rootNode->count() == 2 );
+    memory splitKey = rootNode->branch(1).minKey;
+
+    memory leftPage = mem.get(rootNode->branch(0).nodeID);
+    memory rightPage = mem.get(rootNode->branch(1).nodeID);
+    leafnode_ptr leftNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(leftPage, intToIntTree));
+    leafnode_ptr rightNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(rightPage, intToIntTree));
+
+    for (int i = 0; i < leftNode->count(); i++)
+    {
+        REQUIRE( intCompare(leftNode->pair(i).key, splitKey) < 0 );
+        if (i > 0)
+            REQUIRE( intCompare(leftNode->pair(i-1).key, leftNode->pair(i).key) <= 0 );
+    }
+
+    for (int i = 0; i < rightNode->count(); i++)
+    {
+        REQUIRE( intCompare(rightNode->pair(i).key, splitKey) >= 0 );
+    }
+}
+
+TEST_CASE("inserting then deleting from a leaf")
+{
+    be::mem mem(1024);
+    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    tree.insert(one_r, two_r);
+    tree.remove(one_r);
+    mutation mut = tree.flush();
+
+    THEN("it can be deserialized to an empty leaf")
+    {
+        memory page = mem.get(*mut.newRootID());
+        leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
+
+        REQUIRE(r->count() == 0);
+    }
+}
+
+TEST_CASE("inserting then deleting from an internal node")
+{
+    be::mem mem(1024);
+    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    for (uint32_t i = 0; i < 128; i++)
+        tree.insert(intCopy(i), intCopy(i));
+
+    SECTION("deleting from the left")
+    {
+        uint32_t x = 40;
+        bool success = tree.remove(memory(&x, sizeof(x)));
+        REQUIRE(success);
+
+        mutation mut = tree.flush();
+
+        memory rootPage = mem.get(*mut.newRootID());
+        internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
+        REQUIRE( rootNode->itemCount() == 127 );
+    }
+
+    SECTION("deleting from the right")
+    {
+        uint32_t x = 80;
+        bool success = tree.remove(memory(&x, sizeof(x)));
+        REQUIRE(success);
+        mutation mut = tree.flush();
+
+        memory rootPage = mem.get(*mut.newRootID());
+        internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
+        REQUIRE( rootNode->itemCount() == 127 );
+    }
+}
+
+TEST_CASE("inserting a bunch of values with the same key and selective removal works")
+{
 }

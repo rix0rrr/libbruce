@@ -29,6 +29,7 @@ add_executable(testbruce
     test/testserializing.cpp
     test/testoperations.cpp
     test/testhelpers.cpp
+    test/testnodes.cpp
     test/testbruce.cpp)
 target_include_directories(testbruce
     PRIVATE src  # Testing private headers

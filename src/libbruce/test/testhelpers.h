@@ -11,6 +11,8 @@ int intCompare(const bruce::memory &, const bruce::memory &);
 
 int rngcmp(const bruce::memory &a, const bruce::memory &b);
 
+bruce::memory intCopy(uint32_t i);
+
 extern bruce::tree_functions intToIntTree;
 
 extern bruce::memory one_r;

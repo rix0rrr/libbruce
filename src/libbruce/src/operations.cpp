@@ -2,6 +2,7 @@
 
 #include "nodes.h"
 #include "serializing.h"
+#include <cassert>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
@@ -55,6 +56,7 @@ void mutable_tree::insert(const memory &key, const memory &value)
     {
         // Replace root with a new internal node
         internalnode_ptr newRoot = boost::make_shared<InternalNode>();
+
         newRoot->insert(0, node_branch(memory(), rootSplit.left, rootSplit.leftCount));
         newRoot->insert(1, node_branch(rootSplit.splitKey, rootSplit.right, rootSplit.rightCount));
         m_root = newRoot;
@@ -93,8 +95,7 @@ splitresult_t mutable_tree::insertRec(const node_ptr &node, const memory &key, c
     {
         internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(node);
 
-        keycount_t i = FindInternalKey(internal, key, m_fns);
-
+        keycount_t i = FindShallowestInternalKey(internal, key, m_fns);
         node_branch &leftBranch = internal->branches()[i];
 
         splitresult_t childSplit = insertRec(child(leftBranch), key, value);
@@ -115,7 +116,7 @@ splitresult_t mutable_tree::insertRec(const node_ptr &node, const memory &key, c
 
         InternalNodeSize size(internal, m_be.maxBlockSize());
 
-        // Maybe split this leaf
+        // Maybe split this node
         if (!size.shouldSplit())
             return splitresult_t(internal->itemCount());
 
@@ -133,6 +134,70 @@ void mutable_tree::checkNotFrozen()
 {
     if (m_frozen)
         throw std::runtime_error("Can't mutate tree anymore; already flushed");
+}
+
+bool mutable_tree::remove(const memory &key)
+{
+    checkNotFrozen();
+
+    node_ptr r = root();
+    itemcount_t count = r->itemCount();
+    return removeRec(r, key, NULL) != count;
+}
+
+bool mutable_tree::remove(const memory &key, const memory &value)
+{
+    checkNotFrozen();
+
+    node_ptr r = root();
+    itemcount_t count = r->itemCount();
+    return removeRec(r, key, &value) != count;
+}
+
+int safeCompare(const memory &a, const memory &b, const tree_functions &fns)
+{
+    if (a.empty()) return -1;
+    if (b.empty()) return 1;
+    return fns.keyCompare(a, b);
+}
+
+itemcount_t mutable_tree::removeRec(const node_ptr &node, const memory &key, const memory *value)
+{
+    // We're supposed to be joining nodes together if they're below half-max,
+    // but I'm skipping out on that.
+    if (node->isLeafNode())
+    {
+        leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(node);
+        keycount_t i = FindLeafKey(leaf, key, m_fns) - 1;
+        // i is now the highest index with this key, or higher
+        bool matching = safeCompare(leaf->pair(i).key, key, m_fns) == 0;
+        while (i >= 0 && matching && value && m_fns.valueCompare(leaf->pair(i).value, *value) != 0)
+        {
+            i--;
+            matching = safeCompare(leaf->pair(i).key, key, m_fns) == 0;
+        }
+        if (matching) leaf->pairs().erase(leaf->pairs().begin() + i);
+        return leaf->itemCount();
+    }
+    else
+    {
+        internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(node);
+
+        keycount_t i = FindInternalKey(internal, key, m_fns);
+        for (; i < internal->branches().size() && safeCompare(internal->branch(i).minKey, key, m_fns) <= 0; i++)
+        {
+            // { P: minKey(i) <= key }
+            itemcount_t ret = removeRec(child(internal->branch(i)), key, value);
+            if (ret != internal->branch(i).itemCount)
+            {
+                // Hey, we got to remove an item in this subtree
+                internal->branch(i).itemCount = ret;
+                break;
+            }
+        }
+
+        return internal->itemCount();
+    }
 }
 
 mutation mutable_tree::flush()
