@@ -47,12 +47,20 @@ typedef std::vector<node_branch> branchlist_t;
  */
 struct Node
 {
+    Node();
     virtual ~Node();
 
     virtual bool isLeafNode() const = 0;
     virtual keycount_t count() const = 0; // Items in this node
     virtual keycount_t itemCount() const = 0; // Items in this node and below
     virtual const memory &minKey() const = 0;
+
+    bool dirty() const { return m_dirty; }
+    void clean() { m_dirty = false; }
+    void markDirty() { m_dirty = true; }
+
+private:
+    bool m_dirty;
 };
 
 /**
@@ -68,7 +76,8 @@ struct LeafNode : public Node
     virtual const memory &minKey() const;
     virtual keycount_t itemCount() const;
 
-    void insert(size_t i, const kv_pair &item) { m_pairs.insert(m_pairs.begin() + i, item); }
+    void insert(size_t i, const kv_pair &item) { m_pairs.insert(m_pairs.begin() + i, item); markDirty(); }
+    void erase(size_t i) { m_pairs.erase(m_pairs.begin() + i); markDirty(); }
 
     kv_pair &pair(keycount_t i) { return m_pairs[i]; }
     pairlist_t &pairs() { return m_pairs; }
@@ -89,7 +98,8 @@ struct InternalNode : public Node
     virtual keycount_t count() const { return m_branches.size(); }
     virtual const memory &minKey() const;
 
-    void insert(size_t i, const node_branch &branch) { m_branches.insert(m_branches.begin() + i, branch); }
+    void insert(size_t i, const node_branch &branch) { m_branches.insert(m_branches.begin() + i, branch); markDirty(); }
+    void erase(size_t i) { m_branches.erase(m_branches.begin() + i); markDirty(); }
 
     keycount_t itemCount() const;
 

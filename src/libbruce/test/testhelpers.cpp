@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <boost/make_shared.hpp>
+#include "nodes.h"
+#include "serializing.h"
 
 uint32_t intSize(const void *)
 {
@@ -40,3 +42,13 @@ uint32_t three = 3;
 bruce::memory one_r(&one, sizeof(one));
 bruce::memory two_r(&two, sizeof(two));
 bruce::memory three_r(&three, sizeof(three));
+
+std::ostream &operator <<(std::ostream &os, bruce::be::mem &x)
+{
+    for (bruce::nodeid_t i = 0; i < x.blockCount(); i++)
+    {
+        std::cout << "Block[" << i << "] => " << x.get(i) << std::endl;
+    }
+    return os;
+}
+

@@ -30,7 +30,9 @@ add_executable(testbruce
     test/testoperations.cpp
     test/testhelpers.cpp
     test/testnodes.cpp
+    test/testtree.cpp
     test/testbruce.cpp)
+
 target_include_directories(testbruce
     PRIVATE src  # Testing private headers
     )

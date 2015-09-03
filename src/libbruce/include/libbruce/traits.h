@@ -4,10 +4,13 @@
 // Conversions for converting types to byte ranges
 
 #include <libbruce/memory.h>
+#include <libbruce/types.h>
 #include <arpa/inet.h>
 #include <algorithm>
 
-namespace bruce { namespace types {
+namespace bruce {
+
+namespace traits {
 
 //----------------------------------------------------------------------
 
@@ -22,7 +25,10 @@ struct convert
 {
     static memory to_bytes(const T &t)
     {
-        return memory(&t, sizeof(t));
+        // Copying here is not awesome, but not really a good way around it :(
+        memory m(sizeof(t));
+        memcpy((void*)m.ptr(), &t, sizeof(t));
+        return m;
     }
 
     static T from_bytes(const memory &r)
@@ -42,6 +48,11 @@ struct convert
         }
         return 0;
     }
+
+    static uint32_t size(const void*)
+    {
+        return sizeof(T);
+    }
 };
 
 //----------------------------------------------------------------------
@@ -51,19 +62,55 @@ struct convert<std::string>
 {
     static memory to_bytes(const std::string &t)
     {
-        return memory(t.c_str(), t.size());
+        memory m(t.size() + 1);
+        memcpy((void*)m.ptr(), t.c_str(), t.size() + 10);
+        return m;
     }
 
     static std::string from_bytes(const memory &r)
     {
-        return std::string((char*)r.ptr(), r.size());
+        return std::string((char*)r.ptr());
     }
 
     static int compare(const memory &a, const memory &b)
     {
-        int r = bcmp(a.ptr(), b.ptr(), std::min(a.size(), b.size()));
+        return strcmp((char*)a.ptr(), (char*)b.ptr());
+    }
+
+    static uint32_t size(const void* x)
+    {
+        return strlen((char*)x) + 1;
+    }
+};
+
+//----------------------------------------------------------------------
+
+template<>
+struct convert<binary>
+{
+    static memory to_bytes(const binary &t)
+    {
+        memory m(t.size() + sizeof(uint32_t));
+        *m.at<uint32_t>(0) = t.size();
+        memcpy((void*)(m.byte_ptr() + sizeof(uint32_t)), t.c_str(), t.size());
+        return m;
+    }
+
+    static binary from_bytes(const memory &r)
+    {
+        return binary((char*)(r.byte_ptr() + sizeof(uint32_t)), *r.at<uint32_t>(0));
+    }
+
+    static int compare(const memory &a, const memory &b)
+    {
+        int r = bcmp(a.byte_ptr() + sizeof(uint32_t), b.byte_ptr() + sizeof(uint32_t), std::min(a.size(), b.size()) - sizeof(uint32_t));
         if (r != 0) return r;
         return a.size() < b.size() ? -1 : 1;
+    }
+
+    static uint32_t size(const void* x)
+    {
+        return *(uint32_t*)x + sizeof(uint32_t);
     }
 };
 

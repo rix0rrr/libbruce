@@ -75,6 +75,11 @@ struct splitresult_t {
 
 // FIXME: Reject duplicate inserts?
 
+/**
+ * Operations on a tree
+ *
+ * The tree is loaded into memory on-demand.
+ */
 struct mutable_tree
 {
     mutable_tree(be::be &be, maybe_nodeid rootID, tree_functions fns);

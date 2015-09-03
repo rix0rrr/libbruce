@@ -47,6 +47,12 @@ struct memory
     {
     }
 
+    memory(size_t size)
+        : m_mem(new char[size]), m_size(size)
+    {
+        m_ptr = m_mem.get();
+    }
+
     bool empty() const { return m_size == 0; }
     const void *ptr() const { return m_ptr; }
     const uint8_t *byte_ptr() const { return (uint8_t*)m_ptr; }
@@ -71,7 +77,8 @@ struct memory
     T* at(size_t offset)
     {
         if (!m_mem) throw std::runtime_error("Can't change non-owned memory");
-        return (T*)(m_mem.get() + offset);
+        // Pointers don't have to be the same, but we need to be backed by owned memory
+        return (T*)((char*)m_ptr + offset);
     }
 
     /**

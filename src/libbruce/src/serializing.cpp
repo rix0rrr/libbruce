@@ -139,10 +139,13 @@ node_ptr ParseLeafNode(memory &input, const tree_functions &fns)
 
 node_ptr ParseNode(memory &input, const tree_functions &fns)
 {
+    node_ptr ret;
     if (*input.at<flags_t>(0) & TYPE_INTERNAL)
-        return ParseInternalNode(input, fns);
+        ret = ParseInternalNode(input, fns);
     else
-        return ParseLeafNode(input, fns);
+        ret = ParseLeafNode(input, fns);
+    ret->clean();
+    return ret;
 }
 
 //----------------------------------------------------------------------

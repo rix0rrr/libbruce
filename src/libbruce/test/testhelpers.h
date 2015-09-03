@@ -19,4 +19,6 @@ extern bruce::memory one_r;
 extern bruce::memory two_r;
 extern bruce::memory three_r;
 
+std::ostream &operator <<(std::ostream &os, bruce::be::mem &x);
+
 #endif

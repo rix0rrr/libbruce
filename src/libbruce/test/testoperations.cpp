@@ -193,7 +193,6 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
         REQUIRE( rootNode->itemCount() == 127 );
     }
 
-
     SECTION("deleting a nonexistent value")
     {
         REQUIRE( !tree.remove(two_r, intCopy(130)) );
@@ -204,3 +203,46 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
         REQUIRE( rootNode->itemCount() == 128 );
     }
 }
+
+TEST_CASE("write new pages, delete old ones")
+{
+    maybe_nodeid treeID;
+    be::mem mem(1024);
+    {
+        mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+        for (uint32_t i = 0; i < 128; i++)
+            tree.insert(intCopy(i), intCopy(i));
+        mutation mut = tree.flush();
+        REQUIRE( mem.blockCount() == 3 );
+        treeID = mut.newRootID();
+    }
+
+    {
+        mutable_tree tree(mem, treeID, intToIntTree);
+        tree.insert(intCopy(140), intCopy(140));
+        mutation mut = tree.flush();
+        REQUIRE( mem.blockCount() == 5 );
+        REQUIRE( mut.createdIDs().size() == 2 );
+        REQUIRE( mut.obsoleteIDs().size() == 2 );
+
+    }
+}
+
+/*
+TEST_CASE("no writeback if no changes")
+{
+    be::mem mem(1024);
+    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    for (uint32_t i = 0; i < 128; i++)
+        tree.insert(intCopy(i), intCopy(i));
+    mutation mut = tree.flush();
+    uint32_t blockCount1 = mem.blockCount();
+
+    mutable_tree tree2(mem, mut.newRootID(), intToIntTree);
+    tree2.remove(intCopy(140));
+    mutation mut2 = tree2.flush();
+    uint32_t blockCount2 = mem.blockCount();
+
+    REQUIRE( blockCount1 == blockCount2 );
+}
+*/

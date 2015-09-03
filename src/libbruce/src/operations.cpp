@@ -95,7 +95,7 @@ splitresult_t mutable_tree::insertRec(const node_ptr &node, const memory &key, c
     {
         internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(node);
 
-        keycount_t i = FindShallowestInternalKey(internal, key, m_fns);
+        keycount_t i = FindInternalKey(internal, key, m_fns);
         node_branch &leftBranch = internal->branches()[i];
 
         splitresult_t childSplit = insertRec(child(leftBranch), key, value);

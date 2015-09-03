@@ -34,8 +34,14 @@ struct tree_functions
     fn::sizeinator *valueSize;
 };
 
+/**
+ * A type tagged alias for std::string which is serialized in a binary-safe way
+ */
+class binary : public std::string {
+public:
+    binary(const char *c, size_t n) : std::string(c, n) { }
+};
 
 }
-
 
 #endif

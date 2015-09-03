@@ -5,6 +5,11 @@
 
 namespace bruce {
 
+Node::Node()
+    : m_dirty(false)
+{
+}
+
 Node::~Node()
 {
 }

@@ -5,32 +5,28 @@
 namespace bruce {
 
 unsafe_tree::unsafe_tree(const maybe_nodeid &id, be::be &be, tree_functions fns)
-    : m_id(id), m_be(be), m_fns(fns)
+    : m_tree(new mutable_tree(be, id, fns))
 {
 }
 
-mutation unsafe_tree::insert(const memory &key, const memory &value)
+void unsafe_tree::insert(const memory &key, const memory &value)
 {
-    /*
-    insert_operation insert(m_be, m_id, key, value, m_compareKeys);
+    m_tree->insert(key, value);
+}
 
-    try
-    {
-        insert.do_it();
-    }
-    catch (std::runtime_error &e)
-    {
-        insert.mut.fail(e.what());
-    }
-    catch (...)
-    {
-        insert.mut.fail("Unexpected exception type");
-    }
+bool unsafe_tree::remove(const memory &key)
+{
+    return m_tree->remove(key);
+}
 
-    return insert.mut;
-    */
+bool unsafe_tree::remove(const memory &key, const memory &value)
+{
+    return m_tree->remove(key, value);
+}
 
-    return mutation(maybe_nodeid());
+mutation unsafe_tree::flush()
+{
+    return m_tree->flush();
 }
 
 }
