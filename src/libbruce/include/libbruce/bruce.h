@@ -30,7 +30,7 @@ public:
      * Open an existing bruce tree
      */
     template<typename K, typename V>
-    typename tree<K, V>::ptr open(const nodeid_t &id)
+    typename tree<K, V>::ptr edit(const nodeid_t &id)
     {
         return typename boost::shared_ptr<tree<K,V> >(new tree<K, V>(id, m_blockEngine));
     }
