@@ -23,6 +23,7 @@
 #include <libbruce/mutation.h>
 #include <libbruce/be/be.h>
 #include <libbruce/traits.h>
+#include <boost/make_shared.hpp>
 
 namespace bruce {
 
@@ -52,6 +53,8 @@ private:
 template<typename K, typename V>
 struct tree
 {
+    typedef typename boost::shared_ptr<tree<K, V> > ptr;
+
     tree(const maybe_nodeid &id, be::be &be)
         : m_unsafe(id, be, fns()) { }
 

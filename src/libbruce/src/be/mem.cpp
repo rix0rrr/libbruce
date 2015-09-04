@@ -13,7 +13,7 @@ mem::~mem()
 
 nodeid_t mem::blockCount() const
 {
-    return m_ctr;
+    return m_blocks.size();
 }
 
 std::vector<nodeid_t> mem::newIdentifiers(int n)

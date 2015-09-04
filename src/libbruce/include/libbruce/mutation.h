@@ -8,16 +8,20 @@ namespace bruce {
 
 struct mutation
 {
+    typedef std::vector<nodeid_t> nodes;
+
     mutation(maybe_nodeid newRootID);
 
-    // Public API
+    // Consumer API
     bool success() const { return m_success; }
     const std::string &failureReason() const { return m_failureReason; }
     maybe_nodeid newRootID() const { return m_newRootID; }
-    const std::vector<nodeid_t> &createdIDs() const { return m_createdIDs; }
-    const std::vector<nodeid_t> &obsoleteIDs() const { return m_obsoleteIDs; }
+    const nodes &createdIDs() const { return m_createdIDs; }
+    const nodes &obsoleteIDs() const { return m_obsoleteIDs; }
+    // Return the list with nodes to delete
+    nodes &deleteList(bool commitSuccess);
 
-    // Implementation API
+    // Library API
     void fail(const std::string &reason);
     void setRoot(const maybe_nodeid &id);
     void addCreated(const nodeid_t &id);
@@ -26,8 +30,8 @@ private:
     bool m_success;
     std::string m_failureReason;
     maybe_nodeid m_newRootID;
-    std::vector<nodeid_t> m_createdIDs;
-    std::vector<nodeid_t> m_obsoleteIDs;
+    nodes m_createdIDs;
+    nodes m_obsoleteIDs;
 };
 
 }
