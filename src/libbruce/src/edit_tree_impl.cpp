@@ -1,4 +1,4 @@
-#include "operations.h"
+#include "edit_tree_impl.h"
 
 #include "nodes.h"
 #include "serializing.h"
@@ -12,12 +12,12 @@
 
 namespace bruce {
 
-mutable_tree::mutable_tree(be::be &be, maybe_nodeid rootID, tree_functions fns)
+edit_tree_impl::edit_tree_impl(be::be &be, maybe_nodeid rootID, tree_functions fns)
     : m_be(be), m_rootID(rootID), m_fns(fns), m_frozen(false)
 {
 }
 
-node_ptr &mutable_tree::root()
+node_ptr &edit_tree_impl::root()
 {
     if (!m_root)
     {
@@ -31,20 +31,20 @@ node_ptr &mutable_tree::root()
     return m_root;
 }
 
-const node_ptr &mutable_tree::child(node_branch &branch)
+const node_ptr &edit_tree_impl::child(node_branch &branch)
 {
     if (!branch.child) branch.child = load(branch.nodeID);
     return branch.child;
 }
 
-node_ptr mutable_tree::load(nodeid_t id)
+node_ptr edit_tree_impl::load(nodeid_t id)
 {
     m_oldIDs.push_back(id);
     memory mem = m_be.get(id);
     return ParseNode(mem, m_fns);
 }
 
-void mutable_tree::insert(const memory &key, const memory &value)
+void edit_tree_impl::insert(const memory &key, const memory &value)
 {
     checkNotFrozen();
     validateKVSize(key, value);
@@ -63,14 +63,14 @@ void mutable_tree::insert(const memory &key, const memory &value)
     }
 }
 
-void mutable_tree::validateKVSize(const memory &key, const memory &value)
+void edit_tree_impl::validateKVSize(const memory &key, const memory &value)
 {
     uint32_t maxSize = m_be.maxBlockSize();
     if (key.size() + value.size() > maxSize)
         throw std::runtime_error("Key/value too large to insert, max size: " + to_string(maxSize));
 }
 
-splitresult_t mutable_tree::insertRec(const node_ptr &node, const memory &key, const memory &value)
+splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memory &key, const memory &value)
 {
     if (node->isLeafNode())
     {
@@ -130,13 +130,13 @@ splitresult_t mutable_tree::insertRec(const node_ptr &node, const memory &key, c
     }
 }
 
-void mutable_tree::checkNotFrozen()
+void edit_tree_impl::checkNotFrozen()
 {
     if (m_frozen)
         throw std::runtime_error("Can't mutate tree anymore; already flushed");
 }
 
-bool mutable_tree::remove(const memory &key)
+bool edit_tree_impl::remove(const memory &key)
 {
     checkNotFrozen();
 
@@ -145,7 +145,7 @@ bool mutable_tree::remove(const memory &key)
     return removeRec(r, key, NULL) != count;
 }
 
-bool mutable_tree::remove(const memory &key, const memory &value)
+bool edit_tree_impl::remove(const memory &key, const memory &value)
 {
     checkNotFrozen();
 
@@ -161,7 +161,7 @@ int safeCompare(const memory &a, const memory &b, const tree_functions &fns)
     return fns.keyCompare(a, b);
 }
 
-itemcount_t mutable_tree::removeRec(const node_ptr &node, const memory &key, const memory *value)
+itemcount_t edit_tree_impl::removeRec(const node_ptr &node, const memory &key, const memory *value)
 {
     // We're supposed to be joining nodes together if they're below half-max,
     // but I'm skipping out on that.
@@ -200,7 +200,7 @@ itemcount_t mutable_tree::removeRec(const node_ptr &node, const memory &key, con
     }
 }
 
-mutation mutable_tree::flush()
+mutation edit_tree_impl::flush()
 {
     m_frozen = true;
 
@@ -222,7 +222,7 @@ mutation mutable_tree::flush()
     return collectMutation();
 }
 
-mutation mutable_tree::collectMutation()
+mutation edit_tree_impl::collectMutation()
 {
     mutation ret(m_newIDs[0]);
     bool failed = false;
@@ -251,7 +251,7 @@ mutation mutable_tree::collectMutation()
  * replaced with an index into the m_nodeIDs array. After provisioning the new
  * IDs, that array will have the actual IDs for every page.
  */
-void mutable_tree::collectNewIDsRec(node_ptr &node)
+void edit_tree_impl::collectNewIDsRec(node_ptr &node)
 {
     // FIXME: Check if we actually did any changes. Otherwise we have nothing to write.
 
@@ -269,7 +269,7 @@ void mutable_tree::collectNewIDsRec(node_ptr &node)
     }
 }
 
-void mutable_tree::collectBlocksToPutRec(node_ptr &node, nodeid_t id)
+void edit_tree_impl::collectBlocksToPutRec(node_ptr &node, nodeid_t id)
 {
     if (!node->isLeafNode())
     {

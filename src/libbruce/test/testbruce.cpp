@@ -12,7 +12,7 @@ TEST_CASE("abort commit of empty tree should leave blockstore empty")
     be::mem mem(1024);
     ::bruce::bruce b(mem);
 
-    tree<int, int>::ptr t = b.create<int, int>();
+    edit_tree<int, int>::ptr t = b.create<int, int>();
     t->insert(1, 2);
     t->insert(2, 3);
     mutation mut = t->flush();
@@ -27,7 +27,7 @@ TEST_CASE("commit and abort")
     be::mem mem(1024);
     ::bruce::bruce b(mem);
 
-    tree<int, int>::ptr t = b.create<int, int>();
+    edit_tree<int, int>::ptr t = b.create<int, int>();
     t->insert(1, 2);
     t->insert(2, 3);
     mutation mut = t->flush();
@@ -36,7 +36,7 @@ TEST_CASE("commit and abort")
 
     SECTION("success commit should leave only new nodes")
     {
-        tree<int, int>::ptr u = b.edit<int, int>(*mut.newRootID());
+        edit_tree<int, int>::ptr u = b.edit<int, int>(*mut.newRootID());
         u->insert(3, 4);
         mutation mut2 = u->flush();
 
@@ -47,7 +47,7 @@ TEST_CASE("commit and abort")
 
     SECTION("abort commit should leave only old nodes")
     {
-        tree<int, int>::ptr u = b.edit<int, int>(*mut.newRootID());
+        edit_tree<int, int>::ptr u = b.edit<int, int>(*mut.newRootID());
         u->insert(3, 4);
         mutation mut2 = u->flush();
 

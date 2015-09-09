@@ -53,7 +53,7 @@
 #include <libbruce/mutation.h>
 #include <libbruce/be/be.h>
 #include <libbruce/traits.h>
-#include <libbruce/tree.h>
+#include <libbruce/edit_tree.h>
 #include "nodes.h"
 
 #include <map>
@@ -80,15 +80,15 @@ struct splitresult_t {
  *
  * The tree is loaded into memory on-demand.
  */
-struct mutable_tree
+struct edit_tree_impl
 {
-    mutable_tree(be::be &be, maybe_nodeid rootID, tree_functions fns);
+    edit_tree_impl(be::be &be, maybe_nodeid rootID, tree_functions fns);
 
     /**
      * Insert an item into the tree.
      *
      * The key and value are NOT copied. If the memory slice is borrowed, the
-     * borrowed memory must live until this mutable_tree has been flushed.  If
+     * borrowed memory must live until this edit_tree_impl has been flushed.  If
      * the memory slice is shared, the shared_ptr will make sure the memory is
      * not released prematurely.
      */
@@ -104,7 +104,7 @@ struct mutable_tree
      * Flush changes to the block engine (this only writes new blocks).
      *
      * Returns a mutation containing the IDs of the blocks that can be garbage
-     * collected. After calling this, mutable_tree is frozen.
+     * collected. After calling this, edit_tree_impl is frozen.
      */
     mutation flush();
 

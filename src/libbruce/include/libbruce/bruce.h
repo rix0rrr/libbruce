@@ -3,9 +3,10 @@
 
 #include <stdexcept>
 
-#include <libbruce/tree.h>
 #include <libbruce/be/be.h>
 #include <libbruce/be/mem.h>
+#include <libbruce/edit_tree.h>
+#include <libbruce/query_tree.h>
 
 namespace bruce {
 
@@ -21,18 +22,18 @@ public:
      * silly.
      */
     template<typename K, typename V>
-    typename tree<K, V>::ptr create()
+    typename edit_tree<K, V>::ptr create()
     {
-        return typename boost::shared_ptr<tree<K,V> >(new tree<K, V>(maybe_nodeid(), m_blockEngine));
+        return typename boost::shared_ptr<edit_tree<K,V> >(new edit_tree<K, V>(maybe_nodeid(), m_blockEngine));
     }
 
     /**
      * Open an existing bruce tree
      */
     template<typename K, typename V>
-    typename tree<K, V>::ptr edit(const nodeid_t &id)
+    typename edit_tree<K, V>::ptr edit(const nodeid_t &id)
     {
-        return typename boost::shared_ptr<tree<K,V> >(new tree<K, V>(id, m_blockEngine));
+        return typename boost::shared_ptr<edit_tree<K,V> >(new edit_tree<K, V>(id, m_blockEngine));
     }
 
     /**

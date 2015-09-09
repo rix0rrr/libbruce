@@ -1,7 +1,7 @@
 #include <catch/catch.hpp>
 #include <libbruce/bruce.h>
 
-#include "operations.h"
+#include "edit_tree_impl.h"
 #include "testhelpers.h"
 #include "serializing.h"
 
@@ -12,7 +12,7 @@ using namespace bruce;
 TEST_CASE("writing a new single leaf tree")
 {
     be::mem mem(1024);
-    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
     tree.insert(one_r, two_r);
 
     mutation mut = tree.flush();
@@ -34,7 +34,7 @@ TEST_CASE("writing a new single leaf tree")
 
     WHEN("a new key is added to it")
     {
-        mutable_tree tree2(mem, mut.newRootID(), intToIntTree);
+        edit_tree_impl tree2(mem, mut.newRootID(), intToIntTree);
         tree2.insert(two_r, one_r);
 
         mutation mut2 = tree2.flush();
@@ -56,7 +56,7 @@ TEST_CASE("writing a new single leaf tree")
 TEST_CASE("inserting a lot of keys leads to split nodes")
 {
     be::mem mem(1024);
-    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
 
     for (uint32_t i = 0; i < 140; i++)
         tree.insert(intCopy(i), intCopy(i));
@@ -85,7 +85,7 @@ TEST_CASE("inserting a lot of keys leads to split nodes")
 TEST_CASE("split is kosher")
 {
     be::mem mem(1024);
-    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
 
     for (uint32_t i = 0; i < 128; i++)
         tree.insert(intCopy(i), intCopy(i));
@@ -119,7 +119,7 @@ TEST_CASE("split is kosher")
 TEST_CASE("inserting then deleting from a leaf")
 {
     be::mem mem(1024);
-    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
     tree.insert(one_r, two_r);
     tree.remove(one_r);
     mutation mut = tree.flush();
@@ -136,7 +136,7 @@ TEST_CASE("inserting then deleting from a leaf")
 TEST_CASE("inserting then deleting from an internal node")
 {
     be::mem mem(1024);
-    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
     for (uint32_t i = 0; i < 128; i++)
         tree.insert(intCopy(i), intCopy(i));
 
@@ -169,7 +169,7 @@ TEST_CASE("inserting then deleting from an internal node")
 TEST_CASE("inserting a bunch of values with the same key and selective removal works")
 {
     be::mem mem(1024);
-    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
     for (uint32_t i = 0; i < 128; i++)
         tree.insert(two_r, intCopy(i));
 
@@ -209,7 +209,7 @@ TEST_CASE("write new pages, delete old ones")
     maybe_nodeid treeID;
     be::mem mem(1024);
     {
-        mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+        edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
         for (uint32_t i = 0; i < 128; i++)
             tree.insert(intCopy(i), intCopy(i));
         mutation mut = tree.flush();
@@ -218,7 +218,7 @@ TEST_CASE("write new pages, delete old ones")
     }
 
     {
-        mutable_tree tree(mem, treeID, intToIntTree);
+        edit_tree_impl tree(mem, treeID, intToIntTree);
         tree.insert(intCopy(140), intCopy(140));
         mutation mut = tree.flush();
         REQUIRE( mem.blockCount() == 5 );
@@ -232,13 +232,13 @@ TEST_CASE("write new pages, delete old ones")
 TEST_CASE("no writeback if no changes")
 {
     be::mem mem(1024);
-    mutable_tree tree(mem, maybe_nodeid(), intToIntTree);
+    edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
     for (uint32_t i = 0; i < 128; i++)
         tree.insert(intCopy(i), intCopy(i));
     mutation mut = tree.flush();
     uint32_t blockCount1 = mem.blockCount();
 
-    mutable_tree tree2(mem, mut.newRootID(), intToIntTree);
+    edit_tree_impl tree2(mem, mut.newRootID(), intToIntTree);
     tree2.remove(intCopy(140));
     mutation mut2 = tree2.flush();
     uint32_t blockCount2 = mem.blockCount();

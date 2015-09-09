@@ -27,17 +27,17 @@
 
 namespace bruce {
 
-class mutable_tree;
-typedef std::auto_ptr<mutable_tree> mutable_tree_ptr;
+class edit_tree_impl;
+typedef std::auto_ptr<edit_tree_impl> mutable_tree_ptr;
 
 /**
  * Type-unsafe tree
  *
  * This class is an implementation detail and should not be used directly.
  */
-struct unsafe_tree
+struct edit_tree_unsafe
 {
-    unsafe_tree(const maybe_nodeid &id, be::be &be, tree_functions fns);
+    edit_tree_unsafe(const maybe_nodeid &id, be::be &be, tree_functions fns);
 
     void insert(const memory &key, const memory &value);
     bool remove(const memory &key);
@@ -51,24 +51,24 @@ private:
  * Typesafe tree
  */
 template<typename K, typename V>
-struct tree
+struct edit_tree
 {
-    typedef typename boost::shared_ptr<tree<K, V> > ptr;
+    typedef typename boost::shared_ptr<edit_tree<K, V> > ptr;
 
-    tree(const maybe_nodeid &id, be::be &be)
+    edit_tree(const maybe_nodeid &id, be::be &be)
         : m_unsafe(id, be, fns()) { }
 
-    void insert(K key, V value)
+    void insert(const K &key, const V &value)
     {
         m_unsafe.insert(traits::convert<K>::to_bytes(key), traits::convert<V>::to_bytes(value));
     }
 
-    bool remove(K key)
+    bool remove(const K &key)
     {
         return m_unsafe.remove(traits::convert<K>::to_bytes(key));
     }
 
-    bool remove(K key, V value)
+    bool remove(const K &key, const V &value)
     {
         return m_unsafe.remove(traits::convert<K>::to_bytes(key), traits::convert<V>::to_bytes(value));
     }
@@ -80,7 +80,7 @@ struct tree
 
     static tree_functions fns() { return tree_functions(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size); }
 private:
-    unsafe_tree m_unsafe;
+    edit_tree_unsafe m_unsafe;
 };
 
 }

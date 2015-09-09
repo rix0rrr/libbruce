@@ -5,11 +5,13 @@ project(libbruce VERSION 0.1 LANGUAGES CXX)
 add_library(bruce
     src/bruce.cpp
     src/be/mem.cpp
-    src/tree.cpp
     src/mutation.cpp
     src/memory.cpp
-    src/operations.cpp
     src/serializing.cpp
+    src/edit_tree.cpp
+    src/edit_tree_impl.cpp
+    src/query_tree.cpp
+    src/query_tree_impl.cpp
     src/nodes.cpp)
 
 target_include_directories(bruce
@@ -27,10 +29,10 @@ install(DIRECTORY include/ DESTINATION include)
 
 add_executable(testbruce
     test/testserializing.cpp
-    test/testoperations.cpp
+    test/testedit_tree.cpp
+    test/testedit_tree_impl.cpp
     test/testhelpers.cpp
     test/testnodes.cpp
-    test/testtree.cpp
     test/testbruce.cpp)
 
 target_include_directories(testbruce
