@@ -4,16 +4,14 @@
 #include <libbruce/types.h>
 #include <libbruce/be/be.h>
 
+#include "tree_impl.h"
+
 namespace bruce {
 
-struct query_tree_impl
+struct query_tree_impl : private tree_impl
 {
-    query_tree_impl(nodeid_t id, be::be &be, const tree_functions &fns);
-
+    query_tree_impl(be::be &be, nodeid_t rootID, const tree_functions &fns);
 private:
-    nodeid_t m_id;
-    be::be &m_be;
-    tree_functions m_fns;
 };
 
 }

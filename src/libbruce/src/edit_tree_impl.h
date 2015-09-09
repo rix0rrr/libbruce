@@ -54,7 +54,9 @@
 #include <libbruce/be/be.h>
 #include <libbruce/traits.h>
 #include <libbruce/edit_tree.h>
+
 #include "nodes.h"
+#include "tree_impl.h"
 
 #include <map>
 
@@ -80,9 +82,9 @@ struct splitresult_t {
  *
  * The tree is loaded into memory on-demand.
  */
-struct edit_tree_impl
+struct edit_tree_impl : private tree_impl
 {
-    edit_tree_impl(be::be &be, maybe_nodeid rootID, tree_functions fns);
+    edit_tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns);
 
     /**
      * Insert an item into the tree.
@@ -107,25 +109,12 @@ struct edit_tree_impl
      * collected. After calling this, edit_tree_impl is frozen.
      */
     mutation flush();
-
-    node_ptr theRoot() const { return m_root; }
 private:
-    typedef std::map<nodeid_t, uint32_t> idmap_t;
-
-    be::be &m_be;
-    maybe_nodeid m_rootID;
-    tree_functions m_fns;
-
     bool m_frozen;
-    node_ptr m_root;
     uint32_t m_newIDsRequired;
     std::vector<nodeid_t> m_oldIDs;
     std::vector<nodeid_t> m_newIDs;
     be::putblocklist_t m_putBlocks;
-
-    node_ptr &root();
-    const node_ptr &child(node_branch &branch);
-    node_ptr load(nodeid_t id);
 
     splitresult_t insertRec(const node_ptr &node, const memory &key, const memory &value);
     itemcount_t removeRec(const node_ptr &node, const memory &key, const memory *value);

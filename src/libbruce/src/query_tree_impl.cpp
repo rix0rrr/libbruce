@@ -2,8 +2,8 @@
 
 namespace bruce {
 
-query_tree_impl::query_tree_impl(nodeid_t id, be::be &be, const tree_functions &fns)
-    : m_id(id), m_be(be), m_fns(fns)
+query_tree_impl::query_tree_impl(be::be &be, nodeid_t rootID, const tree_functions &fns)
+    : tree_impl(be, rootID, fns)
 {
 }
 
