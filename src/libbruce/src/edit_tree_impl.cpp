@@ -13,7 +13,7 @@
 namespace bruce {
 
 edit_tree_impl::edit_tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns)
-    : tree_impl(be, rootID, fns)
+    : tree_impl(be, rootID, fns), m_frozen(false), m_newIDsRequired(0)
 {
 }
 
@@ -45,10 +45,7 @@ void edit_tree_impl::validateKVSize(const memory &key, const memory &value)
 
 splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memory &key, const memory &value)
 {
-    if (node->isLeafNode())
-    {
-        leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(node);
-
+NODE_CASE_LEAF
         keycount_t i = FindLeafKey(leaf, key, m_fns);
         leaf->insert(i, kv_pair(key, value));
 
@@ -63,11 +60,8 @@ splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memory &key,
         return splitresult_t(left, left->count(),
                              right->minKey(),
                              right, right->count());
-    }
-    else
-    {
-        internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(node);
 
+NODE_CASE_INT
         keycount_t i = FindInternalKey(internal, key, m_fns);
         node_branch &leftBranch = internal->branches()[i];
 
@@ -100,7 +94,7 @@ splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memory &key,
         return splitresult_t(left, left->count(),
                              right->minKey(),
                              right, right->count());
-    }
+NODE_CASE_END
 }
 
 void edit_tree_impl::checkNotFrozen()
@@ -127,50 +121,39 @@ bool edit_tree_impl::remove(const memory &key, const memory &value)
     return removeRec(r, key, &value) != count;
 }
 
-int safeCompare(const memory &a, const memory &b, const tree_functions &fns)
-{
-    if (a.empty()) return -1;
-    if (b.empty()) return 1;
-    return fns.keyCompare(a, b);
-}
-
 itemcount_t edit_tree_impl::removeRec(const node_ptr &node, const memory &key, const memory *value)
 {
     // We're supposed to be joining nodes together if they're below half-max,
     // but I'm skipping out on that.
-    if (node->isLeafNode())
-    {
-        leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(node);
-        keycount_t i = FindLeafKey(leaf, key, m_fns) - 1;
-        // i is now the highest index with this key, or higher
-        bool matching = safeCompare(leaf->pair(i).key, key, m_fns) == 0;
-        while (i >= 0 && matching && value && m_fns.valueCompare(leaf->pair(i).value, *value) != 0)
-        {
-            i--;
-            matching = safeCompare(leaf->pair(i).key, key, m_fns) == 0;
-        }
-        if (matching) leaf->pairs().erase(leaf->pairs().begin() + i);
-        return leaf->itemCount();
-    }
-    else
-    {
-        internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(node);
+NODE_CASE_LEAF
+    index_range keyrange = findLeafRange(leaf, key);
 
-        keycount_t i = FindInternalKey(internal, key, m_fns);
-        for (; i < internal->branches().size() && safeCompare(internal->branch(i).minKey, key, m_fns) <= 0; i++)
+    for (keycount_t i = keyrange.start; i < keyrange.end; i++)
+    {
+        if (!value || m_fns.valueCompare(leaf->pair(i).value, *value) == 0)
         {
-            // { P: minKey(i) <= key }
-            itemcount_t ret = removeRec(child(internal->branch(i)), key, value);
-            if (ret != internal->branch(i).itemCount)
-            {
-                // Hey, we got to remove an item in this subtree
-                internal->branch(i).itemCount = ret;
-                break;
-            }
+            leaf->pairs().erase(leaf->pairs().begin() + i);
+            break;
         }
-
-        return internal->itemCount();
     }
+    return leaf->itemCount();
+
+NODE_CASE_INT
+    index_range keyrange = findInternalRange(internal, key);
+
+    for (keycount_t i = keyrange.start; i < keyrange.end; i++)
+    {
+        itemcount_t ret = removeRec(child(internal->branch(i)), key, value);
+        if (ret != internal->branch(i).itemCount)
+        {
+            // Hey, we got to remove an item in this subtree
+            internal->branch(i).itemCount = ret;
+            break;
+        }
+    }
+
+    return internal->itemCount();
+NODE_CASE_END
 }
 
 mutation edit_tree_impl::flush()
@@ -210,7 +193,7 @@ mutation edit_tree_impl::collectMutation()
     if (failed)
         ret.fail("Failed to write some blocks to the block engine");
 
-    BOOST_FOREACH(nodeid_t id, m_oldIDs)
+    BOOST_FOREACH(nodeid_t id, m_loadedIDs)
         ret.addObsolete(id);
 
     return ret;

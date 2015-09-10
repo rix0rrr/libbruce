@@ -112,7 +112,6 @@ struct edit_tree_impl : private tree_impl
 private:
     bool m_frozen;
     uint32_t m_newIDsRequired;
-    std::vector<nodeid_t> m_oldIDs;
     std::vector<nodeid_t> m_newIDs;
     be::putblocklist_t m_putBlocks;
 

@@ -8,6 +8,7 @@ add_library(bruce
     src/mutation.cpp
     src/memory.cpp
     src/serializing.cpp
+    src/tree_impl.cpp
     src/edit_tree.cpp
     src/edit_tree_impl.cpp
     src/query_tree.cpp
