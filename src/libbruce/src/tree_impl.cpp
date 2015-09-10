@@ -66,3 +66,10 @@ int tree_impl::safeCompare(const memory &a, const memory &b)
 }
 
 }
+
+std::ostream &operator <<(std::ostream &os, const bruce::index_range &r)
+{
+    os << "[" << r.start << ".." << r.end << ")";
+    return os;
+}
+

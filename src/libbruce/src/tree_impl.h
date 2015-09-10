@@ -51,4 +51,7 @@ protected:
 
 }
 
+std::ostream &operator <<(std::ostream &os, const bruce::index_range &r);
+
+
 #endif

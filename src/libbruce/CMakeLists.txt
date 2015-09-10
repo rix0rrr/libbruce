@@ -34,6 +34,7 @@ add_executable(testbruce
     test/testedit_tree_impl.cpp
     test/testhelpers.cpp
     test/testnodes.cpp
+    test/testquery_tree.cpp
     test/testbruce.cpp)
 
 target_include_directories(testbruce

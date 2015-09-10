@@ -49,7 +49,7 @@ struct query_tree
     maybe_v get(const K &key)
     {
         memory value;
-        if (m_unsafe.get(&value))
+        if (m_unsafe.get(traits::convert<V>::to_bytes(key), &value))
             return traits::convert<V>::from_bytes(value);
         else
             return maybe_v();

@@ -66,12 +66,16 @@ struct KeyCompare
 
     bool operator()(const memory &key, const kv_pair &pair)
     {
+        if (key.empty()) return true;
+        if (pair.key.empty()) return false;
+
         return fns.keyCompare(key, pair.key) < 0;
     }
 
     bool operator()(const node_branch &branch, const memory &key)
     {
         if (branch.minKey.empty()) return true;
+        if (key.empty()) return false;
 
         return fns.keyCompare(branch.minKey, key) < 0;
     }

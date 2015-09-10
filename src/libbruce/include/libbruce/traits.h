@@ -8,6 +8,10 @@
 #include <arpa/inet.h>
 #include <algorithm>
 
+#include <boost/lexical_cast.hpp>
+
+#define to_string boost::lexical_cast<std::string>
+
 namespace bruce {
 
 namespace traits {
@@ -39,13 +43,14 @@ struct convert
     static int compare(const memory &a, const memory &b)
     {
         // Assume types are little-endian, so compare from the back
-        if (a.size() != b.size()) throw std::runtime_error("Type sizes not equal");
+        if (a.size() != b.size())
+            throw std::runtime_error((std::string("Type sizes not equal. ") + to_string(a.size()) + " != " + to_string(b.size())).c_str());
 
-        for (const uint8_t *ap = a.byte_ptr() + a.size(), *bp = b.byte_ptr() + b.size(); a.byte_ptr() <= ap; ap--, bp--)
-        {
-            if (*ap < *bp) return -1;
-            if (*ap > *bp) return 1;
-        }
+        const T &aa = *a.at<T>(0);
+        const T &bb = *b.at<T>(0);
+
+        if (aa < bb) return -1;
+        if (aa > bb) return 1;
         return 0;
     }
 

@@ -30,11 +30,26 @@ bool query_tree_impl::get(const memory &key, memory *value)
 bool query_tree_impl::getRec(const node_ptr &node, const memory &key, memory *value)
 {
 NODE_CASE_LEAF
+    index_range keyrange = findLeafRange(leaf, key);
+
+    for (keycount_t i = keyrange.start; i < keyrange.end; i++)
+    {
+        *value = leaf->pair(i).value;
+        return true;
+    }
+    return false;
 
 NODE_CASE_INT
+    index_range keyrange = findInternalRange(internal, key);
+
+    for (keycount_t i = keyrange.start; i < keyrange.end; i++)
+    {
+        if (getRec(child(internal->branch(i)), key, value))
+            return true;
+    }
+    return false;
 
 NODE_CASE_END
-    return false;
 }
 
 
