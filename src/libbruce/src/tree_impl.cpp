@@ -29,6 +29,13 @@ const node_ptr &tree_impl::child(node_branch &branch)
     return branch.child;
 }
 
+const node_ptr &tree_impl::overflowNode(overflow_t &overflow)
+{
+    assert(!overflow.empty());
+    if (!overflow.node) overflow.node = load(overflow.nodeID);
+    return overflow.node;
+}
+
 node_ptr tree_impl::load(nodeid_t id)
 {
     m_loadedIDs.push_back(id);
@@ -43,17 +50,6 @@ index_range tree_impl::findLeafRange(const leafnode_ptr &leaf, const memory &key
 
     while (start > 0 && m_fns.keyCompare(leaf->pair(start-1).key, key) == 0)
         start--;
-
-    return index_range(start, end);
-}
-
-index_range tree_impl::findInternalRange(const internalnode_ptr &internal, const memory &key)
-{
-    keycount_t start = FindInternalKey(internal, key, m_fns); // This is on or after the given key
-    keycount_t end = start;
-
-    while (end < internal->branches().size() && safeCompare(internal->branch(end).minKey, key) <= 0)
-        end++;
 
     return index_range(start, end);
 }

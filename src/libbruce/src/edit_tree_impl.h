@@ -63,16 +63,14 @@
 namespace bruce {
 
 struct splitresult_t {
-    splitresult_t(itemcount_t leftCount) : didSplit(false), leftCount(leftCount) { }
-    splitresult_t(node_ptr left, itemcount_t leftCount, const memory &splitKey, node_ptr right, itemcount_t rightCount)
-        : didSplit(true), left(left), leftCount(leftCount), splitKey(splitKey), right(right), rightCount(rightCount) { }
+    splitresult_t(node_ptr left) : didSplit(false), left(left) { assert(left); }
+    splitresult_t(node_ptr left, const memory& splitKey, node_ptr right)
+        : didSplit(true), left(left), splitKey(splitKey), right(right) { assert(left); assert(right); }
 
     bool didSplit;
     node_ptr left;
-    itemcount_t leftCount;
     memory splitKey;
     node_ptr right;
-    itemcount_t rightCount;
 };
 
 // FIXME: Reject duplicate inserts?
@@ -82,7 +80,7 @@ struct splitresult_t {
  *
  * The tree is loaded into memory on-demand.
  */
-struct edit_tree_impl : private tree_impl
+struct edit_tree_impl : public tree_impl
 {
     edit_tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns);
 
@@ -116,13 +114,19 @@ private:
     be::putblocklist_t m_putBlocks;
 
     splitresult_t insertRec(const node_ptr &node, const memory &key, const memory &value);
-    itemcount_t removeRec(const node_ptr &node, const memory &key, const memory *value);
+    splitresult_t removeRec(const node_ptr &node, const memory &key, const memory *value);
     void validateKVSize(const memory &key, const memory &value);
     void checkNotFrozen();
 
     void collectNewIDsRec(node_ptr &node);
     void collectBlocksToPutRec(node_ptr &node, nodeid_t id);
     mutation collectMutation();
+
+    void pushDownOverflowNodeSize(const overflownode_ptr &overflow);
+    memory pullFromOverflow(const node_ptr &node);
+    splitresult_t maybeSplitLeaf(const leafnode_ptr &leaf);
+    splitresult_t maybeSplitInternal(const internalnode_ptr &internal);
+    void updateBranch(const internalnode_ptr &internal, keycount_t i, const splitresult_t &split);
 };
 
 }

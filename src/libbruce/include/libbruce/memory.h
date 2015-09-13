@@ -91,6 +91,8 @@ struct memory
     {
         return (T*)((const char*)m_ptr + offset);
     }
+
+    bool operator==(const memory &other) const;
 private:
     const void *m_ptr;
     size_t m_size;

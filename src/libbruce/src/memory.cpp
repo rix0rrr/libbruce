@@ -1,6 +1,20 @@
 #include <libbruce/memory.h>
 
+#include <stdlib.h>
+
 const char* g_hex = "0123456789abcdef";
+
+namespace bruce
+{
+
+bool memory::operator==(const memory &other) const
+{
+    if (size() != other.size()) return false;
+
+    return memcmp(ptr(), other.ptr(), size()) == 0;
+}
+
+}
 
 std::ostream &operator <<(std::ostream &os, const bruce::memory &m)
 {

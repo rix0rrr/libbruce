@@ -5,8 +5,12 @@
 
 namespace bruce {
 
-Node::Node()
-    : m_dirty(false)
+memory g_emptyMemory;
+
+//----------------------------------------------------------------------
+
+Node::Node(node_type_t nodeType)
+    : m_nodeType(nodeType)
 {
 }
 
@@ -14,40 +18,103 @@ Node::~Node()
 {
 }
 
+//----------------------------------------------------------------------
+
 LeafNode::LeafNode(size_t sizeHint)
+    : Node(TYPE_LEAF)
 {
-    if (sizeHint) m_pairs.reserve(sizeHint);
+    if (sizeHint) pairs.reserve(sizeHint);
 }
 
-LeafNode::LeafNode(pairlist_t::iterator begin, pairlist_t::iterator end)
-    : m_pairs(begin, end)
+LeafNode::LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end)
+    : Node(TYPE_LEAF), pairs(begin, end)
 {
 }
 
 const memory &LeafNode::minKey() const
 {
-    return m_pairs[0].key;
+    if (pairs.size()) return pairs[0].key;
+    return g_emptyMemory;
 }
 
-keycount_t LeafNode::itemCount() const
+itemcount_t LeafNode::itemCount() const
 {
-    return m_pairs.size();
+    return overflow.count + pairCount();
 }
+
+void LeafNode::setOverflow(const node_ptr &node)
+{
+    overflow.node = node;
+    overflow.count = node->itemCount();
+    if (!overflow.count)
+    {
+        overflow.node = node_ptr();
+        overflow.count = 0;
+    }
+}
+
+//----------------------------------------------------------------------
+
+OverflowNode::OverflowNode(size_t sizeHint)
+    : Node(TYPE_OVERFLOW)
+{
+    if (sizeHint) values.reserve(sizeHint);
+}
+
+OverflowNode::OverflowNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end)
+    : Node(TYPE_OVERFLOW)
+{
+    for (pairlist_t::const_iterator it = begin; it != end; ++it)
+    {
+        assert(it->key == begin->key); // Make sure all have the same key
+        values.push_back(it->value);
+    }
+}
+
+OverflowNode::OverflowNode(valuelist_t::const_iterator begin, valuelist_t::const_iterator end)
+    : Node(TYPE_OVERFLOW), values(begin, end)
+{
+}
+
+itemcount_t OverflowNode::itemCount() const
+{
+    return next.count + valueCount();
+}
+
+const memory &OverflowNode::minKey() const
+{
+    if (values.size()) return values[0];
+    return g_emptyMemory;
+}
+
+void OverflowNode::setNext(const node_ptr &node)
+{
+    next.node = node;
+    next.count = node->itemCount();
+    if (!next.count)
+    {
+        next.node = node_ptr();
+        next.count = 0;
+    }
+}
+
+//----------------------------------------------------------------------
 
 InternalNode::InternalNode(size_t sizeHint)
+    : Node(TYPE_INTERNAL)
 {
-    if (sizeHint) m_branches.reserve(sizeHint);
+    if (sizeHint) branches.reserve(sizeHint);
 }
 
-InternalNode::InternalNode(branchlist_t::iterator begin, branchlist_t::iterator end)
-    : m_branches(begin, end)
+InternalNode::InternalNode(branchlist_t::const_iterator begin, branchlist_t::const_iterator end)
+    : Node(TYPE_INTERNAL), branches(begin, end)
 {
 }
 
-keycount_t InternalNode::itemCount() const
+itemcount_t InternalNode::itemCount() const
 {
     keycount_t ret = 0;
-    for (branchlist_t::const_iterator it = m_branches.begin(); it != m_branches.end(); ++it)
+    for (branchlist_t::const_iterator it = branches.begin(); it != branches.end(); ++it)
     {
         ret += it->itemCount;
     }
@@ -56,8 +123,17 @@ keycount_t InternalNode::itemCount() const
 
 const memory &InternalNode::minKey() const
 {
-    return m_branches[0].minKey;
+    if (branches.size()) return branches[0].minKey;
+    return g_emptyMemory;
 }
+
+void InternalNode::setBranch(size_t i, const node_ptr &node)
+{
+    branches[i].child = node;
+    branches[i].itemCount = node->itemCount();
+}
+
+//----------------------------------------------------------------------
 
 struct KeyCompare
 {
@@ -83,15 +159,24 @@ struct KeyCompare
 
 keycount_t FindLeafKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns)
 {
-    return std::upper_bound(leaf->pairs().begin(), leaf->pairs().end(), key, KeyCompare(fns)) - leaf->pairs().begin();
+    return std::upper_bound(leaf->pairs.begin(), leaf->pairs.end(), key, KeyCompare(fns)) - leaf->pairs.begin();
 }
 
 keycount_t FindInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns)
 {
     // lower_bound: Points to first element which is >= key
+    // We need the last key which is not > key
     // So we need lower_bound - 1.
-    keycount_t i = std::lower_bound(node->branches().begin(), node->branches().end(), key, KeyCompare(fns)) - node->branches().begin();
-    return i ? i - 1 : 0;
+    keycount_t i = std::lower_bound(node->branches.begin(), node->branches.end(), key, KeyCompare(fns)) - node->branches.begin();
+    if (i == node->branches.size()) return i - 1;
+    if (node->branch(i).minKey.empty()) return i;
+
+    if (i > 0 && fns.keyCompare(node->branch(i).minKey, key) != 0)
+        i--;
+
+    assert(i < node->branches.size());
+
+    return i;
 }
 
 keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns)
@@ -101,7 +186,7 @@ keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory 
     itemcount_t min_items = node->branch(i).itemCount;
     i++;
 
-    while (i < node->branches().size() && fns.keyCompare(node->branch(i).minKey, key) <= 0)
+    while (i < node->branches.size() && fns.keyCompare(node->branch(i).minKey, key) <= 0)
     {
         if (node->branch(i).itemCount < min_items)
         {
@@ -119,19 +204,26 @@ keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory 
 
 std::ostream &operator <<(std::ostream &os, const bruce::Node &x)
 {
-    if (x.isLeafNode())
+    if (x.nodeType() == bruce::TYPE_LEAF)
     {
         const bruce::LeafNode &l = (const bruce::LeafNode&)x;
-        os << "LEAF(" << l.count() << ")" << std::endl;
-        BOOST_FOREACH(const bruce::kv_pair &p, l.pairs())
+        os << "LEAF(" << l.pairCount() << ")" << std::endl;
+        BOOST_FOREACH(const bruce::kv_pair &p, l.pairs)
             os << "  " << p.key << " -> " << p.value << std::endl;
+    }
+    else if (x.nodeType() == bruce::TYPE_OVERFLOW)
+    {
+        const bruce::OverflowNode &o = (const bruce::OverflowNode&)x;
+        os << "OVERFLOW(" << o.valueCount() << ")" << std::endl;
+        BOOST_FOREACH(const bruce::memory &m, o.values)
+            os << "  " << m << std::endl;
     }
     else
     {
         const bruce::InternalNode &l = (const bruce::InternalNode&)x;
-        os << "INTERNAL(" << l.count() << ")" << std::endl;
-        BOOST_FOREACH(const bruce::node_branch &b, l.branches())
-            os << "  " << b.minKey << " -> " << b.nodeID << " (" << b.itemCount << ")" << std::endl;
+        os << "INTERNAL(" << l.branchCount() << ")" << std::endl;
+        BOOST_FOREACH(const bruce::node_branch &b, l.branches)
+            os << "  " << b.minKey << " -> " << b.nodeID << " (" << b.itemCount << (b.child ? "*" : "") << ")" << std::endl;
     }
     return os;
 }

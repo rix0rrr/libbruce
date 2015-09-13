@@ -1,5 +1,7 @@
 #include "query_tree_impl.h"
 
+#include <cassert>
+
 namespace bruce {
 
 query_tree_impl::query_tree_impl(be::be &be, nodeid_t rootID, const tree_functions &fns)
@@ -37,16 +39,22 @@ NODE_CASE_LEAF
         *value = leaf->pair(i).value;
         return true;
     }
+
+    // If it's not in here, it's definitely also not in the overflow node
+
+    return false;
+
+NODE_CASE_OVERFLOW
+
+    assert(false);
     return false;
 
 NODE_CASE_INT
-    index_range keyrange = findInternalRange(internal, key);
+    keycount_t i = FindInternalKey(internal, key, m_fns);
 
-    for (keycount_t i = keyrange.start; i < keyrange.end; i++)
-    {
-        if (getRec(child(internal->branch(i)), key, value))
-            return true;
-    }
+    if (getRec(child(internal->branch(i)), key, value))
+        return true;
+
     return false;
 
 NODE_CASE_END

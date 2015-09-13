@@ -20,6 +20,7 @@ struct tree_impl
 {
     tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns);
 
+    node_ptr &root();
 protected:
     be::be &m_be;
     maybe_nodeid m_rootID;
@@ -28,30 +29,36 @@ protected:
     std::vector<nodeid_t> m_loadedIDs;
     node_ptr m_root;
 
-    node_ptr &root();
     const node_ptr &child(node_branch &branch);
+    const node_ptr &overflowNode(overflow_t &leaf);
     node_ptr load(nodeid_t id);
 
     int safeCompare(const memory &a, const memory &b);
     index_range findLeafRange(const leafnode_ptr &leaf, const memory &key);
-    index_range findInternalRange(const internalnode_ptr &internal, const memory &key);
 };
-
-#define NODE_CASE_LEAF \
-    if (node->isLeafNode()) \
-    { \
-        leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(node);
-
-#define NODE_CASE_INT \
-    } else { \
-        internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(node);
-
-#define NODE_CASE_END \
-    }
 
 }
 
 std::ostream &operator <<(std::ostream &os, const bruce::index_range &r);
 
+#define NODE_CASE_LEAF \
+    if (node->nodeType() == TYPE_LEAF) \
+    { \
+        leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(node);
+
+#define NODE_CASE_OVERFLOW \
+    } \
+    else if (node->nodeType() == TYPE_OVERFLOW) \
+    { \
+        overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
+
+#define NODE_CASE_INT \
+    } \
+    else \
+    { \
+        internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(node);
+
+#define NODE_CASE_END \
+    }
 
 #endif

@@ -43,6 +43,15 @@ bruce::memory one_r(&one, sizeof(one));
 bruce::memory two_r(&two, sizeof(two));
 bruce::memory three_r(&three, sizeof(three));
 
+void printMem(bruce::be::mem &mem, const bruce::tree_functions &fns)
+{
+    for (bruce::nodeid_t i = 0; i < mem.blockCount(); i++)
+    {
+        bruce::memory m(mem.get(i));
+        std::cout << "Block[" << i << "] => " << *bruce::ParseNode(m, fns) << std::endl;
+    }
+}
+
 std::ostream &operator <<(std::ostream &os, bruce::be::mem &x)
 {
     for (bruce::nodeid_t i = 0; i < x.blockCount(); i++)

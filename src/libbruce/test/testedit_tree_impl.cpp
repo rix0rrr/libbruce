@@ -27,7 +27,7 @@ TEST_CASE("writing a new single leaf tree")
         memory page = mem.get(0);
         leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
 
-        REQUIRE(r->count() == 1);
+        REQUIRE(r->pairCount() == 1);
         REQUIRE(rngcmp(r->pair(0).key, one_r) == 0);
         REQUIRE(rngcmp(r->pair(0).value, two_r) == 0);
     }
@@ -44,7 +44,7 @@ TEST_CASE("writing a new single leaf tree")
             memory page = mem.get(*mut2.newRootID());
             leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
 
-            REQUIRE(r->count() == 2);
+            REQUIRE(r->pairCount() == 2);
             REQUIRE(rngcmp(r->pair(0).key, one_r) == 0);
             REQUIRE(rngcmp(r->pair(0).value, two_r) == 0);
             REQUIRE(rngcmp(r->pair(1).key, two_r) == 0);
@@ -68,16 +68,16 @@ TEST_CASE("inserting a lot of keys leads to split nodes")
     memory rootPage = mem.get(*mut.newRootID());
     internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
 
-    REQUIRE( rootNode->count() == 2 );
+    REQUIRE( rootNode->branchCount() == 2 );
     REQUIRE( rootNode->itemCount() == 140 );
 
     memory leftPage = mem.get(rootNode->branch(0).nodeID);
     leafnode_ptr leftNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(leftPage, intToIntTree));
-    REQUIRE( leftNode->count() == rootNode->branch(0).itemCount );
+    REQUIRE( leftNode->pairCount() == rootNode->branch(0).itemCount );
 
     memory rightPage = mem.get(rootNode->branch(1).nodeID);
     leafnode_ptr rightNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(rightPage, intToIntTree));
-    REQUIRE( rightNode->count() == rootNode->branch(1).itemCount );
+    REQUIRE( rightNode->pairCount() == rootNode->branch(1).itemCount );
 
     REQUIRE( leftNode->itemCount() + rightNode->itemCount() == rootNode->itemCount() );
 }
@@ -95,7 +95,7 @@ TEST_CASE("split is kosher")
     memory rootPage = mem.get(*mut.newRootID());
     internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
 
-    REQUIRE( rootNode->count() == 2 );
+    REQUIRE( rootNode->branchCount() == 2 );
     memory splitKey = rootNode->branch(1).minKey;
 
     memory leftPage = mem.get(rootNode->branch(0).nodeID);
@@ -103,14 +103,14 @@ TEST_CASE("split is kosher")
     leafnode_ptr leftNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(leftPage, intToIntTree));
     leafnode_ptr rightNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(rightPage, intToIntTree));
 
-    for (int i = 0; i < leftNode->count(); i++)
+    for (int i = 0; i < leftNode->pairCount(); i++)
     {
         REQUIRE( intCompare(leftNode->pair(i).key, splitKey) < 0 );
         if (i > 0)
             REQUIRE( intCompare(leftNode->pair(i-1).key, leftNode->pair(i).key) <= 0 );
     }
 
-    for (int i = 0; i < rightNode->count(); i++)
+    for (int i = 0; i < rightNode->pairCount(); i++)
     {
         REQUIRE( intCompare(rightNode->pair(i).key, splitKey) >= 0 );
     }
@@ -129,7 +129,7 @@ TEST_CASE("inserting then deleting from a leaf")
         memory page = mem.get(*mut.newRootID());
         leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
 
-        REQUIRE(r->count() == 0);
+        REQUIRE(r->pairCount() == 0);
     }
 }
 
@@ -179,7 +179,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
         mutation mut = tree.flush();
 
         memory rootPage = mem.get(*mut.newRootID());
-        internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
+        leafnode_ptr rootNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(rootPage, intToIntTree));
         REQUIRE( rootNode->itemCount() == 127 );
     }
 
@@ -189,7 +189,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
         mutation mut = tree.flush();
 
         memory rootPage = mem.get(*mut.newRootID());
-        internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
+        leafnode_ptr rootNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(rootPage, intToIntTree));
         REQUIRE( rootNode->itemCount() == 127 );
     }
 
@@ -199,7 +199,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
         mutation mut = tree.flush();
 
         memory rootPage = mem.get(*mut.newRootID());
-        internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
+        leafnode_ptr rootNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(rootPage, intToIntTree));
         REQUIRE( rootNode->itemCount() == 128 );
     }
 }
@@ -224,25 +224,18 @@ TEST_CASE("write new pages, delete old ones")
         REQUIRE( mem.blockCount() == 5 );
         REQUIRE( mut.createdIDs().size() == 2 );
         REQUIRE( mut.obsoleteIDs().size() == 2 );
-
     }
 }
 
-/*
-TEST_CASE("no writeback if no changes")
+TEST_CASE("postfix a whole bunch of the same keys into anode")
 {
     be::mem mem(1024);
     edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
-    for (uint32_t i = 0; i < 128; i++)
+    for (unsigned i = 0; i < 50; i++)
         tree.insert(intCopy(i), intCopy(i));
+    for (unsigned i = 50; i < 400; i++)
+        tree.insert(intCopy(50), intCopy(i));
     mutation mut = tree.flush();
-    uint32_t blockCount1 = mem.blockCount();
 
-    edit_tree_impl tree2(mem, mut.newRootID(), intToIntTree);
-    tree2.remove(intCopy(140));
-    mutation mut2 = tree2.flush();
-    uint32_t blockCount2 = mem.blockCount();
-
-    REQUIRE( blockCount1 == blockCount2 );
+    REQUIRE( mem.blockCount() == 3 ); // Expecting leaf and two overflows
 }
-*/

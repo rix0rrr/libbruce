@@ -19,6 +19,7 @@ extern bruce::memory one_r;
 extern bruce::memory two_r;
 extern bruce::memory three_r;
 
+void printMem(bruce::be::mem &mem, const bruce::tree_functions &fns);
 std::ostream &operator <<(std::ostream &os, bruce::be::mem &x);
 
 #endif

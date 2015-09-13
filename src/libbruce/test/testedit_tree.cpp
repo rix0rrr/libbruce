@@ -81,3 +81,18 @@ TEST_CASE("binary to string tree")
     REQUIRE( traits::convert<std::string>::from_bytes(node->pair(1).key) == "two" );
     REQUIRE( traits::convert<binary>::from_bytes(node->pair(1).value) == binary("\x02\x00\x02", 3) );
 }
+
+TEST_CASE("test inserting into overflow block ", "[nodes]")
+{
+    be::mem mem(1024);
+    edit_tree<int, int> t(maybe_nodeid(), mem);
+
+    // This should produce 2 overflow blocks
+    for (int i = 0; i < 300; i++)
+        t.insert(0, i);
+
+    mutation mut = t.flush();
+
+    REQUIRE( mem.blockCount() == 3 );
+
+}

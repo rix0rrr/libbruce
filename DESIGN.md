@@ -54,3 +54,28 @@ Public interface
 - mutation(success, newroot, newnodes, recyclednodes)
     - .commit() -> nodelist(recyclednodes)
     - .rollback() -> nodelist(newnodes)
+
+Overflow Block Rules
+--------------------
+
+The same key can occur multiple times in a single leaf node, but never in more
+than one leaf node. To store keys that won't fit anymore in a single leaf node,
+leaf nodes can have a linked list of "overflow" blocks trailing them.
+
+INVARIANT
+- All values in the overflow node have the same key, which is the same key as
+  the last key in the leaf node.
+
+INSERTING
+- When splitting, put as much as can go into the overflow block as possible,
+  multiple blocks if necessary.
+- When inserting at the end and there’s and overflow block, insert into the
+  overflow block
+- When splitting a leaf, any existing overflow block should go to the right.
+
+REMOVING
+- When removing an arbitrary key, prefer removing from the overflow chain if
+  present.
+- When removing a key/value pair, we may need to shift a key from the overflow
+  block to the end of the leaf node (which may lead to a split if that k/v pair
+  causes the leaf to bloat).

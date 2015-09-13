@@ -10,6 +10,12 @@
 
 namespace bruce {
 
+enum node_type_t {
+    TYPE_LEAF,
+    TYPE_INTERNAL,
+    TYPE_OVERFLOW
+};
+
 class Node;
 
 typedef boost::shared_ptr<Node> node_ptr;
@@ -24,6 +30,7 @@ struct kv_pair
 };
 
 typedef std::vector<kv_pair> pairlist_t;
+typedef std::vector<memory> valuelist_t;
 
 struct node_branch {
     node_branch(const memory &minKey, nodeid_t nodeID, itemcount_t itemCount)
@@ -36,10 +43,22 @@ struct node_branch {
     memory minKey;
     nodeid_t nodeID;
     itemcount_t itemCount;
+
     node_ptr child; // Only valid while mutating the tree
 };
 
 typedef std::vector<node_branch> branchlist_t;
+
+struct overflow_t
+{
+    overflow_t() : count(0), nodeID(0) { }
+
+    itemcount_t count;
+    nodeid_t nodeID;
+    node_ptr node; // Only valid while mutating the tree
+
+    bool empty() const { return !(node || nodeID); }
+};
 
 
 /**
@@ -47,20 +66,15 @@ typedef std::vector<node_branch> branchlist_t;
  */
 struct Node
 {
-    Node();
+    Node(node_type_t nodeType);
     virtual ~Node();
 
-    virtual bool isLeafNode() const = 0;
-    virtual keycount_t count() const = 0; // Items in this node
-    virtual keycount_t itemCount() const = 0; // Items in this node and below
+    virtual itemcount_t itemCount() const = 0; // Items in this node and below
     virtual const memory &minKey() const = 0;
 
-    bool dirty() const { return m_dirty; }
-    void clean() { m_dirty = false; }
-    void markDirty() { m_dirty = true; }
-
+    node_type_t nodeType() const { return m_nodeType; }
 private:
-    bool m_dirty;
+    node_type_t m_nodeType;
 };
 
 /**
@@ -69,21 +83,48 @@ private:
 struct LeafNode : public Node
 {
     LeafNode(size_t sizeHint=0);
-    LeafNode(pairlist_t::iterator begin, pairlist_t::iterator end);
+    LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end);
 
-    bool isLeafNode() const { return true; }
-    keycount_t count() const { return m_pairs.size(); }
+    keycount_t pairCount() const { return pairs.size(); }
     virtual const memory &minKey() const;
-    virtual keycount_t itemCount() const;
+    virtual itemcount_t itemCount() const;
 
-    void insert(size_t i, const kv_pair &item) { m_pairs.insert(m_pairs.begin() + i, item); markDirty(); }
-    void erase(size_t i) { m_pairs.erase(m_pairs.begin() + i); markDirty(); }
+    void insert(size_t i, const kv_pair &item) { pairs.insert(pairs.begin() + i, item); }
+    void erase(size_t i) { pairs.erase(pairs.begin() + i); }
 
-    kv_pair &pair(keycount_t i) { return m_pairs[i]; }
-    pairlist_t &pairs() { return m_pairs; }
-    const pairlist_t &pairs() const { return m_pairs; }
-private:
-    pairlist_t m_pairs;
+    pairlist_t::const_iterator at(keycount_t i) const { return pairs.begin() + i; }
+
+    kv_pair &pair(keycount_t i) { return pairs[i]; }
+
+    void setOverflow(const node_ptr &node);
+
+    pairlist_t pairs;
+    overflow_t overflow;
+};
+
+/**
+ * Overflow nodes contain lists of values with the same key as the last key in a leaf
+ */
+struct OverflowNode : public Node
+{
+    OverflowNode(size_t sizeHint=0);
+    OverflowNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end);
+    OverflowNode(valuelist_t::const_iterator begin, valuelist_t::const_iterator end);
+
+    virtual itemcount_t itemCount() const;
+    virtual const memory &minKey() const;
+
+    keycount_t valueCount() const { return values.size(); }
+
+    void append(const memory &item) { values.push_back(item); }
+    void erase(size_t i) { values.erase(values.begin() + i); }
+
+    valuelist_t::const_iterator at(keycount_t i) const { return values.begin() + i; }
+
+    void setNext(const node_ptr &node);
+
+    valuelist_t values;
+    overflow_t next;
 };
 
 /**
@@ -92,25 +133,27 @@ private:
 struct InternalNode : public Node
 {
     InternalNode(size_t sizeHint=0);
-    InternalNode(branchlist_t::iterator begin, branchlist_t::iterator end);
+    InternalNode(branchlist_t::const_iterator begin, branchlist_t::const_iterator end);
 
-    bool isLeafNode() const { return false; }
-    virtual keycount_t count() const { return m_branches.size(); }
+    keycount_t branchCount() const { return branches.size(); }
     virtual const memory &minKey() const;
 
-    void insert(size_t i, const node_branch &branch) { m_branches.insert(m_branches.begin() + i, branch); markDirty(); }
-    void erase(size_t i) { m_branches.erase(m_branches.begin() + i); markDirty(); }
+    void insert(size_t i, const node_branch &branch) { branches.insert(branches.begin() + i, branch); }
+    void erase(size_t i) { branches.erase(branches.begin() + i); }
 
-    keycount_t itemCount() const;
+    branchlist_t::const_iterator at(keycount_t i) const { return branches.begin() + i; }
 
-    node_branch &branch(keycount_t i) { return m_branches[i]; }
-    branchlist_t &branches() { return m_branches; }
-    const branchlist_t &branches() const { return m_branches; }
-private:
-    branchlist_t m_branches;
+    itemcount_t itemCount() const;
+
+    node_branch &branch(keycount_t i) { return branches[i]; }
+
+    void setBranch(size_t i, const node_ptr &node);
+
+    branchlist_t branches;
 };
 
 typedef boost::shared_ptr<LeafNode> leafnode_ptr;
+typedef boost::shared_ptr<OverflowNode> overflownode_ptr;
 typedef boost::shared_ptr<InternalNode> internalnode_ptr;
 
 /**
@@ -121,9 +164,9 @@ typedef boost::shared_ptr<InternalNode> internalnode_ptr;
 keycount_t FindLeafKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns);
 
 /**
- * Return the first index where the subtree for a particular key might be located
+ * Return the index where the subtree for a particular key will be located
  *
- * POST: branch[ret-1] <= branch[ret].key <= key
+ * POST: branch[ret-1] < branch[ret].key <= key
  */
 keycount_t FindInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns);
 
@@ -137,5 +180,6 @@ keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory 
 }
 
 std::ostream &operator <<(std::ostream &os, const bruce::Node &x);
+
 
 #endif

@@ -15,12 +15,26 @@
  *   [ uint16 ]  flags
  *        0x0000   leaf node
  *        0x0001   internal node
+ *        0x0002   overflow node
+ *
+ * The invariant for overflow blocks is that the keys in there must ALL be the
+ * same as the final key in the leaf block. In other words, we never split a key
+ * across leaf nodes.
  *
  * LEAF NODE
  * ---------
  *   [ uint16 ]           N of KV-pairs
  *   [ N x ... bytes ]    all keys, type-specific serialization
  *   [ N x ... bytes ]    all values, type-specific serialization
+ *   [ uint32 ]           overflow node count
+ *   [ uint64 ]           overflow node identifier
+ *
+ * OVERFLOW NODE
+ * -------------
+ *   [ uint16 ]           N of values
+ *   [ N x ... bytes ]    all values
+ *   [ uint32 ]           next overflow node count
+ *   [ uint64 ]           next overflow node ID
  *
  * INTERNAL NODE
  * -------------
@@ -73,11 +87,34 @@ protected:
 };
 
 
+/**
+ * Splits a leaf into potentially 3 blocks
+ *
+ * [0..overflowStart)           Contents of the left leaf
+ * [overflowStart..splitIndex)  Contents of the overflow block of the left leaf
+ * [splitIndex..N)              Contents of the right leaf
+ */
 struct LeafNodeSize : public NodeSize
 {
     LeafNodeSize(const leafnode_ptr &node, uint32_t blockSize);
+
+    keycount_t overflowStart() const { return m_overflowStart; }
+private:
+    keycount_t m_overflowStart;
 };
 
+/**
+ * The splitindex will point at the first value that exceeds the block size
+ */
+struct OverflowNodeSize : public NodeSize
+{
+    OverflowNodeSize(const overflownode_ptr &node, uint32_t blockSize);
+};
+
+/**
+ * The splitindex will point at the first branch that makes all branches below
+ * them exceed half of the block size.
+ */
 struct InternalNodeSize : public NodeSize
 {
     InternalNodeSize(const internalnode_ptr &node, uint32_t blockSize);

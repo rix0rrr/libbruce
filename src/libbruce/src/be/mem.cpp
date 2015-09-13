@@ -1,5 +1,9 @@
 #include <libbruce/be/mem.h>
 
+#include <boost/lexical_cast.hpp>
+
+#define to_string boost::lexical_cast<std::string>
+
 namespace bruce { namespace be {
 
 mem::mem(uint32_t maxBlockSize)
@@ -41,7 +45,7 @@ void mem::put_all(putblocklist_t &blocklist)
             throw std::runtime_error("Illegal ID");
 
         if (it->mem.size() > m_maxBlockSize)
-            throw std::runtime_error("Block too large");
+            throw std::runtime_error((std::string("Block too large: ") + to_string(it->mem.size()) + " > " + to_string(m_maxBlockSize)).c_str());
 
         m_blocks[it->id] = it->mem;
 
