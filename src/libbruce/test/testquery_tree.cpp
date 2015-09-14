@@ -69,5 +69,5 @@ TEST_CASE("reading from a tree with queued insert and delete", "[query]")
     query_tree<int, int> q(*mut.newRootID(), mem);
     q.queue_insert(1, 1);
     q.queue_remove(1, true);
-    REQUIRE( !*q.get(1) );
+    REQUIRE( !q.get(1) );
 }

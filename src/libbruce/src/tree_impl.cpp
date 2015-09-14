@@ -61,6 +61,91 @@ int tree_impl::safeCompare(const memory &a, const memory &b)
     return m_fns.keyCompare(a, b);
 }
 
+void tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value)
+{
+    index_range keyrange = findLeafRange(leaf, key);
+
+    // Regular old remove from this block
+    keycount_t eraseLocation = leaf->pairs.size();
+    for (keycount_t i = keyrange.start; i < keyrange.end; i++)
+    {
+        if (!value || m_fns.valueCompare(leaf->pair(i).value, *value) == 0)
+        {
+            eraseLocation = i;
+            break;
+        }
+    }
+
+    if (eraseLocation < leaf->pairs.size())
+    {
+        // Did erase
+        leaf->pairs.erase(leaf->at(eraseLocation));
+
+        // If we removed the final position, pull back from the overflow block
+        // and potentially split.
+        if (eraseLocation == leaf->pairs.size() && !leaf->overflow.empty())
+        {
+            memory ret = pullFromOverflow(leaf->overflow.node);
+            leaf->pairs.push_back(kv_pair(key, ret));
+            leaf->setOverflow(leaf->overflow.node);
+        }
+    }
+    else if (!leaf->overflow.empty() && key == leaf->pairs.back().key)
+    {
+        // Did not erase from this leaf but key matches overflow key, recurse
+        removeFromOverflow(overflowNode(leaf->overflow), key, value);
+        leaf->setOverflow(leaf->overflow.node);
+    }
+}
+
+void tree_impl::removeFromOverflow(const node_ptr &node, const memory &key, const memory *value)
+{
+    overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
+
+    // Try to remove from this block
+    bool erased = false;
+    for (valuelist_t::const_iterator it = overflow->values.begin(); it != overflow->values.end(); ++it)
+    {
+        if (!value || m_fns.valueCompare(*it, *value) == 0)
+        {
+            overflow->values.erase(it);
+            erased = true;
+        }
+    }
+
+    // Try to remove from the next block
+    if (!erased && !overflow->next.empty())
+    {
+        removeFromOverflow(overflowNode(overflow->next), key, value);
+        overflow->setNext(overflow->next.node);
+    }
+
+    // If this block is now empty, pull a value from the next one
+    if (!overflow->itemCount() && !overflow->next.empty())
+    {
+        memory value = pullFromOverflow(overflowNode(overflow->next));
+        overflow->append(value);
+    }
+}
+
+
+memory tree_impl::pullFromOverflow(const node_ptr &node)
+{
+    overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
+
+    if (overflow->next.empty())
+    {
+        memory ret = overflow->values.back();
+        overflow->erase(overflow->valueCount() - 1);
+        return ret;
+    }
+
+    memory ret = pullFromOverflow(overflowNode(overflow->next));
+    overflow->setNext(overflow->next.node);
+    return ret;
+}
+
+
 }
 
 std::ostream &operator <<(std::ostream &os, const bruce::index_range &r)

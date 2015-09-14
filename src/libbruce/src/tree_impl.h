@@ -35,6 +35,10 @@ protected:
 
     int safeCompare(const memory &a, const memory &b);
     index_range findLeafRange(const leafnode_ptr &leaf, const memory &key);
+
+    memory pullFromOverflow(const node_ptr &node);
+    void removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value);
+    void removeFromOverflow(const node_ptr &node, const memory &key, const memory *value);
 };
 
 }

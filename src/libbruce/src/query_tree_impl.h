@@ -52,11 +52,14 @@ struct query_tree_impl : private tree_impl
 
     bool get(const memory &key, memory *value);
 private:
-    typedef std::map<memory, std::vector<pending_edit>, callback_memcmp> editmap_t;
+    typedef std::vector<pending_edit> editlist_t;
+    typedef std::map<memory, editlist_t, callback_memcmp> editmap_t;
 
     editmap_t m_edits;
 
-    bool getRec(const node_ptr &node, const memory &key, memory *value);
+    bool getRec(const node_ptr &node, const memory &key, const memory &minKey, const memory &maxKey, memory *value);
+    void applyPendingChanges(const node_ptr &node, const memory &minKey, const memory &maxKey);
+    void applyPendingChange(const leafnode_ptr &leaf, const pending_edit &edit);
 };
 
 }

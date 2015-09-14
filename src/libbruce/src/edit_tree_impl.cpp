@@ -63,30 +63,30 @@ void edit_tree_impl::validateKVSize(const memory &key, const memory &value)
 splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memory &key, const memory &value)
 {
 NODE_CASE_LEAF
-        keycount_t i = FindLeafKey(leaf, key, m_fns);
+    keycount_t i = FindLeafKey(leaf, key, m_fns);
 
-        if (i == leaf->pairs.size() && !leaf->overflow.empty())
-        {
-            // There is an overflow block already. Insert in there.
-            splitresult_t split = insertRec(overflowNode(leaf->overflow), key, value);
-            leaf->overflow.count = split.left->itemCount();
-            return splitresult_t(leaf);
-        }
+    if (i == leaf->pairs.size() && !leaf->overflow.empty())
+    {
+        // There is an overflow block already. Insert in there.
+        splitresult_t split = insertRec(overflowNode(leaf->overflow), key, value);
+        leaf->overflow.count = split.left->itemCount();
+        return splitresult_t(leaf);
+    }
 
-        leaf->insert(i, kv_pair(key, value));
+    leaf->insert(i, kv_pair(key, value));
 
-        return maybeSplitLeaf(leaf);
+    return maybeSplitLeaf(leaf);
 NODE_CASE_OVERFLOW
-        // Add at the end of the overflow block chain
-        overflow->append(value);
-        pushDownOverflowNodeSize(overflow);
-        return splitresult_t(overflow);
+    // Add at the end of the overflow block chain
+    overflow->append(value);
+    pushDownOverflowNodeSize(overflow);
+    return splitresult_t(overflow);
 
 NODE_CASE_INT
-        keycount_t i = FindInternalKey(internal, key, m_fns);
-        splitresult_t childSplit = insertRec(child(internal->branch(i)), key, value);
-        updateBranch(internal, i, childSplit);
-        return maybeSplitInternal(internal);
+    keycount_t i = FindInternalKey(internal, key, m_fns);
+    splitresult_t childSplit = insertRec(child(internal->branch(i)), key, value);
+    updateBranch(internal, i, childSplit);
+    return maybeSplitInternal(internal);
 
 NODE_CASE_END
 }
@@ -111,22 +111,6 @@ void edit_tree_impl::pushDownOverflowNodeSize(const overflownode_ptr &overflow)
     pushDownOverflowNodeSize(next);
 
     overflow->next.count = next->itemCount();
-}
-
-memory edit_tree_impl::pullFromOverflow(const node_ptr &node)
-{
-    overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
-
-    if (overflow->next.empty())
-    {
-        memory ret = overflow->values.back();
-        overflow->erase(overflow->valueCount() - 1);
-        return ret;
-    }
-
-    memory ret = pullFromOverflow(overflowNode(overflow->next));
-    overflow->setNext(overflow->next.node);
-    return ret;
 }
 
 splitresult_t edit_tree_impl::maybeSplitLeaf(const leafnode_ptr &leaf)
@@ -232,70 +216,12 @@ splitresult_t edit_tree_impl::removeRec(const node_ptr &node, const memory &key,
     // However, when shifting values from an overflow node, we may need to split
     // our leaf.
 NODE_CASE_LEAF
-    index_range keyrange = findLeafRange(leaf, key);
-
-    // Regular old remove from this block
-    keycount_t eraseLocation = leaf->pairs.size();
-    for (keycount_t i = keyrange.start; i < keyrange.end; i++)
-    {
-        if (!value || m_fns.valueCompare(leaf->pair(i).value, *value) == 0)
-        {
-            eraseLocation = i;
-            break;
-        }
-    }
-
-    if (eraseLocation < leaf->pairs.size())
-    {
-        // Did erase
-        leaf->pairs.erase(leaf->at(eraseLocation));
-
-        // If we removed the final position, pull back from the overflow block
-        // and potentially split.
-        if (eraseLocation == leaf->pairs.size() && !leaf->overflow.empty())
-        {
-            memory ret = pullFromOverflow(leaf->overflow.node);
-            leaf->pairs.push_back(kv_pair(key, ret));
-            leaf->setOverflow(leaf->overflow.node);
-
-            return maybeSplitLeaf(leaf);
-        }
-    }
-    else if (!leaf->overflow.empty() && key == leaf->pairs.back().key)
-    {
-        // Did not erase from this leaf but key matches overflow key, recurse
-        splitresult_t overflowSplit = removeRec(overflowNode(leaf->overflow), key, value);
-        leaf->setOverflow(overflowSplit.left);
-    }
-
-    return splitresult_t(leaf);
+    removeFromLeaf(leaf, key, value);
+    return maybeSplitLeaf(leaf);
 
 NODE_CASE_OVERFLOW
-    // Try to remove from this block
-    bool erased = false;
-    for (valuelist_t::const_iterator it = overflow->values.begin(); it != overflow->values.end(); ++it)
-    {
-        if (!value || m_fns.valueCompare(*it, *value) == 0)
-        {
-            overflow->values.erase(it);
-            erased = true;
-        }
-    }
-
-    // Try to remove from the next block
-    if (!erased && !overflow->next.empty())
-    {
-        splitresult_t overflowSplit = removeRec(overflowNode(overflow->next), key, value);
-        overflow->setNext(overflowSplit.left);
-    }
-
-    // If this block is now empty, pull a value from the next one
-    if (!overflow->itemCount() && !overflow->next.empty())
-    {
-        memory value = pullFromOverflow(overflowNode(overflow->next));
-        overflow->append(value);
-    }
-
+    // Won't be called over here
+    assert(false);
     return splitresult_t(overflow);
 
 NODE_CASE_INT

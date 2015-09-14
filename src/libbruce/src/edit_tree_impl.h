@@ -123,7 +123,6 @@ private:
     mutation collectMutation();
 
     void pushDownOverflowNodeSize(const overflownode_ptr &overflow);
-    memory pullFromOverflow(const node_ptr &node);
     splitresult_t maybeSplitLeaf(const leafnode_ptr &leaf);
     splitresult_t maybeSplitInternal(const internalnode_ptr &internal);
     void updateBranch(const internalnode_ptr &internal, keycount_t i, const splitresult_t &split);
