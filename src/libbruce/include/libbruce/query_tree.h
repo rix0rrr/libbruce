@@ -3,12 +3,13 @@
 
 #include <libbruce/be/be.h>
 #include <libbruce/traits.h>
+#include <libbruce/query_iterator.h>
 #include <boost/make_shared.hpp>
 
 namespace bruce {
 
 class query_tree_impl;
-typedef std::auto_ptr<query_tree_impl> unsafe_query_impl_ptr;
+typedef boost::shared_ptr<query_tree_impl> query_tree_impl_ptr;
 
 struct query_tree_unsafe
 {
@@ -19,14 +20,16 @@ struct query_tree_unsafe
     void queue_remove(const memory &key, const memory &value, bool guaranteed);
 
     bool get(const memory &key, memory *value);
+    query_iterator_unsafe find(const memory &key);
 private:
-    unsafe_query_impl_ptr m_impl;
+    query_tree_impl_ptr m_impl;
 };
 
 template<typename K, typename V>
 struct query_tree
 {
     typedef typename boost::optional<V> maybe_v;
+    typedef query_iterator<K, V> iterator;
 
     query_tree(nodeid_t id, be::be &be)
         : m_unsafe(id, be, fns()) { }
@@ -53,6 +56,11 @@ struct query_tree
             return traits::convert<V>::from_bytes(value);
         else
             return maybe_v();
+    }
+
+    iterator find(const K &key)
+    {
+        return query_iterator<K,V>(m_unsafe.find(traits::convert<V>::to_bytes(key)));
     }
 
     static tree_functions fns() { return tree_functions(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size); }

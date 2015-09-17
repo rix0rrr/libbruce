@@ -29,4 +29,9 @@ bool query_tree_unsafe::get(const memory &key, memory *value)
     return m_impl->get(key, value);
 }
 
+query_iterator_unsafe query_tree_unsafe::find(const memory &key)
+{
+    return query_iterator_unsafe(m_impl->find(key));
+}
+
 }

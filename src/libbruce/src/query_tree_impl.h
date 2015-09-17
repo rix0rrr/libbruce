@@ -3,12 +3,15 @@
 
 #include <map>
 #include <vector>
+#include <boost/enable_shared_from_this.hpp>
 
 #include <libbruce/types.h>
 #include <libbruce/be/be.h>
+#include <libbruce/query_tree.h>
 
 #include "tree_impl.h"
 #include "nodes.h"
+#include "query_iterator_impl.h"
 
 namespace bruce {
 
@@ -42,7 +45,7 @@ struct callback_memcmp
     tree_functions fns;
 };
 
-struct query_tree_impl : private tree_impl
+struct query_tree_impl : public tree_impl, public boost::enable_shared_from_this<query_tree_impl>
 {
     query_tree_impl(be::be &be, nodeid_t rootID, const tree_functions &fns);
 
@@ -51,13 +54,14 @@ struct query_tree_impl : private tree_impl
     void queue_remove(const memory &key, const memory &value, bool guaranteed);
 
     bool get(const memory &key, memory *value);
+    query_iterator_impl_ptr find(const memory &key);
 private:
     typedef std::vector<pending_edit> editlist_t;
     typedef std::map<memory, editlist_t, callback_memcmp> editmap_t;
 
     editmap_t m_edits;
 
-    bool getRec(const node_ptr &node, const memory &key, const memory &minKey, const memory &maxKey, memory *value);
+    bool findRec(const node_ptr &node, const memory &key, const memory &minKey, const memory &maxKey, std::vector<knuckle> &rootPath, query_iterator_impl_ptr *iter_ptr);
     void applyPendingChanges(const node_ptr &node, const memory &minKey, const memory &maxKey);
     void applyPendingChange(const leafnode_ptr &leaf, const pending_edit &edit);
 };

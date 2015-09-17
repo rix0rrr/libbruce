@@ -57,7 +57,7 @@ struct overflow_t
     nodeid_t nodeID;
     node_ptr node; // Only valid while mutating the tree
 
-    bool empty() const { return !(node || nodeID); }
+    bool empty() const { return !(node || count); }
 };
 
 
@@ -91,6 +91,7 @@ struct LeafNode : public Node
 
     void insert(size_t i, const kv_pair &item) { pairs.insert(pairs.begin() + i, item); }
     void erase(size_t i) { pairs.erase(pairs.begin() + i); }
+    void append(const kv_pair &item) { pairs.push_back(item); }
 
     pairlist_t::const_iterator at(keycount_t i) const { return pairs.begin() + i; }
 
@@ -140,6 +141,7 @@ struct InternalNode : public Node
 
     void insert(size_t i, const node_branch &branch) { branches.insert(branches.begin() + i, branch); }
     void erase(size_t i) { branches.erase(branches.begin() + i); }
+    void append(const node_branch &branch) { branches.push_back(branch); }
 
     branchlist_t::const_iterator at(keycount_t i) const { return branches.begin() + i; }
 

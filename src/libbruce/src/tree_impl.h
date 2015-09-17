@@ -21,6 +21,9 @@ struct tree_impl
     tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns);
 
     node_ptr &root();
+
+    const node_ptr &child(node_branch &branch);
+    const node_ptr &overflowNode(overflow_t &leaf);
 protected:
     be::be &m_be;
     maybe_nodeid m_rootID;
@@ -29,8 +32,6 @@ protected:
     std::vector<nodeid_t> m_loadedIDs;
     node_ptr m_root;
 
-    const node_ptr &child(node_branch &branch);
-    const node_ptr &overflowNode(overflow_t &leaf);
     node_ptr load(nodeid_t id);
 
     int safeCompare(const memory &a, const memory &b);

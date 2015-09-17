@@ -13,6 +13,8 @@ add_library(bruce
     src/edit_tree_impl.cpp
     src/query_tree.cpp
     src/query_tree_impl.cpp
+    src/query_iterator.cpp
+    src/query_iterator_impl.cpp
     src/nodes.cpp)
 
 target_include_directories(bruce
@@ -35,6 +37,7 @@ add_executable(testbruce
     test/testhelpers.cpp
     test/testnodes.cpp
     test/testquery_tree.cpp
+    test/testquery_iterator.cpp
     test/testbruce.cpp)
 
 target_include_directories(testbruce

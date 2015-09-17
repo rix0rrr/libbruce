@@ -26,10 +26,20 @@ void query_tree_impl::queue_remove(const memory &key, const memory &value, bool 
 
 bool query_tree_impl::get(const memory &key, memory *value)
 {
-    return getRec(root(), key, memory(), memory(), value);
+    query_iterator_unsafe it = find(key);
+    if (it) *value = it.value();
+    return it;
 }
 
-bool query_tree_impl::getRec(const node_ptr &node, const memory &key, const memory &minKey, const memory &maxKey, memory *value)
+query_iterator_impl_ptr query_tree_impl::find(const memory &key)
+{
+    std::vector<knuckle> rootPath;
+    query_iterator_impl_ptr it;
+    findRec(root(), key, memory(), memory(), rootPath, &it);
+    return it;
+}
+
+bool query_tree_impl::findRec(const node_ptr &node, const memory &key, const memory &minKey, const memory &maxKey, std::vector<knuckle> &rootPath, query_iterator_impl_ptr *iter_ptr)
 {
 NODE_CASE_LEAF
     applyPendingChanges(leaf, minKey, maxKey);
@@ -38,7 +48,9 @@ NODE_CASE_LEAF
 
     for (keycount_t i = keyrange.start; i < keyrange.end; i++)
     {
-        *value = leaf->pair(i).value;
+        int rank = 0;
+        rootPath.push_back(knuckle(node, i));
+        iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath, rank));
         return true;
     }
 
@@ -52,10 +64,12 @@ NODE_CASE_OVERFLOW
 NODE_CASE_INT
     keycount_t i = FindInternalKey(internal, key, m_fns);
 
+    rootPath.push_back(knuckle(node, i));
+
     const memory &minK = internal->branch(i).minKey.size() ? internal->branch(i).minKey : minKey;
     const memory &maxK = i < internal->branchCount() - 1 ? internal->branch(i+1).minKey : maxKey;
 
-    if (getRec(child(internal->branch(i)), key, minK, maxK, value))
+    if (findRec(child(internal->branch(i)), key, minK, maxK, rootPath, iter_ptr))
         return true;
 
     return false;

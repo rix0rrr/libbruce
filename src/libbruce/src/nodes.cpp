@@ -210,6 +210,8 @@ std::ostream &operator <<(std::ostream &os, const bruce::Node &x)
         os << "LEAF(" << l.pairCount() << ")" << std::endl;
         BOOST_FOREACH(const bruce::kv_pair &p, l.pairs)
             os << "  " << p.key << " -> " << p.value << std::endl;
+        if (!l.overflow.empty())
+            os << "  Overflow " << l.overflow.count << " @ " << l.overflow.nodeID << std::endl;
     }
     else if (x.nodeType() == bruce::TYPE_OVERFLOW)
     {
@@ -217,6 +219,8 @@ std::ostream &operator <<(std::ostream &os, const bruce::Node &x)
         os << "OVERFLOW(" << o.valueCount() << ")" << std::endl;
         BOOST_FOREACH(const bruce::memory &m, o.values)
             os << "  " << m << std::endl;
+        if (!o.next.empty())
+            os << "  Next " << o.next.count << " @ " << o.next.nodeID << std::endl;
     }
     else
     {

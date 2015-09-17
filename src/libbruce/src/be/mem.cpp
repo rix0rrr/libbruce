@@ -41,9 +41,6 @@ void mem::put_all(putblocklist_t &blocklist)
 {
     for (putblocklist_t::iterator it = blocklist.begin(); it != blocklist.end(); ++it)
     {
-        if (m_ctr < it->id)
-            throw std::runtime_error("Illegal ID");
-
         if (it->mem.size() > m_maxBlockSize)
             throw std::runtime_error((std::string("Block too large: ") + to_string(it->mem.size()) + " > " + to_string(m_maxBlockSize)).c_str());
 
