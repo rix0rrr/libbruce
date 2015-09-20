@@ -10,10 +10,13 @@ namespace bruce {
 struct knuckle
 {
     knuckle() : index(0) {}
-    knuckle(node_ptr node, keycount_t index) : node(node), index(index) { }
+    knuckle(node_ptr node, keycount_t index, const memory &minKey, const memory &maxKey)
+        : node(node), index(index), minKey(minKey), maxKey(maxKey) { }
 
     node_ptr node;
     keycount_t index;
+    memory minKey;
+    memory maxKey;
 };
 
 struct query_iterator_impl

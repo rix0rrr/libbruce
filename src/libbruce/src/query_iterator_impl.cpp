@@ -85,14 +85,27 @@ void query_iterator_impl::travelToNextLeaf()
 {
     while (m_rootPath.size() && m_rootPath.back().node->nodeType() == TYPE_INTERNAL)
     {
-        internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(m_rootPath.back().node);
-        if (m_rootPath.back().index < internal->branchCount())
+        const knuckle &k = m_rootPath.back();
+        internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(k.node);
+
+        if (k.index < internal->branchCount())
         {
-            node_ptr next = m_tree->child(internal->branch(m_rootPath.back().index));
-            m_rootPath.push_back(knuckle(next, 0));
+            node_ptr next = m_tree->child(internal->branch(k.index));
+
+            const memory &minK = internal->branch(k.index).minKey.size() ? internal->branch(k.index).minKey : k.minKey;
+            const memory &maxK = k.index < internal->branchCount() - 1 ? internal->branch(k.index+1).minKey : k.maxKey;
+
+            m_rootPath.push_back(knuckle(next, 0, minK, maxK));
         }
         else
             popCurrentNode();
+    }
+
+    if (m_rootPath.size() && m_rootPath.back().node->nodeType() == TYPE_LEAF)
+    {
+        const knuckle &k = m_rootPath.back();
+        leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(k.node);
+        m_tree->applyPendingChanges(leaf, k.minKey, k.maxKey);
     }
 }
 

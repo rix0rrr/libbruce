@@ -49,7 +49,7 @@ NODE_CASE_LEAF
     for (keycount_t i = keyrange.start; i < keyrange.end; i++)
     {
         int rank = 0;
-        rootPath.push_back(knuckle(node, i));
+        rootPath.push_back(knuckle(node, i, minKey, maxKey));
         iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath, rank));
         return true;
     }
@@ -64,7 +64,7 @@ NODE_CASE_OVERFLOW
 NODE_CASE_INT
     keycount_t i = FindInternalKey(internal, key, m_fns);
 
-    rootPath.push_back(knuckle(node, i));
+    rootPath.push_back(knuckle(node, i, minKey, maxKey));
 
     const memory &minK = internal->branch(i).minKey.size() ? internal->branch(i).minKey : minKey;
     const memory &maxK = i < internal->branchCount() - 1 ? internal->branch(i+1).minKey : maxKey;

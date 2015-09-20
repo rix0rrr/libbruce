@@ -40,14 +40,10 @@ TEST_CASE("iteration crossing between leafs")
     {
         query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it );
-        REQUIRE( it.value() == 1 );
-        ++it;
-        REQUIRE( it.value() == 3 );
-        ++it;
-        REQUIRE( it.value() == 5 );
-        ++it;
-        REQUIRE( it.value() == 7 );
-        ++it;
+        REQUIRE( it++.value() == 1 );
+        REQUIRE( it++.value() == 3 );
+        REQUIRE( it++.value() == 5 );
+        REQUIRE( it++.value() == 7 );
         REQUIRE( !it );
     }
 }
@@ -79,18 +75,12 @@ TEST_CASE("iteration across overflow nodes")
     {
         query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it );
-        REQUIRE( it.value() == 1 );
-        ++it;
-        REQUIRE( it.value() == 3 );
-        ++it;
-        REQUIRE( it.value() == 30 );
-        ++it;
-        REQUIRE( it.value() == 31 );
-        ++it;
-        REQUIRE( it.value() == 5 );
-        ++it;
-        REQUIRE( it.value() == 7 );
-        ++it;
+        REQUIRE( it++.value() == 1 );
+        REQUIRE( it++.value() == 3 );
+        REQUIRE( it++.value() == 30 );
+        REQUIRE( it++.value() == 31 );
+        REQUIRE( it++.value() == 5 );
+        REQUIRE( it++.value() == 7 );
         REQUIRE( !it );
     }
 }
@@ -113,13 +103,9 @@ TEST_CASE("iteration ends after overflow")
     {
         query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it );
-        REQUIRE( it.value() == 1 );
-        ++it;
-        REQUIRE( it.value() == 3 );
-        ++it;
-        REQUIRE( it );
-        REQUIRE( it.value() == 30 );
-        ++it;
+        REQUIRE( it++.value() == 1 );
+        REQUIRE( it++.value() == 3 );
+        REQUIRE( it++.value() == 30 );
         REQUIRE( !it );
     }
 }
@@ -153,14 +139,10 @@ TEST_CASE("tree 2 levels deep")
     {
         query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it );
-        REQUIRE( it.value() == 1 );
-        ++it;
-        REQUIRE( it.value() == 3 );
-        ++it;
-        REQUIRE( it.value() == 5 );
-        ++it;
-        REQUIRE( it.value() == 7 );
-        ++it;
+        REQUIRE( it++.value() == 1 );
+        REQUIRE( it++.value() == 3 );
+        REQUIRE( it++.value() == 5 );
+        REQUIRE( it++.value() == 7 );
         REQUIRE( !it );
     }
 }
@@ -187,6 +169,19 @@ TEST_CASE("iteration with queued insert")
         REQUIRE( it++.value() == 3 );
         REQUIRE( it++.value() == 4 );
         REQUIRE( it++.value() == 5 );
+        REQUIRE( it++.value() == 7 );
+        REQUIRE( !it );
+    }
+
+    SECTION("in second leaf")
+    {
+        query.queue_insert(6, 6);
+
+        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        REQUIRE( it++.value() == 1 );
+        REQUIRE( it++.value() == 3 );
+        REQUIRE( it++.value() == 5 );
+        REQUIRE( it++.value() == 6 );
         REQUIRE( it++.value() == 7 );
         REQUIRE( !it );
     }
