@@ -12,13 +12,13 @@ query_iterator_unsafe::query_iterator_unsafe(query_iterator_impl_ptr impl)
 // Copy constructor and assignment operator
 // Don't just copy the ptr, copy the object INSIDE the ptr
 query_iterator_unsafe::query_iterator_unsafe(const query_iterator_unsafe &rhs)
-    : m_impl(new query_iterator_impl(*rhs.m_impl))
+    : m_impl(rhs.m_impl ? new query_iterator_impl(*rhs.m_impl) : NULL)
 {
 }
 
 query_iterator_unsafe &query_iterator_unsafe::operator=(const query_iterator_unsafe &rhs)
 {
-    m_impl.reset(new query_iterator_impl(*rhs.m_impl));
+    m_impl.reset(rhs.m_impl ? new query_iterator_impl(*rhs.m_impl) : NULL);
     return *this;
 }
 
@@ -55,6 +55,13 @@ void query_iterator_unsafe::next()
 query_iterator_unsafe::operator bool() const
 {
     return m_impl && m_impl->valid();
+}
+
+bool query_iterator_unsafe::operator==(const query_iterator_unsafe &other) const
+{
+    if (valid() != other.valid()) return false;
+    if (!valid()) return true;
+    return *m_impl == *other.m_impl;
 }
 
 }

@@ -1,7 +1,29 @@
 #include "query_iterator_impl.h"
 #include "query_tree_impl.h"
 
+#include "helpers.h"
+
 namespace bruce {
+
+bool knuckle::operator==(const knuckle &other) const
+{
+    return node == other.node && index == other.index;
+}
+
+bool knuckle::isLeaf() const
+{
+    return node->nodeType() == TYPE_LEAF;
+}
+
+internalnode_ptr knuckle::asInternal() const
+{
+    return boost::static_pointer_cast<InternalNode>(node);
+}
+
+leafnode_ptr knuckle::asLeaf() const
+{
+    return boost::static_pointer_cast<LeafNode>(node);
+}
 
 query_iterator_impl::query_iterator_impl(query_tree_impl_ptr tree, const std::vector<knuckle> &rootPath, itemcount_t rank)
     : m_tree(tree), m_rootPath(rootPath), m_rank(rank)
@@ -29,7 +51,12 @@ itemcount_t query_iterator_impl::rank() const
 
 bool query_iterator_impl::valid() const
 {
-    return m_rootPath.size();
+    if (!m_rootPath.size()) return false;
+
+    const knuckle &k = m_rootPath.back();
+
+    return IMPLIES(k.isLeaf(), k.index < k.asLeaf()->pairCount())
+        && IMPLIES(!k.isLeaf(), k.index < k.asInternal()->branchCount());
 }
 
 void query_iterator_impl::skip(itemcount_t n)
@@ -113,6 +140,21 @@ void query_iterator_impl::setCurrentOverflow(const node_ptr &overflow)
 {
     m_overflow.node = overflow;
     m_overflow.index = 0;
+}
+
+bool query_iterator_impl::operator==(const query_iterator_impl &other) const
+{
+    if (m_tree != other.m_tree) return false;
+    if (m_rootPath.size() != other.m_rootPath.size()) return false;
+
+    for (unsigned i = 0; i < m_rootPath.size(); i++)
+        if (m_rootPath[i] != other.m_rootPath[i])
+            return false;
+
+    if (m_overflow != other.m_overflow)
+        return false;
+
+    return true;
 }
 
 }

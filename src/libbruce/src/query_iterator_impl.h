@@ -17,6 +17,13 @@ struct knuckle
     keycount_t index;
     memory minKey;
     memory maxKey;
+
+    bool isLeaf() const;
+    internalnode_ptr asInternal() const;
+    leafnode_ptr asLeaf() const;
+
+    bool operator==(const knuckle &other) const;
+    bool operator!=(const knuckle &other) const { return !(*this == other); }
 };
 
 struct query_iterator_impl
@@ -30,6 +37,9 @@ struct query_iterator_impl
 
     void skip(itemcount_t n);
     void next();
+
+    bool operator==(const query_iterator_impl &other) const;
+    bool operator!=(const query_iterator_impl &other) const { return !(*this == other); }
 private:
     query_tree_impl_ptr m_tree;
     std::vector<knuckle> m_rootPath;

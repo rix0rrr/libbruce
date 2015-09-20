@@ -21,6 +21,8 @@ struct query_tree_unsafe
 
     bool get(const memory &key, memory *value);
     query_iterator_unsafe find(const memory &key);
+    query_iterator_unsafe begin();
+    query_iterator_unsafe end();
 private:
     query_tree_impl_ptr m_impl;
 };
@@ -61,6 +63,16 @@ struct query_tree
     iterator find(const K &key)
     {
         return query_iterator<K,V>(m_unsafe.find(traits::convert<V>::to_bytes(key)));
+    }
+
+    iterator begin()
+    {
+        return query_iterator<K,V>(m_unsafe.begin());
+    }
+
+    iterator end()
+    {
+        return query_iterator<K,V>(m_unsafe.end());
     }
 
     static tree_functions fns() { return tree_functions(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size); }

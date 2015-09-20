@@ -1,15 +1,13 @@
 #include "edit_tree_impl.h"
 
-#include "nodes.h"
-#include "serializing.h"
 #include <cassert>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
-// Macro because we don't have C++11
-#define to_string boost::lexical_cast<std::string>
-#define IMPLIES(a, b) ((!a) || b)
+#include "nodes.h"
+#include "serializing.h"
+#include "helpers.h"
 
 namespace bruce {
 

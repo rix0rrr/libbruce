@@ -35,16 +35,16 @@ query_iterator_impl_ptr query_tree_impl::find(const memory &key)
 {
     std::vector<knuckle> rootPath;
     query_iterator_impl_ptr it;
-    findRec(root(), key, memory(), memory(), rootPath, &it);
+    findRec(root(), &key, memory(), memory(), rootPath, &it);
     return it;
 }
 
-bool query_tree_impl::findRec(const node_ptr &node, const memory &key, const memory &minKey, const memory &maxKey, std::vector<knuckle> &rootPath, query_iterator_impl_ptr *iter_ptr)
+bool query_tree_impl::findRec(const node_ptr &node, const memory *key, const memory &minKey, const memory &maxKey, std::vector<knuckle> &rootPath, query_iterator_impl_ptr *iter_ptr)
 {
 NODE_CASE_LEAF
     applyPendingChanges(leaf, minKey, maxKey);
 
-    index_range keyrange = findLeafRange(leaf, key);
+    index_range keyrange = key ? findLeafRange(leaf, *key) : index_range(0, 1);
 
     for (keycount_t i = keyrange.start; i < keyrange.end; i++)
     {
@@ -62,7 +62,7 @@ NODE_CASE_OVERFLOW
     return false;
 
 NODE_CASE_INT
-    keycount_t i = FindInternalKey(internal, key, m_fns);
+    keycount_t i = key ? FindInternalKey(internal, *key, m_fns) : 0;
 
     rootPath.push_back(knuckle(node, i, minKey, maxKey));
 
@@ -75,6 +75,14 @@ NODE_CASE_INT
     return false;
 
 NODE_CASE_END
+}
+
+query_iterator_impl_ptr query_tree_impl::begin()
+{
+    std::vector<knuckle> rootPath;
+    query_iterator_impl_ptr it;
+    findRec(root(), NULL, memory(), memory(), rootPath, &it);
+    return it;
 }
 
 void query_tree_impl::applyPendingChanges(const node_ptr &node, const memory &minKey, const memory &maxKey)

@@ -34,4 +34,15 @@ query_iterator_unsafe query_tree_unsafe::find(const memory &key)
     return query_iterator_unsafe(m_impl->find(key));
 }
 
+query_iterator_unsafe query_tree_unsafe::begin()
+{
+    return query_iterator_unsafe(m_impl->begin());
+}
+
+query_iterator_unsafe query_tree_unsafe::end()
+{
+    // Return an invalid iterator
+    return query_iterator_unsafe(query_iterator_impl_ptr());
+}
+
 }

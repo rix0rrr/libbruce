@@ -25,6 +25,9 @@ struct query_iterator_unsafe
     void next();
 
     operator bool() const;
+
+    bool operator==(const query_iterator_unsafe &other) const;
+    bool operator!=(const query_iterator_unsafe &other) const { return !(*this == other); }
 private:
     query_iterator_impl_ptr m_impl;
 };
@@ -43,6 +46,8 @@ struct query_iterator
     query_iterator operator++(int) { query_iterator<K, V> ret(*this); m_unsafe.next(); return ret; } // Postfix
     void operator+=(itemcount_t n) { skip(n); }
     operator bool() const { return m_unsafe.valid(); }
+    bool operator==(const query_iterator<K, V> &other) const { return m_unsafe == other.m_unsafe; }
+    bool operator!=(const query_iterator<K, V> &other) const { return !(*this == other); }
 private:
     query_iterator_unsafe m_unsafe;
 };
