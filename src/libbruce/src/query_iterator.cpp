@@ -9,6 +9,19 @@ query_iterator_unsafe::query_iterator_unsafe(query_iterator_impl_ptr impl)
 {
 }
 
+// Copy constructor and assignment operator
+// Don't just copy the ptr, copy the object INSIDE the ptr
+query_iterator_unsafe::query_iterator_unsafe(const query_iterator_unsafe &rhs)
+    : m_impl(new query_iterator_impl(*rhs.m_impl))
+{
+}
+
+query_iterator_unsafe &query_iterator_unsafe::operator=(const query_iterator_unsafe &rhs)
+{
+    m_impl.reset(new query_iterator_impl(*rhs.m_impl));
+    return *this;
+}
+
 const memory &query_iterator_unsafe::key() const
 {
     return m_impl->key();
