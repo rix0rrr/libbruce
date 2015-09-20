@@ -187,4 +187,40 @@ TEST_CASE("iteration with queued insert")
     }
 }
 
+TEST_CASE("iteration with queued delete")
+{
+    be::mem mem(1024);
+
+    put_result root = make_internal()
+        .brn(make_leaf()
+           .kv(1, 1).kv(3, 3).put(mem))
+        .brn(make_leaf()
+           .kv(5, 5).kv(7, 7).put(mem))
+        .put(mem);
+
+    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+
+    SECTION("in first leaf")
+    {
+        query.queue_remove(3, false);
+
+        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        REQUIRE( it++.value() == 1 );
+        REQUIRE( it++.value() == 5 );
+        REQUIRE( it++.value() == 7 );
+        REQUIRE( !it );
+    }
+
+    SECTION("in second leaf")
+    {
+        query.queue_remove(5, false);
+
+        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        REQUIRE( it++.value() == 1 );
+        REQUIRE( it++.value() == 3 );
+        REQUIRE( it++.value() == 7 );
+        REQUIRE( !it );
+    }
+}
+
 // Rank stuff (with guaranteed and unguaranteed queued inserts)
