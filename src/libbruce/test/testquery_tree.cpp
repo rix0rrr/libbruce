@@ -71,3 +71,31 @@ TEST_CASE("reading from a tree with queued insert and delete", "[query]")
     q.queue_remove(1, true);
     REQUIRE( !q.get(1) );
 }
+
+TEST_CASE("seeking in a plain tree", "[query][rank]")
+{
+    be::mem mem(1024);
+    put_result root = make_internal()
+        .brn(make_leaf()
+           .kv(1, 1).kv(3, 3).put(mem))
+        .brn(make_leaf()
+           .kv(5, 5).kv(7, 7).put(mem))
+        .put(mem);
+    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+
+    query_tree<uint32_t, uint32_t>::iterator it;
+    it = query.seek(0);
+    REQUIRE(it.value() == 1);
+
+    it = query.seek(1);
+    REQUIRE(it.value() == 3);
+
+    it = query.seek(2);
+    REQUIRE(it.value() == 5);
+
+    it = query.seek(3);
+    REQUIRE(it.value() == 7);
+
+    it = query.seek(4);
+    REQUIRE( !it );
+}

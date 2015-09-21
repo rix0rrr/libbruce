@@ -132,7 +132,7 @@ void query_iterator_impl::travelToNextLeaf()
     {
         const knuckle &k = m_rootPath.back();
         leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(k.node);
-        m_tree->applyPendingChanges(leaf, k.minKey, k.maxKey);
+        m_tree->applyPendingChanges(k.minKey, k.maxKey);
     }
 }
 

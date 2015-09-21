@@ -12,6 +12,7 @@ typedef boost::shared_ptr<query_iterator_impl> query_iterator_impl_ptr;
 
 struct query_iterator_unsafe
 {
+    query_iterator_unsafe();
     query_iterator_unsafe(query_iterator_impl_ptr impl);
     query_iterator_unsafe(const query_iterator_unsafe &rhs);
     query_iterator_unsafe &operator=(const query_iterator_unsafe &rhs);
@@ -35,6 +36,7 @@ private:
 template<typename K, typename V>
 struct query_iterator
 {
+    query_iterator() {}
     query_iterator(query_iterator_unsafe unsafe) : m_unsafe(unsafe) { }
 
     V value() const { return traits::convert<V>::from_bytes(m_unsafe.value()); }

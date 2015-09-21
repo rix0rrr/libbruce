@@ -4,6 +4,10 @@
 
 namespace bruce {
 
+query_iterator_unsafe::query_iterator_unsafe()
+{
+}
+
 query_iterator_unsafe::query_iterator_unsafe(query_iterator_impl_ptr impl)
     : m_impl(impl)
 {

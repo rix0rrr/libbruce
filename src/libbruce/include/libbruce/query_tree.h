@@ -21,6 +21,7 @@ struct query_tree_unsafe
 
     bool get(const memory &key, memory *value);
     query_iterator_unsafe find(const memory &key);
+    query_iterator_unsafe seek(itemcount_t n);
     query_iterator_unsafe begin();
     query_iterator_unsafe end();
 private:
@@ -63,6 +64,11 @@ struct query_tree
     iterator find(const K &key)
     {
         return query_iterator<K,V>(m_unsafe.find(traits::convert<V>::to_bytes(key)));
+    }
+
+    iterator seek(itemcount_t n)
+    {
+        return query_iterator<K,V>(m_unsafe.seek(n));
     }
 
     iterator begin()

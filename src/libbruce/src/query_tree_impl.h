@@ -56,17 +56,20 @@ struct query_tree_impl : public tree_impl, public boost::enable_shared_from_this
 
     bool get(const memory &key, memory *value);
     query_iterator_impl_ptr find(const memory &key);
+    query_iterator_impl_ptr seek(itemcount_t n);
     query_iterator_impl_ptr begin();
 
-    void applyPendingChanges(const node_ptr &node, const memory &minKey, const memory &maxKey);
+    void applyPendingChanges(const memory &minKey, const memory &maxKey);
 private:
     typedef std::vector<pending_edit> editlist_t;
     typedef std::map<memory, editlist_t, callback_memcmp> editmap_t;
 
     editmap_t m_edits;
 
-    bool findRec(const node_ptr &node, const memory *key, const memory &minKey, const memory &maxKey, std::vector<knuckle> &rootPath, query_iterator_impl_ptr *iter_ptr);
-    void applyPendingChange(const leafnode_ptr &leaf, const pending_edit &edit);
+    void pushChildKnuckle(std::vector<knuckle> &rootPath);
+    void findRec(std::vector<knuckle> &rootPath, const memory *key, query_iterator_impl_ptr *iter_ptr);
+    void seekRec(std::vector<knuckle> &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr);
+    void applyPendingChangeRec(const node_ptr &node, const pending_edit &edit);
 };
 
 }
