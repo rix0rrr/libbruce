@@ -28,7 +28,7 @@ struct knuckle
 
 struct query_iterator_impl
 {
-    query_iterator_impl(query_tree_impl_ptr tree, const std::vector<knuckle> &rootPath, itemcount_t rank);
+    query_iterator_impl(query_tree_impl_ptr tree, const std::vector<knuckle> &rootPath);
 
     const memory &key() const;
     const memory &value() const;
@@ -44,7 +44,6 @@ private:
     query_tree_impl_ptr m_tree;
     std::vector<knuckle> m_rootPath;
     knuckle m_overflow;
-    itemcount_t m_rank;
 
     leafnode_ptr leaf() const { return boost::static_pointer_cast<LeafNode>(m_rootPath.back().node); }
     keycount_t leafIndex() const { return m_rootPath.back().index; }

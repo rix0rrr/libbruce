@@ -1,6 +1,7 @@
 #include "query_tree_impl.h"
 
 #include <cassert>
+#include <list>
 
 namespace bruce {
 
@@ -92,13 +93,28 @@ NODE_CASE_INT
 NODE_CASE_END
 }
 
+/**
+ * Whether the given edit is guaranteed and does not need to be applied.
+ *
+ * An edit is guaranteed if it is itself guaranteed and NOT followed by a non-guaranteed edit (if
+ * there is a later nonguaranteed edit, that one must be applied, and so all changes before it also
+ * must be applied, not just counted).
+ */
+bool query_tree_impl::isGuaranteed(const editlist_t::iterator &cur, const editlist_t::iterator &end)
+{
+    for (editlist_t::iterator it = cur; it != end; ++it)
+        if (!it->guaranteed)
+            return false;
+    return true;
+}
+
 void query_tree_impl::seekRec(std::vector<knuckle> &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr)
 {
     knuckle &top = rootPath.back();
     node_ptr node = rootPath.back().node;
 
 NODE_CASE_LEAF
-    //applyPendingChanges(top.minKey, top.maxKey);
+    applyPendingChanges(top.minKey, top.maxKey);
 
     if (n < leaf->pairCount())
     {
@@ -114,27 +130,64 @@ NODE_CASE_OVERFLOW
 NODE_CASE_INT
     top.index = 0;
 
-    while (top.index < internal->branchCount() && internal->branch(top.index).itemCount <= n)
+    while (top.index < internal->branchCount())
     {
-        n -= internal->branch(top.index).itemCount;
-        top.index++;
-    }
+        // Look for pending changes to apply here
 
-    if (top.index < internal->branchCount())
-    {
-        // Found where to descend
-        pushChildKnuckle(rootPath);
-        seekRec(rootPath, n, iter_ptr);
-    }
+        // Find bounds
+        const memory &minK = top.index == 0 ? top.minKey : internal->branch(top.index).minKey;
+        const memory &maxK = top.index < internal->branchCount() - 1 ? internal->branch(top.index + 1).minKey : top.maxKey;
 
-    /*
-    editmap_t::iterator start = minKey.empty() ? m_edits.begin() : m_edits.lower_bound(minKey);
-    keycount_t i = key ? FindInternalKey(internal, *key, m_fns) : 0;
-    pushChildKnuckle(rootPath);
-    findRec(rootPath, key, iter_ptr);
-    */
+        // Find edits
+        editmap_t::iterator start = minK.empty() ? m_edits.begin() : m_edits.lower_bound(minK);
+        editmap_t::iterator end = maxK.empty() ? m_edits.end() : m_edits.lower_bound(maxK);
+
+        // Apply edits
+        long int delta = 0;
+        for (editmap_t::iterator kit = start; kit != end; /* increment below */)
+        {
+            for (editlist_t::iterator it = kit->second.begin(); it != kit->second.end(); )
+            {
+                // If guaranteed, only need to update a count, else really apply the change.
+                // If the change was applied, remove it from the list.
+                if (isGuaranteed(it, kit->second.end()))
+                {
+                    delta += it->delta();
+                    ++it;
+                }
+                else
+                {
+                    applyPendingChangeRec(node, *it);
+                    kit->second.erase(it);
+                }
+            }
+
+            // Erase key iff the list is now empty
+            if (kit->second.empty())
+                m_edits.erase(kit++);
+            else
+                ++kit;
+        }
+
+        if (internal->branch(top.index).itemCount + delta <= n)
+        {
+            n -= internal->branch(top.index).itemCount;
+            top.index++;
+        }
+        else {
+            // Found where to descend
+            pushChildKnuckle(rootPath);
+            seekRec(rootPath, n, iter_ptr);
+            return;
+        }
+    }
 
 NODE_CASE_END
+}
+
+itemcount_t query_tree_impl::rank(const std::vector<knuckle> &rootPath)
+{
+    return 0;
 }
 
 query_iterator_impl_ptr query_tree_impl::begin()
@@ -150,6 +203,7 @@ void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &ma
 {
     editmap_t::iterator start = minKey.empty() ? m_edits.begin() : m_edits.lower_bound(minKey);
     editmap_t::iterator end = maxKey.empty() ? m_edits.end() : m_edits.lower_bound(maxKey);
+
     for (editmap_t::iterator kit = start; kit != end; /* increment as part of erase */)
     {
         for (editlist_t::iterator it = kit->second.begin(); it != kit->second.end(); ++it)

@@ -26,7 +26,7 @@ leafnode_ptr knuckle::asLeaf() const
 }
 
 query_iterator_impl::query_iterator_impl(query_tree_impl_ptr tree, const std::vector<knuckle> &rootPath, itemcount_t rank)
-    : m_tree(tree), m_rootPath(rootPath), m_rank(rank)
+    : m_tree(tree), m_rootPath(rootPath)
 {
 }
 
@@ -46,7 +46,7 @@ const memory &query_iterator_impl::value() const
 
 itemcount_t query_iterator_impl::rank() const
 {
-    assert(false);
+    return m_tree->rank(m_rootPath);
 }
 
 bool query_iterator_impl::valid() const

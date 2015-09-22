@@ -28,6 +28,8 @@ struct pending_edit
     memory key;
     memory value;
     bool guaranteed;
+
+    long int delta() const { return edit == INSERT ? 1 : -1; }
 };
 
 struct callback_memcmp
@@ -60,6 +62,7 @@ struct query_tree_impl : public tree_impl, public boost::enable_shared_from_this
     query_iterator_impl_ptr begin();
 
     void applyPendingChanges(const memory &minKey, const memory &maxKey);
+    itemcount_t rank(const std::vector<knuckle> &rootPath);
 private:
     typedef std::vector<pending_edit> editlist_t;
     typedef std::map<memory, editlist_t, callback_memcmp> editmap_t;
@@ -70,6 +73,7 @@ private:
     void findRec(std::vector<knuckle> &rootPath, const memory *key, query_iterator_impl_ptr *iter_ptr);
     void seekRec(std::vector<knuckle> &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr);
     void applyPendingChangeRec(const node_ptr &node, const pending_edit &edit);
+    bool isGuaranteed(const editlist_t::iterator &cur, const editlist_t::iterator &end);
 };
 
 }
