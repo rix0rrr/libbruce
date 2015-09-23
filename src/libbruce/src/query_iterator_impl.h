@@ -18,9 +18,10 @@ struct knuckle
     memory minKey;
     memory maxKey;
 
-    bool isLeaf() const;
+    node_type_t nodeType() const;
     internalnode_ptr asInternal() const;
     leafnode_ptr asLeaf() const;
+    overflownode_ptr asOverflow() const;
 
     bool operator==(const knuckle &other) const;
     bool operator!=(const knuckle &other) const { return !(*this == other); }
@@ -45,18 +46,17 @@ private:
     std::vector<knuckle> m_rootPath;
     knuckle m_overflow;
 
-    leafnode_ptr leaf() const { return boost::static_pointer_cast<LeafNode>(m_rootPath.back().node); }
-    keycount_t leafIndex() const { return m_rootPath.back().index; }
-
-    void setCurrentOverflow(const node_ptr &overflow);
-    bool inOverflow() const { return m_overflow.node; }
-    overflownode_ptr overflow() const { return boost::static_pointer_cast<OverflowNode>(m_overflow.node); }
-    keycount_t overflowIndex() const { return m_overflow.index; }
+    const knuckle &leaf() const;
+    knuckle &current() { return m_rootPath.back(); }
+    const knuckle &current() const { return m_rootPath.back(); }
 
     void advanceCurrent();
     bool pastCurrentEnd() const;
     void popCurrentNode();
     void travelToNextLeaf();
+
+    void setCurrentOverflow(const node_ptr &overflow);
+    void removeOverflow();
 };
 
 }

@@ -75,8 +75,7 @@ NODE_CASE_LEAF
 
     for (top.index = keyrange.start; top.index < keyrange.end; top.index++)
     {
-        int rank = 0;
-        iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath, rank));
+        iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath));
         return;
     }
 
@@ -119,13 +118,32 @@ NODE_CASE_LEAF
     if (n < leaf->pairCount())
     {
         top.index = n;
-        int rank = 0;
-        iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath, rank));
+        iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath));
         return;
     }
 
+    n -= leaf->pairCount();
+
+    if (!leaf->overflow.empty())
+    {
+        rootPath.push_back(knuckle(overflowNode(leaf->overflow), 0, memory(), memory()));
+        seekRec(rootPath, n, iter_ptr);
+    }
+
 NODE_CASE_OVERFLOW
-    assert(false);
+
+    if (n < overflow->valueCount())
+    {
+        top.index = n;
+        iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath));
+        return;
+    }
+
+    n -= overflow->valueCount();
+
+    if (!overflow->next.empty())
+        rootPath.push_back(knuckle(overflowNode(overflow->next), 0, memory(), memory()));
+        seekRec(rootPath, n, iter_ptr);
 
 NODE_CASE_INT
     top.index = 0;

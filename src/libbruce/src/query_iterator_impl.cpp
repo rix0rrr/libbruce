@@ -10,9 +10,9 @@ bool knuckle::operator==(const knuckle &other) const
     return node == other.node && index == other.index;
 }
 
-bool knuckle::isLeaf() const
+node_type_t knuckle::nodeType() const
 {
-    return node->nodeType() == TYPE_LEAF;
+    return node->nodeType();
 }
 
 internalnode_ptr knuckle::asInternal() const
@@ -25,23 +25,43 @@ leafnode_ptr knuckle::asLeaf() const
     return boost::static_pointer_cast<LeafNode>(node);
 }
 
-query_iterator_impl::query_iterator_impl(query_tree_impl_ptr tree, const std::vector<knuckle> &rootPath, itemcount_t rank)
+overflownode_ptr knuckle::asOverflow() const
+{
+    return boost::static_pointer_cast<OverflowNode>(node);
+}
+
+query_iterator_impl::query_iterator_impl(query_tree_impl_ptr tree, const std::vector<knuckle> &rootPath)
     : m_tree(tree), m_rootPath(rootPath)
 {
 }
 
+const knuckle &query_iterator_impl::leaf() const
+{
+    // Get the top leaf
+    for (std::vector<knuckle>::const_reverse_iterator it = m_rootPath.rbegin(); it != m_rootPath.rend(); ++it)
+        if (it->nodeType() == TYPE_LEAF)
+            return *it;
+    return m_rootPath.back();
+}
+
 const memory &query_iterator_impl::key() const
 {
-    if (inOverflow())
-        return leaf()->pairs.back().key;
-    return leaf()->pairs[leafIndex()].key;
+    switch (current().nodeType())
+    {
+        case TYPE_LEAF: return current().asLeaf()->pairs[current().index].key;
+        case TYPE_OVERFLOW: return current().asLeaf()->pairs.back().key;  // Because we've already exceeded the index at that level
+        default: throw std::runtime_error("Illegal case");
+    }
 }
 
 const memory &query_iterator_impl::value() const
 {
-    if (inOverflow())
-        return overflow()->values[overflowIndex()];
-    return leaf()->pairs[leafIndex()].value;
+    switch (current().nodeType())
+    {
+        case TYPE_OVERFLOW: return current().asOverflow()->values[current().index];
+        case TYPE_LEAF: return current().asLeaf()->pairs[current().index].value;
+        default: throw std::runtime_error("Illegal case");
+    }
 }
 
 itemcount_t query_iterator_impl::rank() const
@@ -53,10 +73,13 @@ bool query_iterator_impl::valid() const
 {
     if (!m_rootPath.size()) return false;
 
-    const knuckle &k = m_rootPath.back();
-
-    return IMPLIES(k.isLeaf(), k.index < k.asLeaf()->pairCount())
-        && IMPLIES(!k.isLeaf(), k.index < k.asInternal()->branchCount());
+    switch (current().nodeType())
+    {
+        case TYPE_LEAF: return current().index < current().asLeaf()->pairCount();
+        case TYPE_INTERNAL: return current().index < current().asInternal()->branchCount();
+        case TYPE_OVERFLOW: return current().index < current().asOverflow()->valueCount();
+        default: throw std::runtime_error("Illegal case");
+    }
 }
 
 void query_iterator_impl::skip(itemcount_t n)
@@ -66,36 +89,36 @@ void query_iterator_impl::skip(itemcount_t n)
 
 bool query_iterator_impl::pastCurrentEnd() const
 {
-    if (inOverflow())
-        return overflow()->values.size() <= overflowIndex();
-    return leaf()->pairs.size() <= leafIndex();
+    switch (current().nodeType())
+    {
+        case TYPE_OVERFLOW: return current().asOverflow()->values.size() <= current().index;
+        case TYPE_LEAF: return current().asLeaf()->pairs.size() <= current().index;
+        default: throw std::runtime_error("Illegal case");
+    }
 }
 
 void query_iterator_impl::next()
 {
-    if (inOverflow())
-        m_overflow.index++;
-    else
-        m_rootPath.back().index++;
+    current().index++;
     if (pastCurrentEnd()) advanceCurrent();
 }
 
 void query_iterator_impl::advanceCurrent()
 {
     // Move on to overflow chain
-    if (inOverflow() && !overflow()->next.empty())
+    if (current().nodeType() == TYPE_OVERFLOW && !current().asOverflow()->next.empty())
     {
-        setCurrentOverflow(m_tree->overflowNode(overflow()->next));
+        setCurrentOverflow(m_tree->overflowNode(current().asOverflow()->next));
         return;
     }
-    if (!inOverflow() && !leaf()->overflow.empty())
+    if (current().nodeType() == TYPE_LEAF && !current().asLeaf()->overflow.empty())
     {
-        setCurrentOverflow(m_tree->overflowNode(leaf()->overflow));
+        setCurrentOverflow(m_tree->overflowNode(current().asLeaf()->overflow));
         return;
     }
 
     // Nope, pop the root path
-    setCurrentOverflow(node_ptr());
+    removeOverflow();
     popCurrentNode();
     travelToNextLeaf();
 }
@@ -110,17 +133,16 @@ void query_iterator_impl::popCurrentNode()
 
 void query_iterator_impl::travelToNextLeaf()
 {
-    while (m_rootPath.size() && m_rootPath.back().node->nodeType() == TYPE_INTERNAL)
+    while (m_rootPath.size() && current().nodeType() == TYPE_INTERNAL)
     {
-        const knuckle &k = m_rootPath.back();
-        internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(k.node);
+        internalnode_ptr internal = current().asInternal();
 
-        if (k.index < internal->branchCount())
+        if (current().index < internal->branchCount())
         {
-            node_ptr next = m_tree->child(internal->branch(k.index));
+            node_ptr next = m_tree->child(internal->branch(current().index));
 
-            const memory &minK = internal->branch(k.index).minKey.size() ? internal->branch(k.index).minKey : k.minKey;
-            const memory &maxK = k.index < internal->branchCount() - 1 ? internal->branch(k.index+1).minKey : k.maxKey;
+            const memory &minK = internal->branch(current().index).minKey.size() ? internal->branch(current().index).minKey : current().minKey;
+            const memory &maxK = current().index < internal->branchCount() - 1 ? internal->branch(current().index+1).minKey : current().maxKey;
 
             m_rootPath.push_back(knuckle(next, 0, minK, maxK));
         }
@@ -128,18 +150,31 @@ void query_iterator_impl::travelToNextLeaf()
             popCurrentNode();
     }
 
-    if (m_rootPath.size() && m_rootPath.back().node->nodeType() == TYPE_LEAF)
+    if (m_rootPath.size() && current().nodeType() == TYPE_LEAF)
     {
-        const knuckle &k = m_rootPath.back();
-        leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(k.node);
-        m_tree->applyPendingChanges(k.minKey, k.maxKey);
+        m_tree->applyPendingChanges(current().minKey, current().maxKey);
     }
 }
 
 void query_iterator_impl::setCurrentOverflow(const node_ptr &overflow)
 {
-    m_overflow.node = overflow;
-    m_overflow.index = 0;
+    if (current().nodeType() == TYPE_OVERFLOW)
+    {
+        // Replace
+        current().node = overflow;
+        current().index = 0;
+    }
+    else
+    {
+        // Push
+        m_rootPath.push_back(knuckle(overflow, 0, memory(), memory()));
+    }
+}
+
+void query_iterator_impl::removeOverflow()
+{
+    while (current().nodeType() == TYPE_OVERFLOW)
+        m_rootPath.pop_back();
 }
 
 bool query_iterator_impl::operator==(const query_iterator_impl &other) const
