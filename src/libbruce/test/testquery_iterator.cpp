@@ -209,6 +209,7 @@ TEST_CASE("iteration with queued insert")
     }
 }
 
+
 TEST_CASE("iteration with queued delete")
 {
     be::mem mem(1024);

@@ -176,6 +176,15 @@ TEST_CASE("seeking in a tree with nonguaranteed changes", "[query][rank]")
         REQUIRE(query.seek(2).value() == 7);
     }
 
+    SECTION("remove the first element of a leaf")
+    {
+        query.queue_remove(5, false);
+
+        REQUIRE(query.seek(0).value() == 1);
+        REQUIRE(query.seek(1).value() == 3);
+        REQUIRE(query.seek(2).value() == 7);
+    }
+
     SECTION("queued incorrect remove")
     {
         query.queue_remove(4, false);
@@ -230,4 +239,76 @@ TEST_CASE("seek into overflow node", "[query][rank]")
 
     REQUIRE( query.seek(3).value() == 5 );
     REQUIRE( query.seek(4).value() == 6 );
+}
+
+TEST_CASE("calculate item rank", "[query][rank]")
+{
+    be::mem mem(1024);
+    put_result root = make_internal()
+        .brn(make_leaf()
+           .kv(1, 1)
+           .kv(3, 3)
+           .overflow(make_overflow()
+                .val(4)
+                .val(5)
+                .next(make_overflow()
+                      .val(6)
+                      .put(mem))
+                .put(mem))
+           .put(mem))
+        .brn(make_leaf()
+           .kv(7, 7)
+           .kv(8, 8)
+           .put(mem))
+        .put(mem);
+    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    query_tree<uint32_t, uint32_t>::iterator it;
+
+    SECTION("find rank simple")
+    {
+        it = query.find(3);
+        REQUIRE( it.rank() == 1 );
+        it = query.find(7);
+        REQUIRE( it.rank() == 5 );
+    }
+
+    SECTION("find rank with queued insert")
+    {
+        query.queue_insert(2, 2);
+        it = query.find(3);
+        REQUIRE( it.rank() == 2 );
+        it = query.find(7);
+        REQUIRE( it.rank() == 6 );
+    }
+
+    SECTION("find rank in overflow node")
+    {
+        query.queue_insert(2, 2);
+        it = query.find(3);
+        ++it;
+        ++it;
+        ++it;
+        REQUIRE( it.rank() == 5 );
+    }
+
+    SECTION("find rank with guaranteed queued remove")
+    {
+        query.queue_remove(1, true);
+        it = query.find(3);
+        REQUIRE( it.rank() == 0 );
+    }
+
+    SECTION("find rank with correct queued remove")
+    {
+        query.queue_remove(1, false);
+        it = query.find(3);
+        REQUIRE( it.rank() == 0 );
+    }
+
+    SECTION("find rank with wrong remove")
+    {
+        query.queue_remove(2, false);
+        it = query.find(7);
+        REQUIRE( it.rank() == 5 );
+    }
 }

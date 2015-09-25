@@ -34,7 +34,7 @@ bool query_tree_impl::get(const memory &key, memory *value)
 
 query_iterator_impl_ptr query_tree_impl::find(const memory &key)
 {
-    std::vector<knuckle> rootPath;
+    treepath_t rootPath;
     rootPath.push_back(knuckle(root(), 0, memory(), memory()));
 
     query_iterator_impl_ptr it;
@@ -44,7 +44,7 @@ query_iterator_impl_ptr query_tree_impl::find(const memory &key)
 
 query_iterator_impl_ptr query_tree_impl::seek(itemcount_t n)
 {
-    std::vector<knuckle> rootPath;
+    treepath_t rootPath;
     rootPath.push_back(knuckle(root(), 0, memory(), memory()));
 
     query_iterator_impl_ptr it;
@@ -52,7 +52,7 @@ query_iterator_impl_ptr query_tree_impl::seek(itemcount_t n)
     return it;
 }
 
-void query_tree_impl::pushChildKnuckle(std::vector<knuckle> &rootPath)
+void query_tree_impl::pushChildKnuckle(treepath_t &rootPath)
 {
     knuckle &top = rootPath.back();
     internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(top.node);
@@ -63,13 +63,13 @@ void query_tree_impl::pushChildKnuckle(std::vector<knuckle> &rootPath)
     rootPath.push_back(knuckle(child(internal->branch(top.index)), 0, minK, maxK));
 }
 
-void query_tree_impl::findRec(std::vector<knuckle> &rootPath, const memory *key, query_iterator_impl_ptr *iter_ptr)
+void query_tree_impl::findRec(treepath_t &rootPath, const memory *key, query_iterator_impl_ptr *iter_ptr)
 {
     knuckle &top = rootPath.back();
     node_ptr node = rootPath.back().node;
 
 NODE_CASE_LEAF
-    applyPendingChanges(top.minKey, top.maxKey);
+    applyPendingChanges(top.minKey, top.maxKey, NULL);
 
     index_range keyrange = key ? findLeafRange(leaf, *key) : index_range(0, 1);
 
@@ -107,13 +107,13 @@ bool query_tree_impl::isGuaranteed(const editlist_t::iterator &cur, const editli
     return true;
 }
 
-void query_tree_impl::seekRec(std::vector<knuckle> &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr)
+void query_tree_impl::seekRec(treepath_t &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr)
 {
     knuckle &top = rootPath.back();
     node_ptr node = rootPath.back().node;
 
 NODE_CASE_LEAF
-    applyPendingChanges(top.minKey, top.maxKey);
+    applyPendingChanges(top.minKey, top.maxKey, NULL);
 
     if (n < leaf->pairCount())
     {
@@ -157,35 +157,7 @@ NODE_CASE_INT
         const memory &maxK = top.index < internal->branchCount() - 1 ? internal->branch(top.index + 1).minKey : top.maxKey;
 
         // Find edits
-        editmap_t::iterator start = minK.empty() ? m_edits.begin() : m_edits.lower_bound(minK);
-        editmap_t::iterator end = maxK.empty() ? m_edits.end() : m_edits.lower_bound(maxK);
-
-        // Apply edits
-        long int delta = 0;
-        for (editmap_t::iterator kit = start; kit != end; /* increment below */)
-        {
-            for (editlist_t::iterator it = kit->second.begin(); it != kit->second.end(); )
-            {
-                // If guaranteed, only need to update a count, else really apply the change.
-                // If the change was applied, remove it from the list.
-                if (isGuaranteed(it, kit->second.end()))
-                {
-                    delta += it->delta();
-                    ++it;
-                }
-                else
-                {
-                    applyPendingChangeRec(node, *it);
-                    kit->second.erase(it);
-                }
-            }
-
-            // Erase key iff the list is now empty
-            if (kit->second.empty())
-                m_edits.erase(kit++);
-            else
-                ++kit;
-        }
+        int delta = pendingRankDelta(node, minK, maxK);
 
         if (internal->branch(top.index).itemCount + delta <= n)
         {
@@ -203,21 +175,89 @@ NODE_CASE_INT
 NODE_CASE_END
 }
 
-itemcount_t query_tree_impl::rank(const std::vector<knuckle> &rootPath)
+itemcount_t query_tree_impl::rank(treepath_t &rootPath)
 {
-    return 0;
+    itemcount_t ret = 0;
+    for (treepath_t::iterator it = rootPath.begin(); it != rootPath.end(); ++it)
+    {
+        node_ptr node = it->node;
+
+    NODE_CASE_LEAF
+        // This WILL change the index of dude. Need to shift it to stay on the same element.
+        int delta = 0;
+        applyPendingChanges(it->minKey, leaf->pair(it->index).key, &delta); // Apply up to this key
+        it->index += delta;
+
+        ret += it->index;
+    NODE_CASE_OVERFLOW
+        ret += it->index;
+    NODE_CASE_INT
+        const memory &minK = it->minKey;
+        const memory &maxK = it->index < internal->branchCount() - 1 ? internal->branch(it->index + 1).minKey : it->maxKey;
+
+        int delta = pendingRankDelta(node, minK, maxK);
+
+        for (keycount_t i = 0; i < it->index; i++)
+        {
+            ret += internal->branch(i).itemCount;
+        }
+
+        ret += delta;
+
+    NODE_CASE_END
+    }
+
+    return ret;
+}
+
+int query_tree_impl::pendingRankDelta(const node_ptr &node, const memory &minKey, const memory &maxKey)
+{
+    // Doesn't STRICTLY speaking need a node_ptr argument, but it makes the tree traversal a bit
+    // faster to not have to start at the root.
+
+    int delta = 0;
+
+    editmap_t::iterator start = minKey.empty() ? m_edits.begin() : m_edits.lower_bound(minKey);
+    editmap_t::iterator end = maxKey.empty() ? m_edits.end() : m_edits.lower_bound(maxKey);
+
+    for (editmap_t::iterator kit = start; kit != end; /* increment below */)
+    {
+        for (editlist_t::iterator it = kit->second.begin(); it != kit->second.end(); )
+        {
+            // If guaranteed, only need to update a count, else really apply the change.
+            // If the change was applied, remove it from the list.
+            if (isGuaranteed(it, kit->second.end()))
+            {
+                delta += it->delta();
+                ++it;
+            }
+            else
+            {
+                applyPendingChangeRec(node, *it, NULL);
+                kit->second.erase(it);
+            }
+        }
+
+        // Erase key iff the list is now empty
+        if (kit->second.empty())
+            m_edits.erase(kit++);
+        else
+            ++kit;
+    }
+
+    return delta;
 }
 
 query_iterator_impl_ptr query_tree_impl::begin()
 {
-    std::vector<knuckle> rootPath;
+    treepath_t rootPath;
     rootPath.push_back(knuckle(root(), 0, memory(), memory()));
     query_iterator_impl_ptr it;
     findRec(rootPath, NULL, &it);
     return it;
 }
 
-void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &maxKey)
+void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &maxKey, int *delta)
 {
     editmap_t::iterator start = minKey.empty() ? m_edits.begin() : m_edits.lower_bound(minKey);
     editmap_t::iterator end = maxKey.empty() ? m_edits.end() : m_edits.lower_bound(maxKey);
@@ -225,29 +265,33 @@ void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &ma
     for (editmap_t::iterator kit = start; kit != end; /* increment as part of erase */)
     {
         for (editlist_t::iterator it = kit->second.begin(); it != kit->second.end(); ++it)
-            applyPendingChangeRec(root(), *it);
+            applyPendingChangeRec(root(), *it, delta);
         m_edits.erase(kit++); // This is the idiomatic way to iterate+erase
     }
 }
 
-void query_tree_impl::applyPendingChangeRec(const node_ptr &node, const pending_edit &edit)
+void query_tree_impl::applyPendingChangeRec(const node_ptr &node, const pending_edit &edit, int *delta)
 {
 NODE_CASE_LEAF
     // We only need to apply changes to leaf nodes. No need to split into overflow blocks since
     // we're never going to write this back.
+    bool erased;
     switch (edit.edit)
     {
         case INSERT:
             {
                 keycount_t i = FindLeafKey(leaf, edit.key, m_fns);
                 leaf->insert(i, kv_pair(edit.key, edit.value));
+                if (delta) (*delta)++;
             }
             break;
         case REMOVE_KEY:
-            removeFromLeaf(leaf, edit.key, NULL);
+            erased = removeFromLeaf(leaf, edit.key, NULL);
+            if (erased && delta) (*delta)--;
             break;
         case REMOVE_KV:
-            removeFromLeaf(leaf, edit.key, &edit.value);
+            erased = removeFromLeaf(leaf, edit.key, &edit.value);
+            if (erased && delta) (*delta)--;
             break;
         default:
             assert(false);
@@ -258,7 +302,7 @@ NODE_CASE_INT
     // Drill down to leaf, only to update counts afterwards
     keycount_t i = FindInternalKey(internal, edit.key, m_fns);
     node_ptr c = child(internal->branch(i));
-    applyPendingChangeRec(c, edit);
+    applyPendingChangeRec(c, edit, delta);
     internal->branch(i).itemCount = c->itemCount();
 
 NODE_CASE_END

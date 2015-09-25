@@ -61,7 +61,7 @@ int tree_impl::safeCompare(const memory &a, const memory &b)
     return m_fns.keyCompare(a, b);
 }
 
-void tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value)
+bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value)
 {
     index_range keyrange = findLeafRange(leaf, key);
 
@@ -89,16 +89,21 @@ void tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, cons
             leaf->pairs.push_back(kv_pair(key, ret));
             leaf->setOverflow(leaf->overflow.node);
         }
+
+        return true;
     }
     else if (!leaf->overflow.empty() && key == leaf->pairs.back().key)
     {
         // Did not erase from this leaf but key matches overflow key, recurse
-        removeFromOverflow(overflowNode(leaf->overflow), key, value);
+        bool erased = removeFromOverflow(overflowNode(leaf->overflow), key, value);
         leaf->setOverflow(leaf->overflow.node);
+        return erased;
     }
+
+    return false;
 }
 
-void tree_impl::removeFromOverflow(const node_ptr &node, const memory &key, const memory *value)
+bool tree_impl::removeFromOverflow(const node_ptr &node, const memory &key, const memory *value)
 {
     overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
 
@@ -116,7 +121,7 @@ void tree_impl::removeFromOverflow(const node_ptr &node, const memory &key, cons
     // Try to remove from the next block
     if (!erased && !overflow->next.empty())
     {
-        removeFromOverflow(overflowNode(overflow->next), key, value);
+        erased = removeFromOverflow(overflowNode(overflow->next), key, value);
         overflow->setNext(overflow->next.node);
     }
 
@@ -126,6 +131,8 @@ void tree_impl::removeFromOverflow(const node_ptr &node, const memory &key, cons
         memory value = pullFromOverflow(overflowNode(overflow->next));
         overflow->append(value);
     }
+
+    return erased;
 }
 
 

@@ -108,17 +108,17 @@ void query_iterator_impl::advanceCurrent()
     // Move on to overflow chain
     if (current().nodeType() == TYPE_OVERFLOW && !current().asOverflow()->next.empty())
     {
-        setCurrentOverflow(m_tree->overflowNode(current().asOverflow()->next));
+        pushOverflow(m_tree->overflowNode(current().asOverflow()->next));
         return;
     }
     if (current().nodeType() == TYPE_LEAF && !current().asLeaf()->overflow.empty())
     {
-        setCurrentOverflow(m_tree->overflowNode(current().asLeaf()->overflow));
+        pushOverflow(m_tree->overflowNode(current().asLeaf()->overflow));
         return;
     }
 
     // Nope, pop the root path
-    removeOverflow();
+    popOverflows();
     popCurrentNode();
     travelToNextLeaf();
 }
@@ -152,26 +152,16 @@ void query_iterator_impl::travelToNextLeaf()
 
     if (m_rootPath.size() && current().nodeType() == TYPE_LEAF)
     {
-        m_tree->applyPendingChanges(current().minKey, current().maxKey);
+        m_tree->applyPendingChanges(current().minKey, current().maxKey, NULL);
     }
 }
 
-void query_iterator_impl::setCurrentOverflow(const node_ptr &overflow)
+void query_iterator_impl::pushOverflow(const node_ptr &overflow)
 {
-    if (current().nodeType() == TYPE_OVERFLOW)
-    {
-        // Replace
-        current().node = overflow;
-        current().index = 0;
-    }
-    else
-    {
-        // Push
-        m_rootPath.push_back(knuckle(overflow, 0, memory(), memory()));
-    }
+    m_rootPath.push_back(knuckle(overflow, 0, memory(), memory()));
 }
 
-void query_iterator_impl::removeOverflow()
+void query_iterator_impl::popOverflows()
 {
     while (current().nodeType() == TYPE_OVERFLOW)
         m_rootPath.pop_back();

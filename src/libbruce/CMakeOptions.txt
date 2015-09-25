@@ -1,0 +1,6 @@
+option(ADDRESS_SANITIZER "Enable address sanitizer" OFF)
+
+if(ADDRESS_SANITIZER)
+    target_compile_options(bruce PRIVATE -fsanitize=address -fno-omit-frame-pointer -O0 -fno-optimize-sibling-calls)
+    target_link_libraries(bruce PRIVATE -fsanitize=address)
+endif()

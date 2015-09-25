@@ -28,17 +28,25 @@ query_iterator_unsafe &query_iterator_unsafe::operator=(const query_iterator_uns
 
 const memory &query_iterator_unsafe::key() const
 {
+    checkValid();
     return m_impl->key();
 }
 
 const memory &query_iterator_unsafe::value() const
 {
+    checkValid();
     return m_impl->value();
 }
 
 itemcount_t query_iterator_unsafe::rank() const
 {
+    checkValid();
     return m_impl->rank();
+}
+
+void query_iterator_unsafe::checkValid() const
+{
+    if (!valid()) throw std::runtime_error("Iterator is not valid");
 }
 
 bool query_iterator_unsafe::valid() const
@@ -48,11 +56,13 @@ bool query_iterator_unsafe::valid() const
 
 void query_iterator_unsafe::skip(itemcount_t n)
 {
+    checkValid();
     m_impl->skip(n);
 }
 
 void query_iterator_unsafe::next()
 {
+    checkValid();
     m_impl->next();
 }
 

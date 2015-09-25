@@ -67,7 +67,6 @@ TEST_CASE("serializing an overflow node is symmetric", "[serializing]")
     REQUIRE(r->valueCount() == 2);
     REQUIRE(r->values[0] == one_r);
     REQUIRE(r->values[1] == two_r);
-
 }
 
 TEST_CASE("calculating size of leaf node with different keys", "[serializing]")

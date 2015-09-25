@@ -31,6 +31,7 @@ struct query_iterator_unsafe
     bool operator!=(const query_iterator_unsafe &other) const { return !(*this == other); }
 private:
     query_iterator_impl_ptr m_impl;
+    void checkValid() const;
 };
 
 template<typename K, typename V>

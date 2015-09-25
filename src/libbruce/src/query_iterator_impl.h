@@ -27,9 +27,11 @@ struct knuckle
     bool operator!=(const knuckle &other) const { return !(*this == other); }
 };
 
+typedef std::vector<knuckle> treepath_t;
+
 struct query_iterator_impl
 {
-    query_iterator_impl(query_tree_impl_ptr tree, const std::vector<knuckle> &rootPath);
+    query_iterator_impl(query_tree_impl_ptr tree, const treepath_t &rootPath);
 
     const memory &key() const;
     const memory &value() const;
@@ -43,7 +45,7 @@ struct query_iterator_impl
     bool operator!=(const query_iterator_impl &other) const { return !(*this == other); }
 private:
     query_tree_impl_ptr m_tree;
-    std::vector<knuckle> m_rootPath;
+    mutable treepath_t m_rootPath;
     knuckle m_overflow;
 
     const knuckle &leaf() const;
@@ -55,8 +57,8 @@ private:
     void popCurrentNode();
     void travelToNextLeaf();
 
-    void setCurrentOverflow(const node_ptr &overflow);
-    void removeOverflow();
+    void pushOverflow(const node_ptr &overflow);
+    void popOverflows();
 };
 
 }

@@ -48,3 +48,6 @@ target_link_libraries(testbruce
     bruce)
 
 add_test(testbruce testbruce)
+
+include(CMakeOptions.txt)
+
