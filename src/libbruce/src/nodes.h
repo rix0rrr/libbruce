@@ -94,6 +94,7 @@ struct LeafNode : public Node
     void append(const kv_pair &item) { pairs.push_back(item); }
 
     pairlist_t::const_iterator at(keycount_t i) const { return pairs.begin() + i; }
+    pairlist_t::iterator at(keycount_t i) { return pairs.begin() + i; }
 
     kv_pair &pair(keycount_t i) { return pairs[i]; }
 
@@ -121,6 +122,7 @@ struct OverflowNode : public Node
     void erase(size_t i) { values.erase(values.begin() + i); }
 
     valuelist_t::const_iterator at(keycount_t i) const { return values.begin() + i; }
+    valuelist_t::iterator at(keycount_t i) { return values.begin() + i; }
 
     void setNext(const node_ptr &node);
 

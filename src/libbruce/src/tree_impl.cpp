@@ -109,7 +109,7 @@ bool tree_impl::removeFromOverflow(const node_ptr &node, const memory &key, cons
 
     // Try to remove from this block
     bool erased = false;
-    for (valuelist_t::const_iterator it = overflow->values.begin(); it != overflow->values.end(); ++it)
+    for (valuelist_t::iterator it = overflow->values.begin(); it != overflow->values.end(); ++it)
     {
         if (!value || m_fns.valueCompare(*it, *value) == 0)
         {

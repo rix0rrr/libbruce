@@ -1,6 +1,7 @@
 #include <libbruce/memory.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 const char* g_hex = "0123456789abcdef";
 

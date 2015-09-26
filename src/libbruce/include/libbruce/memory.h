@@ -3,6 +3,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <iostream>
+#include <stdint.h>
+#include <stdexcept>
 
 namespace bruce {
 

@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include <boost/range.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <libbruce/types.h>
 #include <libbruce/memory.h>
@@ -14,7 +15,7 @@
 namespace bruce { namespace be {
 
 struct block_not_found : public std::runtime_error {
-    block_not_found(const nodeid_t &id) : std::runtime_error("Block not found: " + std::to_string(id)) { }
+    block_not_found(const nodeid_t &id) : std::runtime_error("Block not found: " + boost::lexical_cast<std::string>(id)) { }
 };
 
 struct putblock_t
