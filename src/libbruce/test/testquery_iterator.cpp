@@ -23,6 +23,26 @@ TEST_CASE("prefix and postfix increment")
     REQUIRE((++it).value() == 3);
 }
 
+TEST_CASE("arbitrary increment")
+{
+    be::mem mem(1024);
+    put_result root = make_leaf()
+        .kv(1, 1)
+        .kv(3, 3)
+        .kv(5, 5)
+        .kv(7, 7)
+        .put(mem);
+    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+
+    query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+    it += 2;
+
+    REQUIRE(it.value() == 5);
+
+    it += -2;
+    REQUIRE(it.value() == 1);
+}
+
 TEST_CASE("iterator for an empty tree")
 {
     be::mem mem(1024);

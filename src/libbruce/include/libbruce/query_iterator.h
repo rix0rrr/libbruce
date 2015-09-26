@@ -22,7 +22,7 @@ struct query_iterator_unsafe
     itemcount_t rank() const;
     bool valid() const;
 
-    void skip(itemcount_t n);
+    void skip(int n);
     void next();
 
     operator bool() const;
@@ -43,11 +43,11 @@ struct query_iterator
     V value() const { return traits::convert<V>::from_bytes(m_unsafe.value()); }
     K key() const { return traits::convert<K>::from_bytes(m_unsafe.key()); }
     itemcount_t rank() const { return m_unsafe.rank(); }
-    void skip(itemcount_t n) { m_unsafe.skip(n); }
+    void skip(int n) { m_unsafe.skip(n); }
 
     query_iterator &operator++() { m_unsafe.next(); return *this; } // Prefix
     query_iterator operator++(int) { query_iterator<K, V> ret(*this); m_unsafe.next(); return ret; } // Postfix
-    void operator+=(itemcount_t n) { skip(n); }
+    void operator+=(int n) { skip(n); }
     operator bool() const { return m_unsafe.valid(); }
     bool operator==(const query_iterator<K, V> &other) const { return m_unsafe == other.m_unsafe; }
     bool operator!=(const query_iterator<K, V> &other) const { return !(*this == other); }

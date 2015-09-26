@@ -54,7 +54,7 @@ bool query_iterator_unsafe::valid() const
     return m_impl && m_impl->valid();
 }
 
-void query_iterator_unsafe::skip(itemcount_t n)
+void query_iterator_unsafe::skip(int n)
 {
     checkValid();
     m_impl->skip(n);

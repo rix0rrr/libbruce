@@ -73,18 +73,32 @@ bool query_iterator_impl::valid() const
 {
     if (!m_rootPath.size()) return false;
 
+    return validIndex(current().index);
+}
+
+bool query_iterator_impl::validIndex(int i) const
+{
     switch (current().nodeType())
     {
-        case TYPE_LEAF: return current().index < current().asLeaf()->pairCount();
-        case TYPE_INTERNAL: return current().index < current().asInternal()->branchCount();
-        case TYPE_OVERFLOW: return current().index < current().asOverflow()->valueCount();
+        case TYPE_LEAF: return i < current().asLeaf()->pairCount();
+        case TYPE_INTERNAL: return i < current().asInternal()->branchCount();
+        case TYPE_OVERFLOW: return i < current().asOverflow()->valueCount();
         default: throw std::runtime_error("Illegal case");
     }
 }
 
-void query_iterator_impl::skip(itemcount_t n)
+void query_iterator_impl::skip(int n)
 {
-    assert(false);
+    // Try to satisfy move by just moving index pointer
+    int potential = current().index + n;
+    if (potential <= 0 && validIndex(potential))
+    {
+        current().index = potential;
+        return;
+    }
+
+    // Otherwise do a complete re-seek
+    *this = *m_tree->seek(rank() + n);
 }
 
 bool query_iterator_impl::pastCurrentEnd() const
@@ -175,9 +189,6 @@ bool query_iterator_impl::operator==(const query_iterator_impl &other) const
     for (unsigned i = 0; i < m_rootPath.size(); i++)
         if (m_rootPath[i] != other.m_rootPath[i])
             return false;
-
-    if (m_overflow != other.m_overflow)
-        return false;
 
     return true;
 }

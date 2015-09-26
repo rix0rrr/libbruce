@@ -38,7 +38,7 @@ struct query_iterator_impl
     itemcount_t rank() const;
     bool valid() const;
 
-    void skip(itemcount_t n);
+    void skip(int n);
     void next();
 
     bool operator==(const query_iterator_impl &other) const;
@@ -46,7 +46,6 @@ struct query_iterator_impl
 private:
     query_tree_impl_ptr m_tree;
     mutable treepath_t m_rootPath;
-    knuckle m_overflow;
 
     const knuckle &leaf() const;
     knuckle &current() { return m_rootPath.back(); }
@@ -59,6 +58,7 @@ private:
 
     void pushOverflow(const node_ptr &overflow);
     void popOverflows();
+    bool validIndex(int i) const;
 };
 
 }
