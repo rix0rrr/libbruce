@@ -185,7 +185,9 @@ itemcount_t query_tree_impl::rank(treepath_t &rootPath)
     NODE_CASE_LEAF
         // This WILL change the index of dude. Need to shift it to stay on the same element.
         int delta = 0;
-        applyPendingChanges(it->minKey, leaf->pair(it->index).key, &delta); // Apply up to this key
+        const memory &maxK = it->index < leaf->pairCount() ? leaf->pair(it->index).key : it->maxKey;
+
+        applyPendingChanges(it->minKey, maxK, &delta); // Apply up to this key
         it->index += delta;
 
         ret += it->index;

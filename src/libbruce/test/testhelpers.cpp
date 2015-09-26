@@ -32,7 +32,7 @@ int intCompare(const memory &a, const memory &b)
 
 memory intCopy(uint32_t i)
 {
-    boost::shared_ptr<char> x(new char[sizeof(i)]);
+    boost::shared_array<char> x(new char[sizeof(i)]);
     *(uint32_t*)x.get() = i;
     return memory(x, sizeof(i));
 }
@@ -89,9 +89,10 @@ make_leaf &make_leaf::overflow(const put_result &put)
 
 put_result make_leaf::put(be::mem &mem)
 {
-    nodeid_t n = mem.newIdentifiers(1)[0];
-    putNode(mem, n, leaf);
-    return put_result(leaf, n);
+    std::vector<nodeid_t> ids;
+    mem.newIdentifiers(1, &ids);
+    putNode(mem, ids[0], leaf);
+    return put_result(leaf, ids[0]);
 }
 
 //----------------------------------------------------------------------
@@ -109,9 +110,10 @@ make_internal &make_internal::brn(const put_result &put)
 
 put_result make_internal::put(be::mem &mem)
 {
-    nodeid_t n = mem.newIdentifiers(1)[0];
-    putNode(mem, n, internal);
-    return put_result(internal, n);
+    std::vector<nodeid_t> ids;
+    mem.newIdentifiers(1, &ids);
+    putNode(mem, ids[0], internal);
+    return put_result(internal, ids[0]);
 }
 
 //----------------------------------------------------------------------
@@ -141,9 +143,10 @@ make_overflow &make_overflow::next(const put_result &put)
 
 put_result make_overflow::put(be::mem &mem)
 {
-    nodeid_t n = mem.newIdentifiers(1)[0];
-    putNode(mem, n, overflow);
-    return put_result(overflow, n);
+    std::vector<nodeid_t> ids;
+    mem.newIdentifiers(1, &ids);
+    putNode(mem, ids[0], overflow);
+    return put_result(overflow, ids[0]);
 }
 
 }

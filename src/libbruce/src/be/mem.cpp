@@ -20,14 +20,10 @@ nodeid_t mem::blockCount() const
     return m_blocks.size();
 }
 
-std::vector<nodeid_t> mem::newIdentifiers(int n)
+void mem::newIdentifiers(int n, std::vector<nodeid_t> *out)
 {
-    std::vector<nodeid_t> ret;
-
     for (int i = 0; i < n; i++)
-         ret.push_back(m_ctr++);
-
-    return ret;
+         out->push_back(m_ctr++);
 }
 
 memory mem::get(const nodeid_t &id)

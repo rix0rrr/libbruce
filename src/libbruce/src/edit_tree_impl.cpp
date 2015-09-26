@@ -242,7 +242,8 @@ mutation edit_tree_impl::flush()
     m_newIDsRequired = 1; // For the root
     collectNewIDsRec(root());
 
-    m_be.newIdentifiers(m_newIDsRequired).swap(m_newIDs); // Swaptimization
+    m_newIDs.clear();
+    m_be.newIdentifiers(m_newIDsRequired, &m_newIDs);
 
     m_putBlocks.reserve(m_newIDsRequired);
     m_newIDsRequired = 1; // For the root

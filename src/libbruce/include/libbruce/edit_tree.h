@@ -28,7 +28,7 @@
 namespace bruce {
 
 class edit_tree_impl;
-typedef std::auto_ptr<edit_tree_impl> mutable_tree_ptr;
+typedef boost::shared_ptr<edit_tree_impl> mutable_tree_ptr;
 
 /**
  * Type-unsafe tree

@@ -68,7 +68,7 @@ struct convert<std::string>
     static memory to_bytes(const std::string &t)
     {
         memory m(t.size() + 1);
-        memcpy((void*)m.ptr(), t.c_str(), t.size() + 10);
+        memcpy((void*)m.ptr(), t.c_str(), t.size() + 1);
         return m;
     }
 

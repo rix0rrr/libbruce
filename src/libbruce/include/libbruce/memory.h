@@ -1,7 +1,7 @@
 #ifndef BRUCE_MEMORY_H
 #define BRUCE_MEMORY_H
 
-#include <boost/shared_ptr.hpp>
+#include <boost/shared_array.hpp>
 #include <iostream>
 #include <stdint.h>
 #include <stdexcept>
@@ -17,7 +17,7 @@ namespace bruce {
  *   pair of iterators, which make for a poor API. This is used when passing
  *   a memory block INTO a function.
  *
- * - It may optionally share ownership (via a shared_ptr) of a block of memory.
+ * - It may optionally share ownership (via a shared_array) of a block of memory.
  *   This is used when returning a memory block FROM a function. Note that the
  *   calling function is unaware of whether the memory is owned or not: this
  *   is completely up to the producer of the slice.
@@ -27,7 +27,7 @@ namespace bruce {
  */
 struct memory
 {
-    typedef boost::shared_ptr<char> memptr;
+    typedef boost::shared_array<char> memptr;
 
     memory()
         : m_ptr(NULL), m_size(0)
