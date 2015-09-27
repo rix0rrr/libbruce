@@ -125,3 +125,46 @@ TEST_CASE("remove branch when empty")
     REQUIRE( mut.obsoleteIDs().size() == 2 );
     REQUIRE( mut.createdIDs().size() == 1 );
 }
+
+TEST_CASE("upserts")
+{
+    be::mem mem(1024);
+
+    // GIVEN
+    put_result root = make_internal()
+        .brn(make_leaf()
+           .kv(1, 1)
+           .put(mem)) // 0
+        .brn(make_leaf()
+           .kv(3, 3)
+           .put(mem)) // 1
+        .put(mem); // 2
+    edit_tree<int, int> edit(root.nodeID, mem);
+
+    SECTION("upsert becomes an update")
+    {
+        edit.upsert(1, 2);
+        mutation mut = edit.flush();
+
+        query_tree<int, int> query(*mut.newRootID(), mem);
+        REQUIRE( query.find(1).value() == 2 );
+
+        // Check rank as well
+        REQUIRE( query.find(3).rank() == 1 );
+        REQUIRE( query.seek(1).key() == 3 );
+    }
+
+    SECTION("upsert becomes an insert")
+    {
+        edit.upsert(2, 2);
+        mutation mut = edit.flush();
+
+        query_tree<int, int> query(*mut.newRootID(), mem);
+        REQUIRE( query.find(1).value() == 1 );
+        REQUIRE( query.find(2).value() == 2 );
+
+        // Check rank as well
+        REQUIRE( query.find(3).rank() == 2 );
+        REQUIRE( query.seek(2).key() == 3 );
+    }
+}

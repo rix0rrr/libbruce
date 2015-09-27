@@ -15,6 +15,11 @@ void query_tree_impl::queue_insert(const memory &key, const memory &value)
     m_edits[key].push_back(pending_edit(INSERT, key, value, true));
 }
 
+void query_tree_impl::queue_upsert(const memory &key, const memory &value, bool guaranteed)
+{
+    m_edits[key].push_back(pending_edit(UPSERT, key, value, guaranteed));
+}
+
 void query_tree_impl::queue_remove(const memory &key, bool guaranteed)
 {
     m_edits[key].push_back(pending_edit(REMOVE_KEY, key, memory(), guaranteed));
@@ -282,9 +287,21 @@ NODE_CASE_LEAF
     {
         case INSERT:
             {
-                keycount_t i = FindLeafKey(leaf, edit.key, m_fns);
+                keycount_t i = FindLeafInsertKey(leaf, edit.key, m_fns);
                 leaf->insert(i, kv_pair(edit.key, edit.value));
                 if (delta) (*delta)++;
+            }
+            break;
+        case UPSERT:
+            {
+                keycount_t i = FindLeafUpsertKey(leaf, edit.key, m_fns);
+                if (leaf->pair(i).key == edit.key)
+                    leaf->pair(i).value = edit.value;
+                else
+                {
+                    leaf->insert(i, kv_pair(edit.key, edit.value));
+                    if (delta) (*delta)++;
+                }
             }
             break;
         case REMOVE_KEY:

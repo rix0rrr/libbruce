@@ -148,6 +148,14 @@ struct KeyCompare
         return fns.keyCompare(key, pair.key) < 0;
     }
 
+    bool operator()(const kv_pair &pair, const memory &key)
+    {
+        if (pair.key.empty()) return true;
+        if (key.empty()) return false;
+
+        return fns.keyCompare(pair.key, key) < 0;
+    }
+
     bool operator()(const node_branch &branch, const memory &key)
     {
         if (branch.minKey.empty()) return true;

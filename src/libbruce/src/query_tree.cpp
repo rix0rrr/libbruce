@@ -14,6 +14,11 @@ void query_tree_unsafe::queue_insert(const memory &key, const memory &value)
     m_impl->queue_insert(key, value);
 }
 
+void query_tree_unsafe::queue_upsert(const memory &key, const memory &value, bool guaranteed)
+{
+    m_impl->queue_upsert(key, value, guaranteed);
+}
+
 void query_tree_unsafe::queue_remove(const memory &key, bool guaranteed)
 {
     m_impl->queue_remove(key, guaranteed);

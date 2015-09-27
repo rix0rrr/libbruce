@@ -13,7 +13,7 @@ TEST_CASE("writing a new single leaf tree")
 {
     be::mem mem(1024);
     edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
-    tree.insert(one_r, two_r);
+    tree.insert(one_r, two_r, false);
 
     mutation mut = tree.flush();
 
@@ -35,7 +35,7 @@ TEST_CASE("writing a new single leaf tree")
     WHEN("a new key is added to it")
     {
         edit_tree_impl tree2(mem, mut.newRootID(), intToIntTree);
-        tree2.insert(two_r, one_r);
+        tree2.insert(two_r, one_r, false);
 
         mutation mut2 = tree2.flush();
 
@@ -59,7 +59,7 @@ TEST_CASE("inserting a lot of keys leads to split nodes")
     edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
 
     for (uint32_t i = 0; i < 140; i++)
-        tree.insert(intCopy(i), intCopy(i));
+        tree.insert(intCopy(i), intCopy(i), false);
 
     mutation mut = tree.flush();
 
@@ -88,7 +88,7 @@ TEST_CASE("split is kosher")
     edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
 
     for (uint32_t i = 0; i < 128; i++)
-        tree.insert(intCopy(i), intCopy(i));
+        tree.insert(intCopy(i), intCopy(i), false);
 
     mutation mut = tree.flush();
 
@@ -120,7 +120,7 @@ TEST_CASE("inserting then deleting from a leaf")
 {
     be::mem mem(1024);
     edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
-    tree.insert(one_r, two_r);
+    tree.insert(one_r, two_r, false);
     tree.remove(one_r);
     mutation mut = tree.flush();
 
@@ -138,7 +138,7 @@ TEST_CASE("inserting then deleting from an internal node")
     be::mem mem(1024);
     edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
     for (uint32_t i = 0; i < 128; i++)
-        tree.insert(intCopy(i), intCopy(i));
+        tree.insert(intCopy(i), intCopy(i), false);
 
     SECTION("deleting from the left")
     {
@@ -171,7 +171,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
     be::mem mem(1024);
     edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
     for (uint32_t i = 0; i < 128; i++)
-        tree.insert(two_r, intCopy(i));
+        tree.insert(two_r, intCopy(i), false);
 
     SECTION("deleting a low key & value")
     {
@@ -211,7 +211,7 @@ TEST_CASE("write new pages, delete old ones")
     {
         edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
         for (uint32_t i = 0; i < 128; i++)
-            tree.insert(intCopy(i), intCopy(i));
+            tree.insert(intCopy(i), intCopy(i), false);
         mutation mut = tree.flush();
         REQUIRE( mem.blockCount() == 3 );
         treeID = mut.newRootID();
@@ -219,7 +219,7 @@ TEST_CASE("write new pages, delete old ones")
 
     {
         edit_tree_impl tree(mem, treeID, intToIntTree);
-        tree.insert(intCopy(140), intCopy(140));
+        tree.insert(intCopy(140), intCopy(140), false);
         mutation mut = tree.flush();
         REQUIRE( mem.blockCount() == 5 );
         REQUIRE( mut.createdIDs().size() == 2 );
@@ -232,9 +232,9 @@ TEST_CASE("postfix a whole bunch of the same keys into anode")
     be::mem mem(1024);
     edit_tree_impl tree(mem, maybe_nodeid(), intToIntTree);
     for (unsigned i = 0; i < 50; i++)
-        tree.insert(intCopy(i), intCopy(i));
+        tree.insert(intCopy(i), intCopy(i), false);
     for (unsigned i = 50; i < 400; i++)
-        tree.insert(intCopy(50), intCopy(i));
+        tree.insert(intCopy(50), intCopy(i), false);
     mutation mut = tree.flush();
 
     REQUIRE( mem.blockCount() == 3 ); // Expecting leaf and two overflows

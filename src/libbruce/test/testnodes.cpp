@@ -19,22 +19,22 @@ TEST_CASE("test findleafkeyindex", "[nodes]")
     SECTION("find 1")
     {
         // Insert to the right
-        REQUIRE( FindLeafKey(leaf, one_r, intToIntTree) == 1 );
+        REQUIRE( FindLeafInsertKey(leaf, one_r, intToIntTree) == 1 );
     }
     SECTION("find 2")
     {
         // Insert to the right of the twos
-        REQUIRE( FindLeafKey(leaf, two_r, intToIntTree) == 3 );
+        REQUIRE( FindLeafInsertKey(leaf, two_r, intToIntTree) == 3 );
     }
     SECTION("find 5")
     {
         // Completely to the right
-        REQUIRE( FindLeafKey(leaf, intCopy(5), intToIntTree) == 4 );
+        REQUIRE( FindLeafInsertKey(leaf, intCopy(5), intToIntTree) == 4 );
     }
     SECTION("find 0")
     {
         // Completely to the left
-        REQUIRE( FindLeafKey(leaf, intCopy(0), intToIntTree) == 0 );
+        REQUIRE( FindLeafInsertKey(leaf, intCopy(0), intToIntTree) == 0 );
     }
 }
 

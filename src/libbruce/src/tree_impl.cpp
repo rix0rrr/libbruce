@@ -45,7 +45,7 @@ node_ptr tree_impl::load(nodeid_t id)
 
 index_range tree_impl::findLeafRange(const leafnode_ptr &leaf, const memory &key)
 {
-    keycount_t end = FindLeafKey(leaf, key, m_fns); // This is AFTER the given key
+    keycount_t end = FindLeafInsertKey(leaf, key, m_fns); // This is AFTER the given key
     keycount_t start = end;
 
     while (start > 0 && m_fns.keyCompare(leaf->pair(start-1).key, key) == 0)

@@ -16,6 +16,7 @@ struct query_tree_unsafe
     query_tree_unsafe(nodeid_t id, be::be &be, const tree_functions &fns);
 
     void queue_insert(const memory &key, const memory &value);
+    void queue_upsert(const memory &key, const memory &value, bool guaranteed);
     void queue_remove(const memory &key, bool guaranteed);
     void queue_remove(const memory &key, const memory &value, bool guaranteed);
 
@@ -40,6 +41,11 @@ struct query_tree
     void queue_insert(const K &key, const V &value)
     {
         m_unsafe.queue_insert(traits::convert<K>::to_bytes(key), traits::convert<V>::to_bytes(value));
+    }
+
+    void queue_upsert(const K &key, const V &value, bool guaranteed)
+    {
+        m_unsafe.queue_upsert(traits::convert<K>::to_bytes(key), traits::convert<V>::to_bytes(value), guaranteed);
     }
 
     void queue_remove(const K &key, bool guaranteed)

@@ -312,3 +312,39 @@ TEST_CASE("calculate item rank", "[query][rank]")
         REQUIRE( it.rank() == 5 );
     }
 }
+
+TEST_CASE("queued upsert")
+{
+    be::mem mem(1024);
+
+    // GIVEN
+    put_result root = make_internal()
+        .brn(make_leaf()
+           .kv(1, 1)
+           .put(mem)) // 0
+        .brn(make_leaf()
+           .kv(3, 3)
+           .put(mem)) // 1
+        .put(mem); // 2
+    query_tree<int, int> query(root.nodeID, mem);
+
+    SECTION("upsert becomes an update")
+    {
+        query.queue_upsert(1, 2, false);
+        REQUIRE( query.find(1).value() == 2 );
+
+        // Check rank as well
+        REQUIRE( query.find(3).rank() == 1 );
+    }
+
+    SECTION("upsert becomes an insert")
+    {
+        query.queue_upsert(2, 2, false);
+        REQUIRE( query.find(1).value() == 1 );
+        REQUIRE( query.find(2).value() == 2 );
+
+        // Check rank as well
+        REQUIRE( query.find(3).rank() == 2 );
+    }
+
+}

@@ -16,7 +16,7 @@
 namespace bruce {
 
 enum edit_t {
-    INSERT, REMOVE_KEY, REMOVE_KV
+    INSERT, REMOVE_KEY, REMOVE_KV, UPSERT
 };
 
 struct pending_edit
@@ -29,7 +29,12 @@ struct pending_edit
     memory value;
     bool guaranteed;
 
-    int delta() const { return edit == INSERT ? 1 : -1; }
+    int delta() const
+    {
+        return edit == UPSERT ? 0 :
+               edit == INSERT ? 1 :
+               -1;
+    }
 };
 
 struct callback_memcmp
@@ -52,6 +57,7 @@ struct query_tree_impl : public tree_impl, public boost::enable_shared_from_this
     query_tree_impl(be::be &be, nodeid_t rootID, const tree_functions &fns);
 
     void queue_insert(const memory &key, const memory &value);
+    void queue_upsert(const memory &key, const memory &value, bool guaranteed);
     void queue_remove(const memory &key, bool guaranteed);
     void queue_remove(const memory &key, const memory &value, bool guaranteed);
 
