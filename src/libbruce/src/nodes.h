@@ -8,7 +8,7 @@
 
 #include <vector>
 
-namespace bruce {
+namespace libbruce {
 
 enum node_type_t {
     TYPE_LEAF,
@@ -188,7 +188,7 @@ keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory 
 
 }
 
-std::ostream &operator <<(std::ostream &os, const bruce::Node &x);
+std::ostream &operator <<(std::ostream &os, const libbruce::Node &x);
 
 
 #endif

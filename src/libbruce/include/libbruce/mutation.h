@@ -4,7 +4,7 @@
 #include <vector>
 #include <libbruce/be/be.h>
 
-namespace bruce {
+namespace libbruce {
 
 struct mutation
 {

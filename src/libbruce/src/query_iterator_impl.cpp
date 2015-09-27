@@ -3,7 +3,7 @@
 
 #include "helpers.h"
 
-namespace bruce {
+namespace libbruce {
 
 bool knuckle::operator==(const knuckle &other) const
 {

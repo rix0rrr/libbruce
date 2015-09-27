@@ -5,7 +5,7 @@
 
 #include "nodes.h"
 
-namespace bruce {
+namespace libbruce {
 
 struct knuckle
 {

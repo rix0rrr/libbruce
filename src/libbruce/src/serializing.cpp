@@ -16,7 +16,7 @@
 
 #define to_string boost::lexical_cast<std::string>
 
-namespace bruce {
+namespace libbruce {
 
 
 struct NodeParser

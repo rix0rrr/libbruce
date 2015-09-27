@@ -8,7 +8,7 @@
 
 // Standard types
 
-namespace bruce {
+namespace libbruce {
 
 typedef uint16_t keycount_t;
 typedef uint64_t nodeid_t;

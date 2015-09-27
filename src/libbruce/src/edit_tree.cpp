@@ -2,7 +2,7 @@
 
 #include "edit_tree_impl.h"
 
-namespace bruce {
+namespace libbruce {
 
 edit_tree_unsafe::edit_tree_unsafe(const maybe_nodeid &id, be::be &be, tree_functions fns)
     : m_tree(new edit_tree_impl(be, id, fns))

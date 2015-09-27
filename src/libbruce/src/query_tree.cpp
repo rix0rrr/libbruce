@@ -1,7 +1,7 @@
 #include <libbruce/query_tree.h>
 #include "query_tree_impl.h"
 
-namespace bruce {
+namespace libbruce {
 
 
 query_tree_unsafe::query_tree_unsafe(nodeid_t id, be::be &be, const tree_functions &fns)

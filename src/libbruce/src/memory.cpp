@@ -5,7 +5,7 @@
 
 const char* g_hex = "0123456789abcdef";
 
-namespace bruce
+namespace libbruce
 {
 
 bool memory::operator==(const memory &other) const
@@ -17,7 +17,7 @@ bool memory::operator==(const memory &other) const
 
 }
 
-std::ostream &operator <<(std::ostream &os, const bruce::memory &m)
+std::ostream &operator <<(std::ostream &os, const libbruce::memory &m)
 {
     for (int i = 0; i < m.size(); i++)
     {

@@ -6,7 +6,7 @@
 
 #include <libbruce/be/be.h>
 
-namespace bruce { namespace be {
+namespace libbruce { namespace be {
 
 /**
  * Memory block engine

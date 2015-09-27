@@ -25,7 +25,7 @@
 #include <libbruce/traits.h>
 #include <boost/make_shared.hpp>
 
-namespace bruce {
+namespace libbruce {
 
 class edit_tree_impl;
 typedef boost::shared_ptr<edit_tree_impl> mutable_tree_ptr;

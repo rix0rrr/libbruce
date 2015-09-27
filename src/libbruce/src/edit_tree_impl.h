@@ -60,7 +60,7 @@
 
 #include <map>
 
-namespace bruce {
+namespace libbruce {
 
 struct splitresult_t {
     splitresult_t(node_ptr left) : didSplit(false), left(left) { assert(left); }

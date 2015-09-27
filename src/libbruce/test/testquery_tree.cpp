@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-using namespace bruce;
+using namespace libbruce;
 
 TEST_CASE("reading from a tree", "[query]")
 {

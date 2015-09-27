@@ -4,7 +4,7 @@
 #include <libbruce/bruce.h>
 #include "nodes.h"
 
-namespace bruce {
+namespace libbruce {
 
 /**
  * Return the size of a 32-bit int
@@ -74,6 +74,6 @@ private:
 
 }
 
-std::ostream &operator <<(std::ostream &os, bruce::be::mem &x);
+std::ostream &operator <<(std::ostream &os, libbruce::be::mem &x);
 
 #endif

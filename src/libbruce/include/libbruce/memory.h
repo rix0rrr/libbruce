@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdexcept>
 
-namespace bruce {
+namespace libbruce {
 
 /**
  * A slice of borrowed or owned memory
@@ -103,6 +103,6 @@ private:
 
 }
 
-std::ostream &operator <<(std::ostream &os, const bruce::memory &m);
+std::ostream &operator <<(std::ostream &os, const libbruce::memory &m);
 
 #endif

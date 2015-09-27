@@ -5,7 +5,7 @@
 #include <libbruce/traits.h>
 #include <boost/make_shared.hpp>
 
-namespace bruce {
+namespace libbruce {
 
 class query_iterator_impl;
 typedef boost::shared_ptr<query_iterator_impl> query_iterator_impl_ptr;

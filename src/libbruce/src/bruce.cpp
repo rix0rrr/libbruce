@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace bruce {
+namespace libbruce {
 
 bruce::bruce(be::be &blockEngine)
     : m_blockEngine(blockEngine)

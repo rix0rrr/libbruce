@@ -6,7 +6,7 @@
 #include "serializing.h"
 #include <ostream>
 
-namespace bruce {
+namespace libbruce {
 
 uint32_t intSize(const void *)
 {
@@ -151,9 +151,9 @@ put_result make_overflow::put(be::mem &mem)
 
 }
 
-std::ostream &operator <<(std::ostream &os, bruce::be::mem &x)
+std::ostream &operator <<(std::ostream &os, libbruce::be::mem &x)
 {
-    for (bruce::nodeid_t i = 0; i < x.blockCount(); i++)
+    for (libbruce::nodeid_t i = 0; i < x.blockCount(); i++)
     {
         std::cout << "Block[" << i << "] => " << x.get(i) << std::endl;
     }

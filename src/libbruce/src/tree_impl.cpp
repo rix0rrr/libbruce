@@ -2,7 +2,7 @@
 
 #include "serializing.h"
 
-namespace bruce {
+namespace libbruce {
 
 tree_impl::tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns)
     : m_be(be), m_rootID(rootID), m_fns(fns)
@@ -155,7 +155,7 @@ memory tree_impl::pullFromOverflow(const node_ptr &node)
 
 }
 
-std::ostream &operator <<(std::ostream &os, const bruce::index_range &r)
+std::ostream &operator <<(std::ostream &os, const libbruce::index_range &r)
 {
     os << "[" << r.start << ".." << r.end << ")";
     return os;

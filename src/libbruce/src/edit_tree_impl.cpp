@@ -9,7 +9,7 @@
 #include "serializing.h"
 #include "helpers.h"
 
-namespace bruce {
+namespace libbruce {
 
 //----------------------------------------------------------------------
 

@@ -8,7 +8,7 @@
 #include <libbruce/edit_tree.h>
 #include <libbruce/query_tree.h>
 
-namespace bruce {
+namespace libbruce {
 
 class bruce
 {

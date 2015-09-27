@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-using namespace bruce;
+using namespace libbruce;
 
 TEST_CASE("int to int tree")
 {

@@ -2,7 +2,7 @@
 
 #include "query_iterator_impl.h"
 
-namespace bruce {
+namespace libbruce {
 
 query_iterator_unsafe::query_iterator_unsafe()
 {

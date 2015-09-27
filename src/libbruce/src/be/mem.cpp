@@ -4,7 +4,7 @@
 
 #define to_string boost::lexical_cast<std::string>
 
-namespace bruce { namespace be {
+namespace libbruce { namespace be {
 
 mem::mem(uint32_t maxBlockSize)
     : m_ctr(0), m_maxBlockSize(maxBlockSize)

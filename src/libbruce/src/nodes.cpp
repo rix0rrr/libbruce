@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <boost/foreach.hpp>
 
-namespace bruce {
+namespace libbruce {
 
 memory g_emptyMemory;
 
@@ -215,31 +215,31 @@ keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory 
 
 }
 
-std::ostream &operator <<(std::ostream &os, const bruce::Node &x)
+std::ostream &operator <<(std::ostream &os, const libbruce::Node &x)
 {
-    if (x.nodeType() == bruce::TYPE_LEAF)
+    if (x.nodeType() == libbruce::TYPE_LEAF)
     {
-        const bruce::LeafNode &l = (const bruce::LeafNode&)x;
+        const libbruce::LeafNode &l = (const libbruce::LeafNode&)x;
         os << "LEAF(" << l.pairCount() << ")" << std::endl;
-        BOOST_FOREACH(const bruce::kv_pair &p, l.pairs)
+        BOOST_FOREACH(const libbruce::kv_pair &p, l.pairs)
             os << "  " << p.key << " -> " << p.value << std::endl;
         if (!l.overflow.empty())
             os << "  Overflow " << l.overflow.count << " @ " << l.overflow.nodeID << std::endl;
     }
-    else if (x.nodeType() == bruce::TYPE_OVERFLOW)
+    else if (x.nodeType() == libbruce::TYPE_OVERFLOW)
     {
-        const bruce::OverflowNode &o = (const bruce::OverflowNode&)x;
+        const libbruce::OverflowNode &o = (const libbruce::OverflowNode&)x;
         os << "OVERFLOW(" << o.valueCount() << ")" << std::endl;
-        BOOST_FOREACH(const bruce::memory &m, o.values)
+        BOOST_FOREACH(const libbruce::memory &m, o.values)
             os << "  " << m << std::endl;
         if (!o.next.empty())
             os << "  Next " << o.next.count << " @ " << o.next.nodeID << std::endl;
     }
     else
     {
-        const bruce::InternalNode &l = (const bruce::InternalNode&)x;
+        const libbruce::InternalNode &l = (const libbruce::InternalNode&)x;
         os << "INTERNAL(" << l.branchCount() << ")" << std::endl;
-        BOOST_FOREACH(const bruce::node_branch &b, l.branches)
+        BOOST_FOREACH(const libbruce::node_branch &b, l.branches)
             os << "  " << b.minKey << " -> " << b.nodeID << " (" << b.itemCount << (b.child ? "*" : "") << ")" << std::endl;
     }
     return os;

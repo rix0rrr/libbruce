@@ -12,7 +12,7 @@
 #include <libbruce/types.h>
 #include <libbruce/memory.h>
 
-namespace bruce { namespace be {
+namespace libbruce { namespace be {
 
 struct block_not_found : public std::runtime_error {
     block_not_found(const nodeid_t &id) : std::runtime_error("Block not found: " + boost::lexical_cast<std::string>(id)) { }

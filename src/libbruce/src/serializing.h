@@ -63,7 +63,7 @@
 
 #include "nodes.h"
 
-namespace bruce {
+namespace libbruce {
 
 // Sizes of types inside the block
 typedef uint16_t flags_t;

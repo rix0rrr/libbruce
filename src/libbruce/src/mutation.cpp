@@ -1,6 +1,6 @@
 #include <libbruce/mutation.h>
 
-namespace bruce {
+namespace libbruce {
 
 mutation::mutation(maybe_nodeid newRootID)
     : m_success(true), m_newRootID(newRootID)

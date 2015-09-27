@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 
-using namespace bruce;
+using namespace libbruce;
 
 TEST_CASE("writing a new single leaf tree")
 {

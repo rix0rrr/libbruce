@@ -5,7 +5,7 @@
 
 // Defines catch's main()
 
-using namespace bruce;
+using namespace libbruce;
 
 TEST_CASE("abort commit of empty tree should leave blockstore empty")
 {

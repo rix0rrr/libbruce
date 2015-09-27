@@ -5,7 +5,7 @@
 #include <libbruce/types.h>
 #include "nodes.h"
 
-namespace bruce {
+namespace libbruce {
 
 struct index_range
 {
@@ -44,7 +44,7 @@ protected:
 
 }
 
-std::ostream &operator <<(std::ostream &os, const bruce::index_range &r);
+std::ostream &operator <<(std::ostream &os, const libbruce::index_range &r);
 
 #define NODE_CASE_LEAF \
     if (node->nodeType() == TYPE_LEAF) \

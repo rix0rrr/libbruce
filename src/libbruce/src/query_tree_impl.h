@@ -13,7 +13,7 @@
 #include "nodes.h"
 #include "query_iterator_impl.h"
 
-namespace bruce {
+namespace libbruce {
 
 enum edit_t {
     INSERT, REMOVE_KEY, REMOVE_KV, UPSERT
