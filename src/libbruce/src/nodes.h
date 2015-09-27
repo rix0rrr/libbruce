@@ -165,7 +165,12 @@ typedef boost::shared_ptr<InternalNode> internalnode_ptr;
  *
  * POST: leaf[ret-1].key <= key < leaf[ret].key
  */
-keycount_t FindLeafKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns);
+keycount_t FindLeafInsertKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns);
+
+/**
+ * Return the index where to UPDATE or INSERT a particular key in a leaf.
+ */
+keycount_t FindLeafUpsertKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns);
 
 /**
  * Return the index where the subtree for a particular key will be located

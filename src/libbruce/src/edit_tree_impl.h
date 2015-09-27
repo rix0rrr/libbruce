@@ -92,7 +92,7 @@ struct edit_tree_impl : public tree_impl
      * the memory slice is shared, the shared_ptr will make sure the memory is
      * not released prematurely.
      */
-    void insert(const memory &key, const memory &value);
+    void insert(const memory &key, const memory &value, bool upsert);
 
     // Remove any element with the given key
     bool remove(const memory &key);
@@ -113,7 +113,7 @@ private:
     std::vector<nodeid_t> m_newIDs;
     be::putblocklist_t m_putBlocks;
 
-    splitresult_t insertRec(const node_ptr &node, const memory &key, const memory &value);
+    splitresult_t insertRec(const node_ptr &node, const memory &key, const memory &value, bool upsert);
     splitresult_t removeRec(const node_ptr &node, const memory &key, const memory *value);
     void validateKVSize(const memory &key, const memory &value);
     void checkNotFrozen();

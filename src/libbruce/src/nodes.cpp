@@ -157,9 +157,14 @@ struct KeyCompare
     }
 };
 
-keycount_t FindLeafKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns)
+keycount_t FindLeafInsertKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns)
 {
     return std::upper_bound(leaf->pairs.begin(), leaf->pairs.end(), key, KeyCompare(fns)) - leaf->pairs.begin();
+}
+
+keycount_t FindLeafUpsertKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns)
+{
+    return std::lower_bound(leaf->pairs.begin(), leaf->pairs.end(), key, KeyCompare(fns)) - leaf->pairs.begin();
 }
 
 keycount_t FindInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns)

@@ -96,3 +96,32 @@ TEST_CASE("test inserting into overflow block ", "[nodes]")
     REQUIRE( mem.blockCount() == 3 );
 
 }
+
+TEST_CASE("remove branch when empty")
+{
+    be::mem mem(1024);
+
+    // GIVEN
+    put_result root = make_internal()
+        .brn(make_leaf()
+           .kv(1, 1)
+           .put(mem)) // 0
+        .brn(make_leaf()
+           .kv(2, 2)
+           .put(mem)) // 1
+        .put(mem); // 2
+    edit_tree<int, int> edit(root.nodeID, mem);
+
+    // WHEN
+    edit.remove(1);
+    mutation mut = edit.flush();
+
+    // THEN
+    memory page = mem.get(*mut.newRootID());
+    internalnode_ptr internal = boost::dynamic_pointer_cast<InternalNode>(ParseNode(page, edit_tree<int, int>::fns()));
+
+    REQUIRE( internal->branchCount() == 1 );
+
+    REQUIRE( mut.obsoleteIDs().size() == 2 );
+    REQUIRE( mut.createdIDs().size() == 1 );
+}

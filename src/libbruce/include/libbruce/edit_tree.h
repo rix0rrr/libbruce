@@ -40,6 +40,7 @@ struct edit_tree_unsafe
     edit_tree_unsafe(const maybe_nodeid &id, be::be &be, tree_functions fns);
 
     void insert(const memory &key, const memory &value);
+    void upsert(const memory &key, const memory &value);
     bool remove(const memory &key);
     bool remove(const memory &key, const memory &value);
     mutation flush();
@@ -61,6 +62,11 @@ struct edit_tree
     void insert(const K &key, const V &value)
     {
         m_unsafe.insert(traits::convert<K>::to_bytes(key), traits::convert<V>::to_bytes(value));
+    }
+
+    void upsert(const K &key, const V &value)
+    {
+        m_unsafe.upsert(traits::convert<K>::to_bytes(key), traits::convert<V>::to_bytes(value));
     }
 
     bool remove(const K &key)

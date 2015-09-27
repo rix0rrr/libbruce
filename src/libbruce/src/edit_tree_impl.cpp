@@ -29,13 +29,13 @@ edit_tree_impl::edit_tree_impl(be::be &be, maybe_nodeid rootID, const tree_funct
 {
 }
 
-void edit_tree_impl::insert(const memory &key, const memory &value)
+void edit_tree_impl::insert(const memory &key, const memory &value, bool upsert)
 {
     checkNotFrozen();
     validateKVSize(key, value);
 
     const node_ptr &r = root();
-    splitresult_t rootSplit = insertRec(r, key, value);
+    splitresult_t rootSplit = insertRec(r, key, value, upsert);
 
     if (!rootSplit.didSplit)
     {
@@ -58,20 +58,30 @@ void edit_tree_impl::validateKVSize(const memory &key, const memory &value)
         throw std::runtime_error("Key/value too large to insert, max size: " + to_string(maxSize));
 }
 
-splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memory &key, const memory &value)
+splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memory &key, const memory &value, bool upsert)
 {
 NODE_CASE_LEAF
-    keycount_t i = FindLeafKey(leaf, key, m_fns);
+    keycount_t i = upsert ? FindLeafUpsertKey(leaf, key, m_fns) : FindLeafInsertKey(leaf, key, m_fns);
 
-    if (i == leaf->pairs.size() && !leaf->overflow.empty())
+    if (upsert && leaf->pair(i).key == key)
     {
-        // There is an overflow block already. Insert in there.
-        splitresult_t split = insertRec(overflowNode(leaf->overflow), key, value);
-        leaf->overflow.count = split.left->itemCount();
-        return splitresult_t(leaf);
+        // Update
+        leaf->pair(i).value = value;
     }
-
-    leaf->insert(i, kv_pair(key, value));
+    else
+    {
+        // Insert
+        if (i == leaf->pairs.size() && !leaf->overflow.empty())
+        {
+            // There is an overflow block already. Insert in there.
+            splitresult_t split = insertRec(overflowNode(leaf->overflow), key, value, upsert);
+            leaf->overflow.count = split.left->itemCount();
+        }
+        else
+        {
+            leaf->insert(i, kv_pair(key, value));
+        }
+    }
 
     return maybeSplitLeaf(leaf);
 NODE_CASE_OVERFLOW
@@ -82,7 +92,7 @@ NODE_CASE_OVERFLOW
 
 NODE_CASE_INT
     keycount_t i = FindInternalKey(internal, key, m_fns);
-    splitresult_t childSplit = insertRec(child(internal->branch(i)), key, value);
+    splitresult_t childSplit = insertRec(child(internal->branch(i)), key, value, upsert);
     updateBranch(internal, i, childSplit);
     return maybeSplitInternal(internal);
 
@@ -171,6 +181,11 @@ void edit_tree_impl::updateBranch(const internalnode_ptr &internal, keycount_t i
     {
         internal->branches[i].child = split.left;
         internal->branches[i].itemCount = split.left->itemCount();
+
+        // Remove branch if it's empty now
+        if (!internal->branches[i].itemCount)
+            internal->erase(i);
+
         return;
     }
 

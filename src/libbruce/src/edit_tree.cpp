@@ -11,7 +11,12 @@ edit_tree_unsafe::edit_tree_unsafe(const maybe_nodeid &id, be::be &be, tree_func
 
 void edit_tree_unsafe::insert(const memory &key, const memory &value)
 {
-    m_tree->insert(key, value);
+    m_tree->insert(key, value, false);
+}
+
+void edit_tree_unsafe::upsert(const memory &key, const memory &value)
+{
+    m_tree->insert(key, value, true);
 }
 
 bool edit_tree_unsafe::remove(const memory &key)
