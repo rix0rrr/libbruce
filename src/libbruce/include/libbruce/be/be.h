@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_BE_BE_H
 #define BRUCE_BE_BE_H
 

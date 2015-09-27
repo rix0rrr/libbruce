@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_NODES_H
 #define BRUCE_NODES_H
 

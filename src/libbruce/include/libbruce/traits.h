@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_TRAITS_H
 #define BRUCE_TRAITS_H
 

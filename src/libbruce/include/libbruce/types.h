@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_TYPES_H
 #define BRUCE_TYPES_H
 

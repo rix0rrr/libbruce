@@ -2,6 +2,10 @@ project(libbruce VERSION 0.1 LANGUAGES CXX)
 
 #----------------------------------------------------------------------
 
+find_package(zlib)
+
+#----------------------------------------------------------------------
+
 add_library(bruce
     src/bruce.cpp
     src/be/mem.cpp

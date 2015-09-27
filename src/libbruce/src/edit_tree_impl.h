@@ -47,6 +47,7 @@
  * inserting in sorted order.
  *
  */
+#pragma once
 #ifndef BRUCE_OPERATIONS_H
 #define BRUCE_OPERATIONS_H
 

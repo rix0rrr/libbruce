@@ -16,6 +16,7 @@
  *   variables related to the operation in a class without needing to expose
  *   the implementation details in this header.
  */
+#pragma once
 #ifndef BRUCE_TREE_H
 #define BRUCE_TREE_H
 

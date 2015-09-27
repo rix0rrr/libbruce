@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_TREE_IMPL_H
 #define BRUCE_TREE_IMPL_H
 

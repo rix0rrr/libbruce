@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_MUTATION_H
 #define BRUCE_MUTATION_H
 

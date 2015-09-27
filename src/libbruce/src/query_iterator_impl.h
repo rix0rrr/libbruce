@@ -1,3 +1,4 @@
+#pragma once
 #ifndef QUERY_ITERATOR_IMPL_H
 #define QUERY_ITERATOR_IMPL_H
 

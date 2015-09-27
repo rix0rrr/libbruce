@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_QUERY_ITERATOR_H
 #define BRUCE_QUERY_ITERATOR_H
 

@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_QUERY_TREE_H
 #define BRUCE_QUERY_TREE_H
 

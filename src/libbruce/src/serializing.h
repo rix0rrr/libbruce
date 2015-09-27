@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_SERIALIZING_H
 #define BRUCE_SERIALIZING_H
 

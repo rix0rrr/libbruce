@@ -1,3 +1,4 @@
+#pragma once
 #ifndef BRUCE_MEMORY_H
 #define BRUCE_MEMORY_H
 
