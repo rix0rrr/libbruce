@@ -3,7 +3,9 @@
 #define AWSBRUCE_S3BE_H
 
 #include <libbruce/bruce.h>
+#include <libbruce/util/blockcache.h>
 #include <aws/s3/S3Client.h>
+
 
 namespace awsbruce {
 
@@ -18,7 +20,7 @@ namespace awsbruce {
  */
 struct s3be : public libbruce::be::be
 {
-    s3be(const std::shared_ptr<Aws::S3::S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize);
+    s3be(const std::shared_ptr<Aws::S3::S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize, uint32_t cacheSize);
     ~s3be();
 
     virtual void newIdentifiers(int n, std::vector<libbruce::nodeid_t> *out);
@@ -30,6 +32,8 @@ private:
     std::shared_ptr<Aws::S3::S3Client> m_s3;
     std::string m_bucket;
     std::string m_prefix;
+    libbruce::util::BlockCache m_cache;
+
     uint32_t m_blockSize;
 
     // FIXME: IF I RELEASE IT LIKE THIS I SHOULD BE SHOT

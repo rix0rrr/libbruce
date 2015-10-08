@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
     auto clientFactory = Aws::MakeShared<HttpClientFactory>(NULL);
     auto s3 = Aws::MakeShared<S3Client>(NULL, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(NULL), config, clientFactory);
 
-    s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB);
+    s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB, 100 * MB);
     bruce b(be);
     auto edit = b.create<std::string, std::string>();
     edit->insert("key", "value");

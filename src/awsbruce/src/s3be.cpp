@@ -8,7 +8,6 @@
 #include <boost/iostreams/copy.hpp>
 #include <sstream>
 
-
 #undef to_string
 
 using namespace libbruce;
@@ -22,9 +21,9 @@ typedef io::filtering_stream<boost::iostreams::bidirectional> filtering_iostream
 
 namespace awsbruce {
 
-s3be::s3be(const std::shared_ptr<S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize)
+s3be::s3be(const std::shared_ptr<S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize, uint32_t cacheSize)
     : m_s3(s3), m_bucket(bucket), m_prefix(prefix), m_blockSize(blockSize),
-    m_blockCtr(0)
+    m_cache(cacheSize), m_blockCtr(0)
 {
 }
 
@@ -43,6 +42,13 @@ void s3be::newIdentifiers(int n, std::vector<nodeid_t> *out)
 
 memory s3be::get(const nodeid_t &id)
 {
+    // Look in the cache
+    {
+        memory ret;
+        if (m_cache.get(id, &ret))
+            return ret;
+    }
+
     GetObjectRequest request;
     request.SetBucket(m_bucket);
     request.SetKey(m_prefix + std::to_string(id));
@@ -61,6 +67,9 @@ memory s3be::get(const nodeid_t &id)
 
     memory ret(ss.str().size());
     memcpy((void*)ret.ptr(), ss.str().data(), ss.str().size());
+
+    // Put in the cache
+    m_cache.put(id, ret);
     return ret;
 }
 
@@ -70,14 +79,21 @@ void s3be::put_all(putblocklist_t &blocklist)
     ops.reserve(blocklist.size());
 
     for (int i = 0; i < blocklist.size(); i++)
+    {
         ops.push_back(put_one(blocklist[i]));
+    }
 
     // Collect results
     for (int i = 0; i < blocklist.size(); i++)
     {
         PutObjectOutcome response = ops[i].get();
         blocklist[i].success = response.IsSuccess();
-        if (!response.IsSuccess()) blocklist[i].failureReason = response.GetError().GetMessage();
+
+        // Only cache succesful puts
+        if (response.IsSuccess())
+            m_cache.put(blocklist[i].id, blocklist[i].mem);
+        else
+            blocklist[i].failureReason = response.GetError().GetMessage();
     }
 }
 
@@ -118,7 +134,10 @@ void s3be::del_all(delblocklist_t &ids)
     {
         DeleteObjectOutcome response = ops[i].get();
         ids[i].success = response.IsSuccess();
-        if (!response.IsSuccess()) ids[i].failureReason = response.GetError().GetMessage();
+        if (response.IsSuccess())
+            m_cache.del(ids[i].id);
+        else
+            ids[i].failureReason = response.GetError().GetMessage();
     }
 }
 
