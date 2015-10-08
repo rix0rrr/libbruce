@@ -23,6 +23,9 @@ struct block_not_found : public std::runtime_error {
     block_not_found(const nodeid_t &id) : std::runtime_error("Block not found: " + boost::lexical_cast<std::string>(id)) { }
 };
 
+/**
+ * Request to write a block
+ */
 struct putblock_t
 {
     putblock_t(nodeid_t id, const memory &mem) : id(id), mem(mem), success(false) { }
@@ -35,6 +38,9 @@ struct putblock_t
 
 typedef std::vector<putblock_t> putblocklist_t;
 
+/**
+ * Request to delete a block
+ */
 struct delblock_t
 {
     delblock_t(nodeid_t id) : id(id), success(false) { }
@@ -55,6 +61,7 @@ public:
     virtual ~be() {}
 
     virtual void newIdentifiers(int n, std::vector<nodeid_t> *out) = 0;
+    virtual nodeid_t id(const memory &block) = 0;
     virtual memory get(const nodeid_t &id) = 0;
     virtual void put_all(putblocklist_t &blocklist) = 0;
     virtual void del_all(delblocklist_t &ids) = 0;

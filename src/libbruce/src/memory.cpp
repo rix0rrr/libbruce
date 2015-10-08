@@ -15,8 +15,6 @@ bool memory::operator==(const memory &other) const
     return memcmp(ptr(), other.ptr(), size()) == 0;
 }
 
-}
-
 std::ostream &operator <<(std::ostream &os, const libbruce::memory &m)
 {
     for (int i = 0; i < m.size(); i++)
@@ -27,4 +25,6 @@ std::ostream &operator <<(std::ostream &os, const libbruce::memory &m)
     }
 
     return os;
+}
+
 }

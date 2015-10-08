@@ -110,8 +110,6 @@ struct edit_tree_impl : public tree_impl
     mutation flush();
 private:
     bool m_frozen;
-    uint32_t m_newIDsRequired;
-    std::vector<nodeid_t> m_newIDs;
     be::putblocklist_t m_putBlocks;
 
     splitresult_t insertRec(const node_ptr &node, const memory &key, const memory &value, bool upsert);
@@ -119,8 +117,7 @@ private:
     void validateKVSize(const memory &key, const memory &value);
     void checkNotFrozen();
 
-    void collectNewIDsRec(node_ptr &node);
-    void collectBlocksToPutRec(node_ptr &node, nodeid_t id);
+    nodeid_t collectBlocksToPutRec(node_ptr &node);
     mutation collectMutation();
 
     void pushDownOverflowNodeSize(const overflownode_ptr &overflow);

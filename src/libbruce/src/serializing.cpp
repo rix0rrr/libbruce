@@ -99,13 +99,13 @@ struct NodeParser
         internalnode_ptr ret = boost::make_shared<InternalNode>(keyCount());
 
         // Read N-1 keys, starting at 1
-        ret->branches.push_back(node_branch(memory(), 0, 0));
+        ret->branches.push_back(node_branch(memory(), nodeid_t(), 0));
         for (keycount_t i = 1; i < keyCount(); i++)
         {
             validateOffset();
             uint32_t size = fns.keySize(m_input.at<const char>(m_offset));
 
-            ret->branches.push_back(node_branch(m_input.slice(m_offset, size), 0, 0));
+            ret->branches.push_back(node_branch(m_input.slice(m_offset, size), nodeid_t(), 0));
 
             m_offset += size;
         }

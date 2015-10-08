@@ -26,9 +26,18 @@ endif()
 
 #----------------------------------------------------------------------
 
+find_package(OpenSSL)
+if (OPENSSL_FOUND)
+    add_library(libcrypto SHARED IMPORTED)
+    set_property(TARGET libcrypto PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR})
+    set_property(TARGET libcrypto PROPERTY IMPORTED_LOCATION ${OPENSSL_CRYPTO_LIBRARY})
+endif()
+
+#----------------------------------------------------------------------
+
 enable_testing()
 add_subdirectory(libbruce)
-if (AwsCppSdk_FOUND)
+if (AwsCppSdk_FOUND AND OPENSSL_FOUND)
     add_subdirectory(awsbruce)
+    add_subdirectory(bruce_demo)
 endif()
-add_subdirectory(bruce_demo)

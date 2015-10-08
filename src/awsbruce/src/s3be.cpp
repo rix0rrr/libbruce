@@ -6,6 +6,7 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/copy.hpp>
+#include <openssl/sha.h>
 #include <sstream>
 
 #undef to_string
@@ -40,6 +41,13 @@ void s3be::newIdentifiers(int n, std::vector<nodeid_t> *out)
     }
 }
 
+nodeid_t s3be::id(const libbruce::memory &block)
+{
+    nodeid_t ret;
+    SHA1(block.byte_ptr(), block.size(), (unsigned char*)ret.data());
+    return ret;
+}
+
 memory s3be::get(const nodeid_t &id)
 {
     // Look in the cache
@@ -51,7 +59,7 @@ memory s3be::get(const nodeid_t &id)
 
     GetObjectRequest request;
     request.SetBucket(m_bucket);
-    request.SetKey(m_prefix + std::to_string(id));
+    request.SetKey(m_prefix + boost::lexical_cast<std::string>(id));
 
     GetObjectOutcome response = m_s3->GetObject(request);
     if (!response.IsSuccess())
@@ -110,7 +118,7 @@ PutObjectOutcomeCallable s3be::put_one(libbruce::be::putblock_t &block)
 
     PutObjectRequest request;
     request.SetBucket(m_bucket);
-    request.SetKey(m_prefix + std::to_string(block.id));
+    request.SetKey(m_prefix + boost::lexical_cast<std::string>(block.id));
     request.SetContentType("application/octet-stream");
     request.SetBody(ss);
     request.SetContentLength(ss->str().size());
@@ -145,7 +153,7 @@ DeleteObjectOutcomeCallable s3be::del_one(libbruce::be::delblock_t &block)
 {
     DeleteObjectRequest request;
     request.SetBucket(m_bucket);
-    request.SetKey(m_prefix + std::to_string(block.id));
+    request.SetKey(m_prefix + boost::lexical_cast<std::string>(block.id));
 
     return m_s3->DeleteObjectCallable(request);
 }

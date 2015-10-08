@@ -25,7 +25,7 @@ void chop(const overflownode_ptr &overflow, keycount_t i)
 //----------------------------------------------------------------------
 
 edit_tree_impl::edit_tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns)
-    : tree_impl(be, rootID, fns), m_frozen(false), m_newIDsRequired(0)
+    : tree_impl(be, rootID, fns), m_frozen(false)
 {
 }
 
@@ -254,16 +254,10 @@ mutation edit_tree_impl::flush()
     if (!m_root)
         return mutation(m_rootID);
 
-    m_newIDsRequired = 1; // For the root
-    collectNewIDsRec(root());
+    // FIXME: Check if we actually did any changes. Otherwise we have nothing to write.
 
-    m_newIDs.clear();
-    m_be.newIdentifiers(m_newIDsRequired, &m_newIDs);
-
-    m_putBlocks.reserve(m_newIDsRequired);
-    m_newIDsRequired = 1; // For the root
-    collectBlocksToPutRec(root(), m_newIDs[0]);
-
+    // Replace rootID
+    m_rootID = collectBlocksToPutRec(root());
     m_be.put_all(m_putBlocks);
 
     return collectMutation();
@@ -271,7 +265,7 @@ mutation edit_tree_impl::flush()
 
 mutation edit_tree_impl::collectMutation()
 {
-    mutation ret(m_newIDs[0]);
+    mutation ret(m_rootID);
     bool failed = false;
 
     BOOST_FOREACH(const be::putblock_t &put, m_putBlocks)
@@ -290,76 +284,30 @@ mutation edit_tree_impl::collectMutation()
     return ret;
 }
 
-/**
- * Traverse the tree, and record that we need a new ID for every node that was loaded
- *
- * Every loaded node got loaded because we changed it, so it needs to be
- * written to a new page. Every branch with a child pointer gets its nodeID
- * replaced with an index into the m_nodeIDs array. After provisioning the new
- * IDs, that array will have the actual IDs for every page.
- */
-void edit_tree_impl::collectNewIDsRec(node_ptr &node)
+nodeid_t edit_tree_impl::collectBlocksToPutRec(node_ptr &node)
 {
-    // FIXME: Check if we actually did any changes. Otherwise we have nothing to write.
-
 NODE_CASE_LEAF
     if (leaf->overflow.node)
-    {
-        leaf->overflow.nodeID = m_newIDsRequired++;
-        collectNewIDsRec(leaf->overflow.node);
-    }
+        leaf->overflow.nodeID = collectBlocksToPutRec(leaf->overflow.node);
 
 NODE_CASE_OVERFLOW
     if (overflow->next.node)
-    {
-        overflow->next.nodeID = m_newIDsRequired++;
-        collectNewIDsRec(overflow->next.node);
-    }
+        overflow->next.nodeID = collectBlocksToPutRec(overflow->next.node);
 
 NODE_CASE_INT
     BOOST_FOREACH(node_branch &b, internal->branches)
     {
         if (b.child)
-        {
-            b.nodeID = m_newIDsRequired++;
-            collectNewIDsRec(b.child);
-        }
-    }
-
-NODE_CASE_END
-}
-
-void edit_tree_impl::collectBlocksToPutRec(node_ptr &node, nodeid_t id)
-{
-NODE_CASE_LEAF
-    if (leaf->overflow.node)
-    {
-        leaf->overflow.nodeID = m_newIDs[leaf->overflow.nodeID];
-        collectBlocksToPutRec(leaf->overflow.node, leaf->overflow.nodeID);
-    }
-
-NODE_CASE_OVERFLOW
-    if (overflow->next.node)
-    {
-        overflow->next.nodeID = m_newIDs[overflow->next.nodeID];
-        collectBlocksToPutRec(overflow->next.node, overflow->next.nodeID);
-    }
-
-NODE_CASE_INT
-    BOOST_FOREACH(node_branch &b, internal->branches)
-    {
-        if (b.child)
-        {
-            // In this case, nodeID is an index into the array of IDs
-            b.nodeID = m_newIDs[b.nodeID];
-            collectBlocksToPutRec(b.child, b.nodeID);
-        }
+            b.nodeID = collectBlocksToPutRec(b.child);
     }
 
 NODE_CASE_END
 
-    // Serialize this node
-    m_putBlocks.push_back(be::putblock_t(id, SerializeNode(node)));
+    // Serialize this node, request an ID for it, and store it to put later
+    memory serialized = SerializeNode(node);
+    nodeid_t id = m_be.id(serialized);
+    m_putBlocks.push_back(be::putblock_t(id, serialized));
+    return id;
 }
 
 

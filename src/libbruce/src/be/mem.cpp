@@ -15,7 +15,7 @@ mem::~mem()
 {
 }
 
-nodeid_t mem::blockCount() const
+size_t mem::blockCount() const
 {
     return m_blocks.size();
 }
@@ -23,12 +23,17 @@ nodeid_t mem::blockCount() const
 void mem::newIdentifiers(int n, std::vector<nodeid_t> *out)
 {
     for (int i = 0; i < n; i++)
-         out->push_back(m_ctr++);
+         out->push_back(nodeid_t(m_ctr++));
+}
+
+nodeid_t mem::id(const memory &block)
+{
+    return nodeid_t(m_ctr++);
 }
 
 memory mem::get(const nodeid_t &id)
 {
-    blockmap::iterator i = m_blocks.find(id);
+    blockmap_t::iterator i = m_blocks.find(id);
     if (i == m_blocks.end()) throw block_not_found(id);
     return i->second;
 }
@@ -50,7 +55,7 @@ void mem::del_all(delblocklist_t &ids)
 {
     for (delblocklist_t::iterator it = ids.begin(); it != ids.end(); ++it)
     {
-        blockmap::iterator i = m_blocks.find(it->id);
+        blockmap_t::iterator i = m_blocks.find(it->id);
         if (i != m_blocks.end()) {
             m_blocks.erase(i);
             it->success = true;

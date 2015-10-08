@@ -42,7 +42,7 @@ TEST_CASE("commit and abort")
 
         b.finish(mut2, true);
 
-        REQUIRE_THROWS(mem.get(0).size());
+        REQUIRE_THROWS(mem.get(*mut.newRootID()).size());
     }
 
     SECTION("abort commit should leave only old nodes")

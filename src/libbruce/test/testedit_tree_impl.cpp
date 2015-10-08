@@ -20,11 +20,10 @@ TEST_CASE("writing a new single leaf tree")
     // Check that we wrote a page to storage, and that that page deserializes
     REQUIRE( mut.success() );
     REQUIRE( mut.createdIDs().size() == 1 );
-    REQUIRE( mut.createdIDs()[0] == 0 );
 
     THEN("it can be deserialized to a leaf")
     {
-        memory page = mem.get(0);
+        memory page = mem.get(mut.createdIDs()[0]);
         leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
 
         REQUIRE(r->pairCount() == 1);

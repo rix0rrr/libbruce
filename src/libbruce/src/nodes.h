@@ -37,7 +37,7 @@ struct node_branch {
     node_branch(const memory &minKey, nodeid_t nodeID, itemcount_t itemCount)
         : minKey(minKey), nodeID(nodeID), itemCount(itemCount) { }
     node_branch(const memory &minKey, const node_ptr &child, itemcount_t itemCount)
-        : minKey(minKey), nodeID(0), itemCount(itemCount), child(child) { }
+        : minKey(minKey), nodeID(), itemCount(itemCount), child(child) { }
 
     void inc() { itemCount++; }
 
@@ -52,7 +52,7 @@ typedef std::vector<node_branch> branchlist_t;
 
 struct overflow_t
 {
-    overflow_t() : count(0), nodeID(0) { }
+    overflow_t() : count(0), nodeID() { }
 
     itemcount_t count;
     nodeid_t nodeID;
@@ -187,9 +187,9 @@ keycount_t FindInternalKey(const internalnode_ptr &node, const memory &key, cons
  */
 keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns);
 
-}
-
 std::ostream &operator <<(std::ostream &os, const libbruce::Node &x);
+
+}
 
 
 #endif

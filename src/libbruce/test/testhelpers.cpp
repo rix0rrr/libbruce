@@ -48,10 +48,9 @@ memory three_r(&three, sizeof(three));
 
 void printMem(be::mem &mem, const tree_functions &fns)
 {
-    for (nodeid_t i = 0; i < mem.blockCount(); i++)
+    for (libbruce::be::mem::blockmap_t::iterator it = mem.blocks().begin(); it != mem.blocks().end(); ++it)
     {
-        memory m(mem.get(i));
-        std::cout << "Block[" << i << "] => " << *ParseNode(m, fns) << std::endl;
+        std::cout << "Block[" << it->first << "] => " << *ParseNode(it->second, fns) << std::endl;
     }
 }
 
@@ -153,9 +152,9 @@ put_result make_overflow::put(be::mem &mem)
 
 std::ostream &operator <<(std::ostream &os, libbruce::be::mem &x)
 {
-    for (libbruce::nodeid_t i = 0; i < x.blockCount(); i++)
+    for (libbruce::be::mem::blockmap_t::iterator it = x.blocks().begin(); it != x.blocks().end(); ++it)
     {
-        std::cout << "Block[" << i << "] => " << x.get(i) << std::endl;
+        std::cout << "Block[" << it->first << "] => " << it->second << std::endl;
     }
     return os;
 }

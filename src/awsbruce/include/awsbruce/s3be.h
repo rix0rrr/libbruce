@@ -24,6 +24,7 @@ struct s3be : public libbruce::be::be
     ~s3be();
 
     virtual void newIdentifiers(int n, std::vector<libbruce::nodeid_t> *out);
+    virtual libbruce::nodeid_t id(const libbruce::memory &block);
     virtual libbruce::memory get(const libbruce::nodeid_t &id);
     virtual void put_all(libbruce::be::putblocklist_t &blocklist);
     virtual void del_all(libbruce::be::delblocklist_t &ids);

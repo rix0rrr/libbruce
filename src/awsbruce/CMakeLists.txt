@@ -14,6 +14,7 @@ target_include_directories(awsbruce PUBLIC
 target_link_libraries(awsbruce
     aws-cpp-sdk-s3
     boost-iostreams
+    libcrypto
     bruce)
 
 # We need C++11 because of the AWS cpp SDK

@@ -213,8 +213,6 @@ keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory 
     return ret;
 }
 
-}
-
 std::ostream &operator <<(std::ostream &os, const libbruce::Node &x)
 {
     if (x.nodeType() == libbruce::TYPE_LEAF)
@@ -243,4 +241,6 @@ std::ostream &operator <<(std::ostream &os, const libbruce::Node &x)
             os << "  " << b.minKey << " -> " << b.nodeID << " (" << b.itemCount << (b.child ? "*" : "") << ")" << std::endl;
     }
     return os;
+}
+
 }

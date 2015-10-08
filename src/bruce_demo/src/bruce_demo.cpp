@@ -53,6 +53,7 @@ int main(int argc, char* argv[])
 
     if (mut.success())
     {
+        std::cout << *mut.newRootID() << std::endl;
         auto query = b.query<std::string, std::string>(*mut.newRootID());
 
         for (query_tree<std::string, std::string>::iterator it = query->begin(); it != query->end(); ++it)

@@ -41,9 +41,9 @@ TEST_CASE("test findleafkeyindex", "[nodes]")
 TEST_CASE("test findinternalkeyindex", "[nodes]")
 {
     internalnode_ptr node = boost::make_shared<InternalNode>();
-    node->insert(0, node_branch(one_r, 0, 0));
-    node->insert(1, node_branch(two_r, 0, 0));
-    node->insert(2, node_branch(three_r, 0, 0));
+    node->insert(0, node_branch(one_r, nodeid_t(), 0));
+    node->insert(1, node_branch(two_r, nodeid_t(), 0));
+    node->insert(2, node_branch(three_r, nodeid_t(), 0));
 
     SECTION("find 1")
     {

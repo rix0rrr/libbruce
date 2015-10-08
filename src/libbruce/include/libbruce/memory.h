@@ -102,8 +102,8 @@ private:
     memptr m_mem;
 };
 
-}
-
 std::ostream &operator <<(std::ostream &os, const libbruce::memory &m);
+
+}
 
 #endif
