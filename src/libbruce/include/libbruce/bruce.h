@@ -38,6 +38,15 @@ public:
     }
 
     /**
+     * Query an existing bruce tree
+     */
+    template<typename K, typename V>
+    typename query_tree<K, V>::ptr query(const nodeid_t &id)
+    {
+        return typename boost::shared_ptr<query_tree<K,V> >(new query_tree<K, V>(id, m_blockEngine));
+    }
+
+    /**
      * Commit or abort a given mutation.
      *
      * This should ALWAYS be called after flushing a tree.

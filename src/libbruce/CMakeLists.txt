@@ -2,11 +2,7 @@ project(libbruce VERSION 0.1 LANGUAGES CXX)
 
 #----------------------------------------------------------------------
 
-find_package(zlib)
-
-#----------------------------------------------------------------------
-
-add_library(bruce
+add_library(bruce 
     src/bruce.cpp
     src/be/mem.cpp
     src/mutation.cpp
@@ -21,9 +17,9 @@ add_library(bruce
     src/query_iterator_impl.cpp
     src/nodes.cpp)
 
-target_include_directories(bruce
-    INTERFACE include
-    PUBLIC include ${Boost_INCLUDE_DIR}
+target_include_directories(bruce PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
     PRIVATE src)
 
 install(TARGETS bruce
@@ -31,6 +27,8 @@ install(TARGETS bruce
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include)
+export(TARGETS bruce FILE LibBruceConfig.cmake)
+target_link_libraries(bruce boost)
 
 #----------------------------------------------------------------------
 
@@ -54,4 +52,3 @@ target_link_libraries(testbruce
 add_test(testbruce testbruce)
 
 include(CMakeOptions.txt)
-

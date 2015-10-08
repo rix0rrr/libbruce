@@ -33,6 +33,7 @@ private:
 template<typename K, typename V>
 struct query_tree
 {
+    typedef typename boost::shared_ptr<query_tree<K, V> > ptr;
     typedef typename boost::optional<V> maybe_v;
     typedef query_iterator<K, V> iterator;
 

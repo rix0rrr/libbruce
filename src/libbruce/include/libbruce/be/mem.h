@@ -2,7 +2,6 @@
 #ifndef BRUCE_BE_MEM_H
 #define BRUCE_BE_MEM_H
 
-#include <stdint.h>
 #include <map>
 
 #include <libbruce/be/be.h>

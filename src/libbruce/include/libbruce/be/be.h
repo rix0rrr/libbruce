@@ -15,6 +15,10 @@
 
 namespace libbruce { namespace be {
 
+struct be_error : public std::runtime_error {
+    be_error(const char *what) : std::runtime_error(what) { }
+};
+
 struct block_not_found : public std::runtime_error {
     block_not_found(const nodeid_t &id) : std::runtime_error("Block not found: " + boost::lexical_cast<std::string>(id)) { }
 };
@@ -26,6 +30,7 @@ struct putblock_t
     nodeid_t id;
     memory mem;
     bool success;
+    std::string failureReason;
 };
 
 typedef std::vector<putblock_t> putblocklist_t;
@@ -36,6 +41,7 @@ struct delblock_t
 
     nodeid_t id;
     bool success;
+    std::string failureReason;
 };
 
 typedef std::vector<delblock_t> delblocklist_t;
