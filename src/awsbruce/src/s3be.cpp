@@ -9,6 +9,8 @@
 #include <openssl/sha.h>
 #include <sstream>
 
+#include <fstream>
+
 #undef to_string
 
 using namespace libbruce;
@@ -24,7 +26,7 @@ namespace awsbruce {
 
 s3be::s3be(const std::shared_ptr<S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize, uint32_t cacheSize)
     : m_s3(s3), m_bucket(bucket), m_prefix(prefix), m_blockSize(blockSize),
-    m_cache(cacheSize), m_blockCtr(0)
+    m_cache(cacheSize)
 {
 }
 
@@ -32,19 +34,11 @@ s3be::~s3be()
 {
 }
 
-void s3be::newIdentifiers(int n, std::vector<nodeid_t> *out)
-{
-    for (int i = 0; i < n; i++)
-    {
-        // FIXME: AAAaaaaahghggh
-        out->push_back(++m_blockCtr);
-    }
-}
-
 nodeid_t s3be::id(const libbruce::memory &block)
 {
     nodeid_t ret;
-    SHA1(block.byte_ptr(), block.size(), (unsigned char*)ret.data());
+    BOOST_STATIC_ASSERT(sizeof(ret) == SHA_DIGEST_LENGTH);
+    SHA1(block.byte_ptr(), block.size(), ret.data());
     return ret;
 }
 
@@ -69,7 +63,7 @@ memory s3be::get(const nodeid_t &id)
 
     // Decompress into the stringstream
     io::filtering_ostreambuf in;
-    in.push(io::zlib_decompressor());
+    //in.push(io::zlib_decompressor());
     in.push(ss);
     io::copy(response.GetResult().GetBody(), in);
 
@@ -112,9 +106,13 @@ PutObjectOutcomeCallable s3be::put_one(libbruce::be::putblock_t &block)
     std::shared_ptr<std::stringstream> ss = std::make_shared<std::stringstream>();
 
     io::filtering_ostream in;
-    in.push(io::zlib_compressor());
+    //in.push(io::zlib_compressor());
     in.push(*ss);
     io::copy(memstream, in);
+
+    std::fstream of("test.bin", std::fstream::out | std::fstream::binary |
+                    std::fstream::trunc);
+    io::copy(memstream, of);
 
     PutObjectRequest request;
     request.SetBucket(m_bucket);

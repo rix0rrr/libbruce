@@ -17,8 +17,6 @@ public:
     mem(uint32_t maxBlockSize);
     ~mem();
 
-    virtual void newIdentifiers(int n, std::vector<nodeid_t> *out);
-
     size_t blockCount() const;
 
     virtual memory get(const nodeid_t &id);

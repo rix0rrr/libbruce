@@ -20,12 +20,6 @@ size_t mem::blockCount() const
     return m_blocks.size();
 }
 
-void mem::newIdentifiers(int n, std::vector<nodeid_t> *out)
-{
-    for (int i = 0; i < n; i++)
-         out->push_back(nodeid_t(m_ctr++));
-}
-
 nodeid_t mem::id(const memory &block)
 {
     return nodeid_t(m_ctr++);

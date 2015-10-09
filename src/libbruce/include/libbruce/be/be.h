@@ -60,7 +60,6 @@ class be
 public:
     virtual ~be() {}
 
-    virtual void newIdentifiers(int n, std::vector<nodeid_t> *out) = 0;
     virtual nodeid_t id(const memory &block) = 0;
     virtual memory get(const nodeid_t &id) = 0;
     virtual void put_all(putblocklist_t &blocklist) = 0;

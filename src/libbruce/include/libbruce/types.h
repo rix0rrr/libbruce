@@ -32,8 +32,8 @@ struct nodeid_t
         *(size_t*)m_bytes = x;
     }
 
-    const char *data() const { return m_bytes; }
-    char *data() { return m_bytes; }
+    const unsigned char *data() const { return m_bytes; }
+    unsigned char *data() { return m_bytes; }
 
     bool empty() const
     {
@@ -46,7 +46,7 @@ struct nodeid_t
     bool operator==(const nodeid_t &other) const { return memcmp(m_bytes, other.m_bytes, sizeof(m_bytes)) == 0; }
     bool operator<(const nodeid_t &other) const { return memcmp(m_bytes, other.m_bytes, sizeof(m_bytes)) < 0; }
 private:
-    char m_bytes[20];
+    unsigned char m_bytes[20];
 };
 
 std::ostream &operator <<(std::ostream &os, const libbruce::nodeid_t &id);

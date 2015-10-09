@@ -54,11 +54,14 @@ void printMem(be::mem &mem, const tree_functions &fns)
     }
 }
 
-void putNode(be::mem &mem, nodeid_t id, const node_ptr &node)
+nodeid_t putNode(be::mem &mem, const node_ptr &node)
 {
+    memory block = SerializeNode(node);
+    nodeid_t id = mem.id(block);
     be::putblocklist_t blocks;
-    blocks.push_back(be::putblock_t(id, SerializeNode(node)));
+    blocks.push_back(be::putblock_t(id, block));
     mem.put_all(blocks);
+    return id;
 }
 
 //----------------------------------------------------------------------
@@ -88,10 +91,7 @@ make_leaf &make_leaf::overflow(const put_result &put)
 
 put_result make_leaf::put(be::mem &mem)
 {
-    std::vector<nodeid_t> ids;
-    mem.newIdentifiers(1, &ids);
-    putNode(mem, ids[0], leaf);
-    return put_result(leaf, ids[0]);
+    return put_result(leaf, putNode(mem, leaf));
 }
 
 //----------------------------------------------------------------------
@@ -109,10 +109,7 @@ make_internal &make_internal::brn(const put_result &put)
 
 put_result make_internal::put(be::mem &mem)
 {
-    std::vector<nodeid_t> ids;
-    mem.newIdentifiers(1, &ids);
-    putNode(mem, ids[0], internal);
-    return put_result(internal, ids[0]);
+    return put_result(internal, putNode(mem, internal));
 }
 
 //----------------------------------------------------------------------
@@ -142,10 +139,7 @@ make_overflow &make_overflow::next(const put_result &put)
 
 put_result make_overflow::put(be::mem &mem)
 {
-    std::vector<nodeid_t> ids;
-    mem.newIdentifiers(1, &ids);
-    putNode(mem, ids[0], overflow);
-    return put_result(overflow, ids[0]);
+    return put_result(overflow, putNode(mem, overflow));
 }
 
 }
