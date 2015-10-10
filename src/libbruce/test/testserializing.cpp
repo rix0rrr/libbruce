@@ -120,5 +120,5 @@ TEST_CASE("calculating size of overflow node", "[serializing]")
         overflow->append(intCopy(i));
 
     OverflowNodeSize s(overflow, 1024);
-    REQUIRE( s.splitIndex() == 252 );
+    REQUIRE( s.splitIndex() == 249 );
 }

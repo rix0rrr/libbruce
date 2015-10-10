@@ -42,6 +42,7 @@ add_executable(testbruce
     test/testnodes.cpp
     test/testquery_tree.cpp
     test/testquery_iterator.cpp
+    test/testtypes.cpp
     test/testbruce.cpp)
 
 target_include_directories(testbruce

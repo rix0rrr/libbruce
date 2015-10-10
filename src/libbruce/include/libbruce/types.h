@@ -50,6 +50,7 @@ private:
 };
 
 std::ostream &operator <<(std::ostream &os, const libbruce::nodeid_t &id);
+std::istream &operator >>(std::istream &is, libbruce::nodeid_t &id);
 
 typedef boost::optional<nodeid_t> maybe_nodeid;
 
