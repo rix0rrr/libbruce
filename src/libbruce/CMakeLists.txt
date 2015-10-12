@@ -5,6 +5,7 @@ project(libbruce VERSION 0.1 LANGUAGES CXX)
 add_library(bruce 
     src/bruce.cpp
     src/be/mem.cpp
+    src/be/disk.cpp
     src/mutation.cpp
     src/memory.cpp
     src/serializing.cpp
@@ -17,6 +18,7 @@ add_library(bruce
     src/query_iterator_impl.cpp
     src/nodes.cpp
     src/types.cpp
+    src/sha1.cpp
     src/util/blockcache.cpp)
 
 target_include_directories(bruce PUBLIC

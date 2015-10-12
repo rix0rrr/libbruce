@@ -6,6 +6,7 @@
 
 #include <libbruce/be/be.h>
 #include <libbruce/be/mem.h>
+#include <libbruce/be/disk.h>
 #include <libbruce/edit_tree.h>
 #include <libbruce/query_tree.h>
 
