@@ -2,8 +2,6 @@
 #ifndef BRUCE_H
 #define BRUCE_H
 
-struct im_bruce {};
-
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/ref.hpp>

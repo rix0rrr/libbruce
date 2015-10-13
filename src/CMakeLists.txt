@@ -36,7 +36,10 @@ endif()
 #----------------------------------------------------------------------
 
 enable_testing()
+
 add_subdirectory(libbruce)
+add_subdirectory(bcat)
+
 if (AwsCppSdk_FOUND AND OPENSSL_FOUND)
     add_subdirectory(awsbruce)
     add_subdirectory(s3kv)
