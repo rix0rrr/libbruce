@@ -11,7 +11,7 @@
 
 namespace libbruce {
 
-typedef uint16_t keycount_t;
+typedef uint32_t keycount_t;
 typedef uint32_t itemcount_t;
 
 struct nodeid_t

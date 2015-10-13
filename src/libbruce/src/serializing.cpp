@@ -60,7 +60,7 @@ struct NodeParser
         ret->overflow.nodeID = *m_input.at<nodeid_t>(m_offset);
         m_offset += sizeof(nodeid_t);
 
-        validateNotPastEnd();
+        validateAtEnd();
 
         return ret;
     }
@@ -89,7 +89,7 @@ struct NodeParser
         ret->next.nodeID = *m_input.at<nodeid_t>(m_offset);
         m_offset += sizeof(nodeid_t);
 
-        validateNotPastEnd();
+        validateAtEnd();
 
         return ret;
     }
@@ -132,7 +132,7 @@ struct NodeParser
             m_offset += size;
         }
 
-        validateNotPastEnd();
+        validateAtEnd();
 
         return ret;
     }
@@ -149,10 +149,14 @@ private:
             throw std::runtime_error((std::string("End of block while parsing node data: ") + to_string(m_offset) + " >= " + to_string(m_input.size())).c_str());
     }
 
-    void validateNotPastEnd()
+    void validateAtEnd()
     {
-        if (m_offset > m_input.size())
-            throw std::runtime_error("Last item truncated");
+        if (m_offset != m_input.size())
+            throw std::runtime_error((std::string("Trailing bytes found: ") +
+                                     boost::lexical_cast<std::string>(m_input.size()
+                                                                      -
+                                                                      m_offset)
+                                     + " bytes left").c_str());
     }
 
     size_t m_offset;

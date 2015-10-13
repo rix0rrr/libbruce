@@ -55,7 +55,10 @@ memory s3be::get(const nodeid_t &id)
 
     GetObjectOutcome response = m_s3->GetObject(request);
     if (!response.IsSuccess())
-        throw be_error(response.GetError().GetMessage().c_str());
+        throw be_error((std::string("Error fetching ") +
+                       boost::lexical_cast<std::string>(id) +
+                       ": " +
+                       response.GetError().GetMessage()).c_str());
 
     std::stringstream ss;
 
