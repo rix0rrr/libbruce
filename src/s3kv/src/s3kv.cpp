@@ -8,6 +8,9 @@
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/core/http/HttpClientFactory.h>
 
+#include <sys/time.h>
+#include <fstream>
+
 using namespace libbruce;
 using namespace awsbruce;
 
@@ -19,10 +22,38 @@ using namespace Aws::Utils;
 
 namespace io = boost::iostreams;
 
+typedef bruce<std::string, std::string> stringbruce;
+
 const int MB = 1024 * 1024;
 
 #define S3_BUCKET "huijbers-test"
 #define S3_PREFIX "bruce/"
+
+struct Timer
+{
+    Timer()
+    {
+        timeval now;
+        gettimeofday(&now, NULL);
+
+        m_start = now.tv_sec + (now.tv_usec / 1e6);
+    }
+
+    /**
+     * Return elapsed time in ms
+     */
+    size_t elapsed()
+    {
+        timeval now;
+        gettimeofday(&now, NULL);
+
+        double t = now.tv_sec + (now.tv_usec / 1e6);
+        return (t - m_start) * 1000;
+    }
+
+private:
+    double m_start;
+};
 
 void noop(void *p)
 {
@@ -30,18 +61,17 @@ void noop(void *p)
 
 struct Params
 {
-    bool ok;
     maybe_nodeid root;
     bool hasKey = false;
     std::string key;
     bool hasValue = false;
     std::string value;
     std::map<std::string, std::string> otherKVs;
+    std::fstream metrics;
 };
 
-Params parseParams(int argc, char* argv[])
+bool parseParams(int argc, char* argv[], Params &ret)
 {
-    Params ret;
     if (argc == 1)
     {
         std::cout << "Usage:" << std::endl;
@@ -49,10 +79,10 @@ Params parseParams(int argc, char* argv[])
         std::cout << "    s3kv ID" << std::endl;
         std::cout << "    s3kv ID KEY" << std::endl;
         std::cout << "    s3kv ID KEY VALUE [KEY VALUE [...]]" << std::endl;
-        ret.ok = false;
-        return ret;
+        return false;
     }
-    ret.ok = true;
+
+    ret.metrics.open("metrics.csv", std::fstream::out | std::fstream::app);
 
     // Parse params
     if (strlen(argv[1]))
@@ -75,30 +105,35 @@ Params parseParams(int argc, char* argv[])
         ret.otherKVs[std::string(argv[i])] = std::string(argv[i + 1]);
     }
 
-    return ret;
+    return true;
 }
 
-int putKeyValue(bruce &b, const Params &params)
+int putKeyValue(stringbruce &b, Params &params)
 {
-    auto edit = params.root ? b.edit<std::string, std::string>(*params.root) : b.create<std::string, std::string>();
+    Timer t;
+    auto edit = params.root ? b.edit(*params.root) : b.create();
     edit->insert(params.key, params.value);
 
     for (std::map<std::string, std::string>::const_iterator it = params.otherKVs.begin(); it != params.otherKVs.end(); ++it)
         edit->insert(it->first, it->second);
 
     mutation mut = edit->flush();
+    /*
     b.finish(mut, true);
     if (!mut.success())
     {
         fprintf(stderr, "Error!\n");
         return 1;
     }
+    */
+
+    params.metrics << "put," << 1 + params.otherKVs.size() << "," << t.elapsed() << std::endl;
 
     std::cout << *mut.newRootID() << std::endl;
     return 0;
 }
 
-int queryKey(bruce &b, const Params &params)
+int queryKey(stringbruce &b, Params &params)
 {
     if (!params.root)
     {
@@ -106,8 +141,8 @@ int queryKey(bruce &b, const Params &params)
         return 1;
     }
 
-    auto query = b.query<std::string, std::string>(*params.root);
-    query_tree<std::string, std::string>::iterator it = query->find(params.key);
+    auto query = b.query(*params.root);
+    stringbruce::iterator it = query->find(params.key);
 
     while (it && it.key() == params.key)
     {
@@ -115,13 +150,14 @@ int queryKey(bruce &b, const Params &params)
         ++it;
     }
 
+
     return 0;
 }
 
-int fullScan(bruce &b, const Params &params)
+int fullScan(stringbruce &b, Params &params)
 {
-    auto query = b.query<std::string, std::string>(*params.root);
-    query_tree<std::string, std::string>::iterator it = query->begin();
+    auto query = b.query(*params.root);
+    stringbruce::iterator it = query->begin();
 
     while (it)
     {
@@ -135,8 +171,8 @@ int fullScan(bruce &b, const Params &params)
 int main(int argc, char* argv[])
 {
     // Params
-    Params params = parseParams(argc, argv);
-    if (!params.ok)
+    Params params;
+    if (!parseParams(argc, argv, params))
         return 1;
 
     std::shared_ptr<Aws::OStream> output(&std::cerr, noop);
@@ -152,8 +188,9 @@ int main(int argc, char* argv[])
 
     auto clientFactory = Aws::MakeShared<HttpClientFactory>(NULL);
     auto s3 = Aws::MakeShared<S3Client>(NULL, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(NULL), config, clientFactory);
-    s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB, 100 * MB);
-    bruce b(be);
+    //s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB, 100 * MB);
+    be::disk be("temp/", 1 * MB);
+    stringbruce b(be);
 
     int exit;
     if (params.hasKey && params.hasValue)
