@@ -1,3 +1,4 @@
+#include <libbruce/bruce.h>
 #include <libbruce/util/blockcache.h>
 
 namespace libbruce { namespace util {

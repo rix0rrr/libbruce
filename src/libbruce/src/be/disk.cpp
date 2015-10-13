@@ -1,6 +1,6 @@
-#include <libbruce/bruce.h>
-#include <boost/iostreams/copy.hpp>
+#include <libbruce/be/disk.h>
 #include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/copy.hpp>
 #include <cstdio>
 
 #include <sha1.h>
@@ -19,13 +19,13 @@ memory disk::get(const nodeid_t &id)
 {
     std::fstream file(m_pathPrefix + boost::lexical_cast<std::string>(id),
                       std::fstream::in | std::fstream::binary | std::fstream::ate);
-
     size_t size = file.tellg();
     file.seekg(0);
 
     memory ret(size);
     io::basic_array_sink<char> memstream((char*)ret.ptr(), ret.size());
     io::copy(file, memstream);
+
     return ret;
 }
 
@@ -39,10 +39,7 @@ nodeid_t disk::id(const memory &block)
     digest.update(memstream);
     std::string hash = digest.final();
 
-    nodeid_t ret;
-    BOOST_STATIC_ASSERT(sizeof(ret) == 20);
-    memcpy(ret.data(), hash.data(), hash.size());
-
+    nodeid_t ret = boost::lexical_cast<nodeid_t>(hash);
     return ret;
 }
 
