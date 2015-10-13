@@ -20,8 +20,6 @@ using namespace Aws::S3::Model;
 
 namespace io = boost::iostreams;
 
-typedef io::filtering_stream<boost::iostreams::bidirectional> filtering_iostream;
-
 namespace awsbruce {
 
 s3be::s3be(const std::shared_ptr<S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize, uint32_t cacheSize)
