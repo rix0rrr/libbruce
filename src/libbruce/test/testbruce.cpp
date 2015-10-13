@@ -7,12 +7,14 @@
 
 using namespace libbruce;
 
+typedef bruce<int, int> intbruce;
+
 TEST_CASE("abort commit of empty tree should leave blockstore empty")
 {
     be::mem mem(1024);
-    ::bruce::bruce b(mem);
+    intbruce b(mem);
 
-    edit_tree<int, int>::ptr t = b.create<int, int>();
+    intbruce::edit_ptr t = b.create();
     t->insert(1, 2);
     t->insert(2, 3);
     mutation mut = t->flush();
@@ -25,9 +27,9 @@ TEST_CASE("abort commit of empty tree should leave blockstore empty")
 TEST_CASE("commit and abort")
 {
     be::mem mem(1024);
-    ::bruce::bruce b(mem);
+    intbruce b(mem);
 
-    edit_tree<int, int>::ptr t = b.create<int, int>();
+    intbruce::edit_ptr t = b.create();
     t->insert(1, 2);
     t->insert(2, 3);
     mutation mut = t->flush();
@@ -36,7 +38,7 @@ TEST_CASE("commit and abort")
 
     SECTION("success commit should leave only new nodes")
     {
-        edit_tree<int, int>::ptr u = b.edit<int, int>(*mut.newRootID());
+        intbruce::edit_ptr u = b.edit(*mut.newRootID());
         u->insert(3, 4);
         mutation mut2 = u->flush();
 
@@ -47,7 +49,7 @@ TEST_CASE("commit and abort")
 
     SECTION("abort commit should leave only old nodes")
     {
-        edit_tree<int, int>::ptr u = b.edit<int, int>(*mut.newRootID());
+        intbruce::edit_ptr u = b.edit(*mut.newRootID());
         u->insert(3, 4);
         mutation mut2 = u->flush();
 

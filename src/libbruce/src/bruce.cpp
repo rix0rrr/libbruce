@@ -4,12 +4,7 @@
 
 namespace libbruce {
 
-bruce::bruce(be::be &blockEngine)
-    : m_blockEngine(blockEngine)
-{
-}
-
-bool bruce::finish(mutation &mut, bool success)
+bool doFinish(be::be &blockEngine, mutation &mut, bool success)
 {
     mutation::nodes &ns = mut.deleteList(success);
     be::delblocklist_t dels;
@@ -22,7 +17,7 @@ bool bruce::finish(mutation &mut, bool success)
 
     try
     {
-        m_blockEngine.del_all(dels);
+        blockEngine.del_all(dels);
 
         bool allDeleted = true;
         for (be::delblocklist_t::iterator it = dels.begin(); it != dels.end(); ++it)

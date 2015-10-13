@@ -2,6 +2,11 @@
 #ifndef BRUCE_H
 #define BRUCE_H
 
+struct im_bruce {};
+
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/ref.hpp>
 #include <stdexcept>
 
 #include <libbruce/be/be.h>
@@ -12,10 +17,18 @@
 
 namespace libbruce {
 
+template<typename K, typename V>
 class bruce
 {
 public:
-    bruce(be::be &blockEngine);
+    typedef typename query_tree<K, V>::ptr query_ptr;
+    typedef typename edit_tree<K, V>::ptr edit_ptr;
+    typedef typename query_tree<K, V>::iterator iterator;
+
+    bruce(be::be &blockEngine)
+        : m_blockEngine(blockEngine)
+    {
+    }
 
     /**
      * Create a new bruce tree
@@ -23,28 +36,25 @@ public:
      * The empty tree will not be backed by any block, because that would be
      * silly.
      */
-    template<typename K, typename V>
-    typename edit_tree<K, V>::ptr create()
+    edit_ptr create()
     {
-        return typename boost::shared_ptr<edit_tree<K,V> >(new edit_tree<K, V>(maybe_nodeid(), m_blockEngine));
+        return boost::make_shared<edit_tree<K,V> >(maybe_nodeid(), boost::ref(m_blockEngine));
     }
 
     /**
      * Open an existing bruce tree
      */
-    template<typename K, typename V>
-    typename edit_tree<K, V>::ptr edit(const nodeid_t &id)
+    edit_ptr edit(const nodeid_t &id)
     {
-        return typename boost::shared_ptr<edit_tree<K,V> >(new edit_tree<K, V>(id, m_blockEngine));
+        return boost::make_shared<edit_tree<K, V> >(id, boost::ref(m_blockEngine));
     }
 
     /**
      * Query an existing bruce tree
      */
-    template<typename K, typename V>
-    typename query_tree<K, V>::ptr query(const nodeid_t &id)
+    query_ptr query(const nodeid_t &id)
     {
-        return typename boost::shared_ptr<query_tree<K,V> >(new query_tree<K, V>(id, m_blockEngine));
+        return boost::make_shared<query_tree<K,V> >(id, boost::ref(m_blockEngine));
     }
 
     /**
@@ -62,10 +72,15 @@ public:
      *
      * Returns true iff all deletes succeeded.
      */
-    bool finish(mutation &mut, bool success);
+    bool finish(mutation &mut, bool success)
+    {
+        return doFinish(m_blockEngine, mut, success);
+    }
 private:
     be::be &m_blockEngine;
 };
+
+bool doFinish(be::be &blockEngine, mutation &mut, bool success);
 
 }
 
