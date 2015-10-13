@@ -64,7 +64,7 @@ memory s3be::get(const nodeid_t &id)
 
     // Decompress into the stringstream
     io::filtering_ostreambuf in;
-    //in.push(io::zlib_decompressor());
+    in.push(io::zlib_decompressor());
     in.push(ss);
     io::copy(response.GetResult().GetBody(), in);
 
@@ -107,7 +107,7 @@ PutObjectOutcomeCallable s3be::put_one(libbruce::be::putblock_t &block)
     std::shared_ptr<std::stringstream> ss = std::make_shared<std::stringstream>();
 
     io::filtering_ostream in;
-    //in.push(io::zlib_compressor());
+    in.push(io::zlib_compressor());
     in.push(*ss);
     io::copy(memstream, in);
 
