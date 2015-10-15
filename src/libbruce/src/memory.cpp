@@ -11,6 +11,7 @@ namespace libbruce
 bool memory::operator==(const memory &other) const
 {
     if (size() != other.size()) return false;
+    if (ptr() == other.ptr()) return true; // Easy win
 
     return memcmp(ptr(), other.ptr(), size()) == 0;
 }

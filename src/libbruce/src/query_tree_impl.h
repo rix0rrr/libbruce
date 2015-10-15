@@ -68,7 +68,8 @@ struct query_tree_impl : public tree_impl, public boost::enable_shared_from_this
     query_iterator_impl_ptr seek(itemcount_t n);
     query_iterator_impl_ptr begin();
 
-    void applyPendingChanges(const memory &minKey, const memory &maxKey, int *delta);
+    void applyPendingChanges(const memory &minKey, const memory &maxKey, int *delta,
+                             pairlist_t::iterator *leafIter);
     itemcount_t rank(treepath_t &rootPath);
 private:
     typedef std::vector<pending_edit> editlist_t;
@@ -79,7 +80,7 @@ private:
     void pushChildKnuckle(treepath_t &rootPath);
     void findRec(treepath_t &rootPath, const memory *key, query_iterator_impl_ptr *iter_ptr);
     void seekRec(treepath_t &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr);
-    void applyPendingChangeRec(const node_ptr &node, const pending_edit &edit, int *delta);
+    void applyPendingChangeRec(const node_ptr &node, const pending_edit &edit, int *delta, pairlist_t::iterator *leafIter);
     bool isGuaranteed(const editlist_t::iterator &cur, const editlist_t::iterator &end);
     itemcount_t rankRec(const treepath_t &rootPath, unsigned i);
     int pendingRankDelta(const node_ptr &node, const memory &minKey, const memory &maxKey);

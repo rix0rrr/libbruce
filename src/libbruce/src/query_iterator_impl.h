@@ -11,10 +11,14 @@ namespace libbruce {
 struct knuckle
 {
     knuckle() : index(0) {}
-    knuckle(node_ptr node, keycount_t index, const memory &minKey, const memory &maxKey)
-        : node(node), index(index), minKey(minKey), maxKey(maxKey) { }
+    knuckle(node_ptr node, const memory &minKey, const memory &maxKey)
+        : node(node), index(0), minKey(minKey), maxKey(maxKey)
+    {
+        if (nodeType() == TYPE_LEAF) leafIter = asLeaf()->pairs.begin();
+    }
 
     node_ptr node;
+    pairlist_t::iterator leafIter;
     keycount_t index;
     memory minKey;
     memory maxKey;

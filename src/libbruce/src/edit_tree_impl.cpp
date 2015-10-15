@@ -61,17 +61,17 @@ void edit_tree_impl::validateKVSize(const memory &key, const memory &value)
 splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memory &key, const memory &value, bool upsert)
 {
 NODE_CASE_LEAF
-    keycount_t i = upsert ? FindLeafUpsertKey(leaf, key, m_fns) : FindLeafInsertKey(leaf, key, m_fns);
+    pairlist_t::iterator it = leaf->pairs.find(key);
 
-    if (upsert && leaf->pair(i).key == key)
+    if (upsert && it != leaf->pairs.end())
     {
         // Update
-        leaf->pair(i).value = value;
+        it->second = value;
     }
     else
     {
         // Insert
-        if (i == leaf->pairs.size() && !leaf->overflow.empty())
+        if (it == (--leaf->pairs.end()) && !leaf->overflow.empty())
         {
             // There is an overflow block already. Insert in there.
             splitresult_t split = insertRec(overflowNode(leaf->overflow), key, value, upsert);
@@ -79,7 +79,7 @@ NODE_CASE_LEAF
         }
         else
         {
-            leaf->insert(i, kv_pair(key, value));
+            leaf->insert(kv_pair(key, value));
         }
     }
 
@@ -129,14 +129,16 @@ splitresult_t edit_tree_impl::maybeSplitLeaf(const leafnode_ptr &leaf)
 
     // Child needs to split
     leafnode_ptr left = boost::make_shared<LeafNode>(
-            leaf->at(0),
-            leaf->at(size.overflowStart()));
+            leaf->pairs.begin(),
+            size.overflowStart(),
+            m_fns);
     overflownode_ptr overflow = boost::make_shared<OverflowNode>(
-            leaf->at(size.overflowStart()),
-            leaf->at(size.splitIndex()));
+            size.overflowStart(),
+            size.splitStart());
     leafnode_ptr right = boost::make_shared<LeafNode>(
-            leaf->at(size.splitIndex()),
-            leaf->pairs.end());
+            size.splitStart(),
+            leaf->pairs.end(),
+            m_fns);
 
     // It should not be possible that the original leaf had an overflow
     // block and we're NOT producing an actual leaf split right now. Where
@@ -229,7 +231,7 @@ splitresult_t edit_tree_impl::removeRec(const node_ptr &node, const memory &key,
     // However, when shifting values from an overflow node, we may need to split
     // our leaf.
 NODE_CASE_LEAF
-    removeFromLeaf(leaf, key, value);
+    removeFromLeaf(leaf, key, value, NULL);
     return maybeSplitLeaf(leaf);
 
 NODE_CASE_OVERFLOW

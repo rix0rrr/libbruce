@@ -24,24 +24,27 @@
  *
  * LEAF NODE
  * ---------
- *   [ uint16 ]           N of KV-pairs
+ *   [ uint16 ]           flags
+ *   [ uint32 ]           N of KV-pairs
  *   [ N x ... bytes ]    all keys, type-specific serialization
  *   [ N x ... bytes ]    all values, type-specific serialization
  *   [ uint32 ]           overflow node count
- *   [ uint64 ]           overflow node identifier
+ *   [ hash160 ]          overflow node identifier
  *
  * OVERFLOW NODE
  * -------------
- *   [ uint16 ]           N of values
+ *   [ uint16 ]           flags
+ *   [ uint32 ]           N of values
  *   [ N x ... bytes ]    all values
  *   [ uint32 ]           next overflow node count
- *   [ uint64 ]           next overflow node ID
+ *   [ hash160 ]          next overflow node ID
  *
  * INTERNAL NODE
  * -------------
- *   [ uint16 ]           N of node pointers
+ *   [ uint16 ]           flags
+ *   [ uint32 ]           N of node pointers
  *   [ N-1 x ... bytes ]  keys s.t. max_key(leaf(i)) < key(i) <= min_key(leaf(i+1))
- *   [ N x uint64 ]       node identifiers
+ *   [ N x hash160 ]      node identifiers
  *   [ N x uint32 ]       item counts per node
  *
  * The structure ought to be read as follows:
@@ -76,15 +79,13 @@ memory SerializeNode(const node_ptr &node);
 
 struct NodeSize
 {
-    bool shouldSplit();
-    keycount_t splitIndex();
     uint32_t size() const { return m_size; }
+    bool shouldSplit();
 protected:
     NodeSize(uint32_t blockSize);
 
     uint32_t m_blockSize;
     uint32_t m_size;
-    keycount_t m_splitIndex;
 };
 
 
@@ -99,9 +100,11 @@ struct LeafNodeSize : public NodeSize
 {
     LeafNodeSize(const leafnode_ptr &node, uint32_t blockSize);
 
-    keycount_t overflowStart() const { return m_overflowStart; }
+    pairlist_t::const_iterator splitStart() const { return m_splitStart; }
+    pairlist_t::const_iterator overflowStart() const { return m_overflowStart; }
 private:
-    keycount_t m_overflowStart;
+    pairlist_t::const_iterator m_splitStart;
+    pairlist_t::const_iterator m_overflowStart;
 };
 
 /**
@@ -110,6 +113,10 @@ private:
 struct OverflowNodeSize : public NodeSize
 {
     OverflowNodeSize(const overflownode_ptr &node, uint32_t blockSize);
+
+    keycount_t splitIndex() const { return m_splitIndex; }
+private:
+    keycount_t m_splitIndex;
 };
 
 /**
@@ -119,6 +126,10 @@ struct OverflowNodeSize : public NodeSize
 struct InternalNodeSize : public NodeSize
 {
     InternalNodeSize(const internalnode_ptr &node, uint32_t blockSize);
+
+    keycount_t splitIndex() const { return m_splitIndex; }
+private:
+    keycount_t m_splitIndex;
 };
 
 

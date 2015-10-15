@@ -76,9 +76,9 @@ TEST_CASE("seeking in a plain tree", "[query][rank]")
 {
     be::mem mem(1024);
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1).kv(3, 3).put(mem))
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(5, 5).kv(7, 7).put(mem))
         .put(mem);
     query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
@@ -104,9 +104,9 @@ TEST_CASE("seeking in a tree with guaranteed changes", "[query][rank]")
 {
     be::mem mem(1024);
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1).kv(3, 3).put(mem))
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(5, 5).kv(7, 7).put(mem))
         .put(mem);
     query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
@@ -159,9 +159,9 @@ TEST_CASE("seeking in a tree with nonguaranteed changes", "[query][rank]")
 {
     be::mem mem(1024);
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1).kv(3, 3).put(mem))
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(5, 5).kv(7, 7).put(mem))
         .put(mem);
     query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
@@ -223,7 +223,7 @@ TEST_CASE("seek into overflow node", "[query][rank]")
 {
     be::mem mem(1024);
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1)
            .kv(3, 3)
            .overflow(make_overflow()
@@ -245,7 +245,7 @@ TEST_CASE("calculate item rank", "[query][rank]")
 {
     be::mem mem(1024);
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1)
            .kv(3, 3)
            .overflow(make_overflow()
@@ -256,7 +256,7 @@ TEST_CASE("calculate item rank", "[query][rank]")
                       .put(mem))
                 .put(mem))
            .put(mem))
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(7, 7)
            .kv(8, 8)
            .put(mem))
@@ -319,10 +319,10 @@ TEST_CASE("queued upsert")
 
     // GIVEN
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1)
            .put(mem)) // 0
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(3, 3)
            .put(mem)) // 1
         .put(mem); // 2

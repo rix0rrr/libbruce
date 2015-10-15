@@ -10,7 +10,7 @@ using namespace libbruce;
 TEST_CASE("prefix and postfix increment")
 {
     be::mem mem(1024);
-    put_result root = make_leaf()
+    put_result root = make_leaf(intToIntTree)
         .kv(1, 1)
         .kv(3, 3)
         .put(mem);
@@ -26,7 +26,7 @@ TEST_CASE("prefix and postfix increment")
 TEST_CASE("arbitrary increment")
 {
     be::mem mem(1024);
-    put_result root = make_leaf()
+    put_result root = make_leaf(intToIntTree)
         .kv(1, 1)
         .kv(3, 3)
         .kv(5, 5)
@@ -46,7 +46,7 @@ TEST_CASE("arbitrary increment")
 TEST_CASE("iterator for an empty tree")
 {
     be::mem mem(1024);
-    put_result root = make_leaf()
+    put_result root = make_leaf(intToIntTree)
         .put(mem);
     query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
@@ -57,7 +57,7 @@ TEST_CASE("iterator for an empty tree")
 TEST_CASE("iterator compare")
 {
     be::mem mem(1024);
-    put_result root = make_leaf()
+    put_result root = make_leaf(intToIntTree)
         .put(mem);
     query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
@@ -70,9 +70,9 @@ TEST_CASE("iteration crossing between leafs")
     be::mem mem(1024);
 
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1).kv(3, 3).put(mem))
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(5, 5).kv(7, 7).put(mem))
         .put(mem);
 
@@ -95,7 +95,7 @@ TEST_CASE("iteration across overflow nodes")
     be::mem mem(1024);
 
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1)
            .kv(3, 3)
            .overflow(make_overflow()
@@ -105,7 +105,7 @@ TEST_CASE("iteration across overflow nodes")
                     .put(mem))
                 .put(mem))
            .put(mem))
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(5, 5)
            .kv(7, 7)
            .put(mem))
@@ -131,7 +131,7 @@ TEST_CASE("iteration ends after overflow")
 {
     be::mem mem(1024);
 
-    put_result root = make_leaf()
+    put_result root = make_leaf(intToIntTree)
         .kv(1, 1)
         .kv(3, 3)
         .overflow(make_overflow()
@@ -158,18 +158,18 @@ TEST_CASE("tree 2 levels deep")
 
     put_result root = make_internal()
         .brn(make_internal()
-             .brn(make_leaf()
+             .brn(make_leaf(intToIntTree)
                  .kv(1, 1)
                  .put(mem))
-             .brn(make_leaf()
+             .brn(make_leaf(intToIntTree)
                  .kv(3, 3)
                  .put(mem))
              .put(mem))
         .brn(make_internal()
-             .brn(make_leaf()
+             .brn(make_leaf(intToIntTree)
                  .kv(5, 5)
                  .put(mem))
-             .brn(make_leaf()
+             .brn(make_leaf(intToIntTree)
                  .kv(7, 7)
                  .put(mem))
              .put(mem))
@@ -194,9 +194,9 @@ TEST_CASE("iteration with queued insert")
     be::mem mem(1024);
 
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1).kv(3, 3).put(mem))
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(5, 5).kv(7, 7).put(mem))
         .put(mem);
 
@@ -235,9 +235,9 @@ TEST_CASE("iteration with queued delete")
     be::mem mem(1024);
 
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1).kv(3, 3).put(mem))
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(5, 5).kv(7, 7).put(mem))
         .put(mem);
 

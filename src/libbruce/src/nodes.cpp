@@ -20,20 +20,24 @@ Node::~Node()
 
 //----------------------------------------------------------------------
 
-LeafNode::LeafNode(size_t sizeHint)
-    : Node(TYPE_LEAF)
+LeafNode::LeafNode(const tree_functions &fns)
+    : Node(TYPE_LEAF), pairs(KeyOrder(fns))
 {
-    if (sizeHint) pairs.reserve(sizeHint);
 }
 
-LeafNode::LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end)
-    : Node(TYPE_LEAF), pairs(begin, end)
+LeafNode::LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end, const tree_functions &fns)
+    : Node(TYPE_LEAF), pairs(begin, end, KeyOrder(fns))
+{
+}
+
+LeafNode::LeafNode(std::vector<kv_pair>::const_iterator begin, std::vector<kv_pair>::const_iterator end, const tree_functions &fns)
+    : Node(TYPE_LEAF), pairs(begin, end, KeyOrder(fns))
 {
 }
 
 const memory &LeafNode::minKey() const
 {
-    if (pairs.size()) return pairs[0].key;
+    if (pairs.size()) return pairs.begin()->first;
     return g_emptyMemory;
 }
 
@@ -53,6 +57,20 @@ void LeafNode::setOverflow(const node_ptr &node)
     }
 }
 
+pairlist_t::const_iterator LeafNode::get_at(int n) const
+{
+    pairlist_t::const_iterator it = pairs.begin();
+    for (int i = 0; i < n && it != pairs.end(); ++it, ++i);
+    return it;
+}
+
+pairlist_t::iterator LeafNode::get_at(int n)
+{
+    pairlist_t::iterator it = pairs.begin();
+    for (int i = 0; i < n && it != pairs.end(); ++it, ++i);
+    return it;
+}
+
 //----------------------------------------------------------------------
 
 OverflowNode::OverflowNode(size_t sizeHint)
@@ -66,8 +84,8 @@ OverflowNode::OverflowNode(pairlist_t::const_iterator begin, pairlist_t::const_i
 {
     for (pairlist_t::const_iterator it = begin; it != end; ++it)
     {
-        assert(it->key == begin->key); // Make sure all have the same key
-        values.push_back(it->value);
+        assert(it->first == begin->first); // Make sure all have the same key
+        values.push_back(it->second);
     }
 }
 
@@ -140,23 +158,23 @@ struct KeyCompare
     KeyCompare(const tree_functions &fns) : fns(fns) { }
     const tree_functions &fns;
 
-    bool operator()(const memory &key, const kv_pair &pair)
+    bool operator()(const memory &key, const kv_pair &pair) const
     {
         if (key.empty()) return true;
-        if (pair.key.empty()) return false;
+        if (pair.first.empty()) return false;
 
-        return fns.keyCompare(key, pair.key) < 0;
+        return fns.keyCompare(key, pair.first) < 0;
     }
 
-    bool operator()(const kv_pair &pair, const memory &key)
+    bool operator()(const kv_pair &pair, const memory &key) const
     {
-        if (pair.key.empty()) return true;
+        if (pair.first.empty()) return true;
         if (key.empty()) return false;
 
-        return fns.keyCompare(pair.key, key) < 0;
+        return fns.keyCompare(pair.first, key) < 0;
     }
 
-    bool operator()(const node_branch &branch, const memory &key)
+    bool operator()(const node_branch &branch, const memory &key) const
     {
         if (branch.minKey.empty()) return true;
         if (key.empty()) return false;
@@ -165,15 +183,6 @@ struct KeyCompare
     }
 };
 
-keycount_t FindLeafInsertKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns)
-{
-    return std::upper_bound(leaf->pairs.begin(), leaf->pairs.end(), key, KeyCompare(fns)) - leaf->pairs.begin();
-}
-
-keycount_t FindLeafUpsertKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns)
-{
-    return std::lower_bound(leaf->pairs.begin(), leaf->pairs.end(), key, KeyCompare(fns)) - leaf->pairs.begin();
-}
 
 keycount_t FindInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns)
 {
@@ -220,7 +229,7 @@ std::ostream &operator <<(std::ostream &os, const libbruce::Node &x)
         const libbruce::LeafNode &l = (const libbruce::LeafNode&)x;
         os << "LEAF(" << l.pairCount() << ")" << std::endl;
         BOOST_FOREACH(const libbruce::kv_pair &p, l.pairs)
-            os << "  " << p.key << " -> " << p.value << std::endl;
+            os << "  " << p.first << " -> " << p.second << std::endl;
         if (!l.overflow.empty())
             os << "  Overflow " << l.overflow.count << " @ " << l.overflow.nodeID << std::endl;
     }

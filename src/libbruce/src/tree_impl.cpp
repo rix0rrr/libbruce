@@ -17,7 +17,7 @@ node_ptr &tree_impl::root()
             m_root = load(*m_rootID);
         else
             // No existing tree, create a new leaf node
-            m_root = boost::make_shared<LeafNode>();
+            m_root = boost::make_shared<LeafNode>(m_fns);
     }
 
     return m_root;
@@ -43,15 +43,10 @@ node_ptr tree_impl::load(nodeid_t id)
     return ParseNode(mem, m_fns);
 }
 
-index_range tree_impl::findLeafRange(const leafnode_ptr &leaf, const memory &key)
+void tree_impl::findLeafRange(const leafnode_ptr &leaf, const memory &key, pairlist_t::iterator *begin, pairlist_t::iterator *end)
 {
-    keycount_t end = FindLeafInsertKey(leaf, key, m_fns); // This is AFTER the given key
-    keycount_t start = end;
-
-    while (start > 0 && m_fns.keyCompare(leaf->pair(start-1).key, key) == 0)
-        start--;
-
-    return index_range(start, end);
+    *begin = leaf->pairs.lower_bound(key);
+    *end = leaf->pairs.upper_bound(key);
 }
 
 int tree_impl::safeCompare(const memory &a, const memory &b)
@@ -61,38 +56,56 @@ int tree_impl::safeCompare(const memory &a, const memory &b)
     return m_fns.keyCompare(a, b);
 }
 
-bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value)
+bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value, pairlist_t::iterator *leafIter)
 {
-    index_range keyrange = findLeafRange(leaf, key);
+    pairlist_t::iterator begin, end;
+    findLeafRange(leaf, key, &begin, &end);
+
+    pairlist_t::iterator eraseLocation = leaf->pairs.end();
 
     // Regular old remove from this block
-    keycount_t eraseLocation = leaf->pairs.size();
-    for (keycount_t i = keyrange.start; i < keyrange.end; i++)
+    for (pairlist_t::iterator it = begin; it != end; ++it)
     {
-        if (!value || m_fns.valueCompare(leaf->pair(i).value, *value) == 0)
+        if (!value || m_fns.valueCompare(it->second, *value) == 0)
         {
-            eraseLocation = i;
+            eraseLocation = it;
             break;
         }
     }
 
-    if (eraseLocation < leaf->pairs.size())
+    if (eraseLocation != leaf->pairs.end())
     {
-        // Did erase
-        leaf->pairs.erase(leaf->at(eraseLocation));
+        // Did erase in this block
+        // Adjust an existing pointer into this leaf if necessary.
+        if (leafIter && *leafIter == eraseLocation)
+        {
+            *leafIter = leaf->pairs.erase(eraseLocation);
+            eraseLocation = *leafIter;
+        }
+        else {
+            eraseLocation = leaf->pairs.erase(eraseLocation);
+        }
 
         // If we removed the final position, pull back from the overflow block
         // and potentially split.
-        if (eraseLocation == leaf->pairs.size() && !leaf->overflow.empty())
+        if (eraseLocation == leaf->pairs.end() && !leaf->overflow.empty())
         {
             memory ret = pullFromOverflow(leaf->overflow.node);
-            leaf->pairs.push_back(kv_pair(key, ret));
+            leaf->pairs.insert(kv_pair(key, ret));
             leaf->setOverflow(leaf->overflow.node);
+
+            // If we had a pointer to adjust, it was just invalidated, so point to the back item
+            // again.
+            if (leafIter) *leafIter = --leaf->pairs.end();
         }
 
         return true;
     }
-    else if (!leaf->overflow.empty() && key == leaf->pairs.back().key)
+
+    if (leaf->pairs.empty()) return false;
+
+    // If we did not erase here, but the key matches the last key, search in the overflow block
+    if (!leaf->overflow.empty() && key == leaf->pairs.rbegin()->first)
     {
         // Did not erase from this leaf but key matches overflow key, recurse
         bool erased = removeFromOverflow(overflowNode(leaf->overflow), key, value);

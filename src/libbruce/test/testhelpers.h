@@ -41,7 +41,7 @@ struct put_result
 
 struct make_leaf
 {
-    make_leaf();
+    make_leaf(const tree_functions &fn);
     make_leaf &kv(const memory &k, const memory &v);
     make_leaf &kv(uint32_t k, uint32_t v);
     make_leaf &overflow(const put_result &put);

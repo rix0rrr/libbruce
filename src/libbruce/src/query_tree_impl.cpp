@@ -40,7 +40,7 @@ bool query_tree_impl::get(const memory &key, memory *value)
 query_iterator_impl_ptr query_tree_impl::find(const memory &key)
 {
     treepath_t rootPath;
-    rootPath.push_back(knuckle(root(), 0, memory(), memory()));
+    rootPath.push_back(knuckle(root(), memory(), memory()));
 
     query_iterator_impl_ptr it;
     findRec(rootPath, &key, &it);
@@ -50,7 +50,7 @@ query_iterator_impl_ptr query_tree_impl::find(const memory &key)
 query_iterator_impl_ptr query_tree_impl::seek(itemcount_t n)
 {
     treepath_t rootPath;
-    rootPath.push_back(knuckle(root(), 0, memory(), memory()));
+    rootPath.push_back(knuckle(root(), memory(), memory()));
 
     query_iterator_impl_ptr it;
     seekRec(rootPath, n, &it);
@@ -65,7 +65,7 @@ void query_tree_impl::pushChildKnuckle(treepath_t &rootPath)
     const memory &minK = internal->branch(top.index).minKey.size() ? internal->branch(top.index).minKey : top.minKey;
     const memory &maxK = top.index < internal->branchCount() - 1 ? internal->branch(top.index+1).minKey : top.maxKey;
 
-    rootPath.push_back(knuckle(child(internal->branch(top.index)), 0, minK, maxK));
+    rootPath.push_back(knuckle(child(internal->branch(top.index)), minK, maxK));
 }
 
 void query_tree_impl::findRec(treepath_t &rootPath, const memory *key, query_iterator_impl_ptr *iter_ptr)
@@ -74,11 +74,13 @@ void query_tree_impl::findRec(treepath_t &rootPath, const memory *key, query_ite
     node_ptr node = rootPath.back().node;
 
 NODE_CASE_LEAF
-    applyPendingChanges(top.minKey, top.maxKey, NULL);
+    applyPendingChanges(top.minKey, top.maxKey, NULL, NULL);
 
-    index_range keyrange = key ? findLeafRange(leaf, *key) : index_range(0, 1);
+    pairlist_t::iterator begin = leaf->pairs.begin();
+    pairlist_t::iterator end = leaf->pairs.end();
+    if (key) findLeafRange(leaf, *key, &begin, &end);
 
-    for (top.index = keyrange.start; top.index < keyrange.end; top.index++)
+    for (top.leafIter = begin; top.leafIter != end; ++top.leafIter)
     {
         iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath));
         return;
@@ -118,11 +120,11 @@ void query_tree_impl::seekRec(treepath_t &rootPath, itemcount_t n, query_iterato
     node_ptr node = rootPath.back().node;
 
 NODE_CASE_LEAF
-    applyPendingChanges(top.minKey, top.maxKey, NULL);
+    applyPendingChanges(top.minKey, top.maxKey, NULL, NULL);
 
     if (n < leaf->pairCount())
     {
-        top.index = n;
+        top.leafIter = leaf->get_at(n);
         iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath));
         return;
     }
@@ -131,7 +133,7 @@ NODE_CASE_LEAF
 
     if (!leaf->overflow.empty())
     {
-        rootPath.push_back(knuckle(overflowNode(leaf->overflow), 0, memory(), memory()));
+        rootPath.push_back(knuckle(overflowNode(leaf->overflow), memory(), memory()));
         seekRec(rootPath, n, iter_ptr);
     }
 
@@ -147,7 +149,7 @@ NODE_CASE_OVERFLOW
     n -= overflow->valueCount();
 
     if (!overflow->next.empty())
-        rootPath.push_back(knuckle(overflowNode(overflow->next), 0, memory(), memory()));
+        rootPath.push_back(knuckle(overflowNode(overflow->next), memory(), memory()));
         seekRec(rootPath, n, iter_ptr);
 
 NODE_CASE_INT
@@ -190,12 +192,17 @@ itemcount_t query_tree_impl::rank(treepath_t &rootPath)
     NODE_CASE_LEAF
         // This WILL change the index of dude. Need to shift it to stay on the same element.
         int delta = 0;
-        const memory &maxK = it->index < leaf->pairCount() ? leaf->pair(it->index).key : it->maxKey;
+        const memory &maxK = it->index < leaf->pairCount() ? it->leafIter->first : it->maxKey;
 
-        applyPendingChanges(it->minKey, maxK, &delta); // Apply up to this key
-        it->index += delta;
+        // FIXME: Shouldn't the next applyPendingChanges() always apply 0 changes?
+        applyPendingChanges(it->minKey, maxK, &delta, &it->leafIter); // Apply up to this key
 
-        ret += it->index;
+        // Unfortunately, we need to do linear search here.
+        itemcount_t index = 0;
+        for (pairlist_t::const_iterator i = leaf->pairs.begin(); i != it->leafIter; ++i)
+            index++;
+
+        ret += index;
     NODE_CASE_OVERFLOW
         ret += it->index;
     NODE_CASE_INT
@@ -240,7 +247,7 @@ int query_tree_impl::pendingRankDelta(const node_ptr &node, const memory &minKey
             }
             else
             {
-                applyPendingChangeRec(node, *it, NULL);
+                applyPendingChangeRec(node, *it, NULL, NULL);
                 kit->second.erase(it);
             }
         }
@@ -258,26 +265,26 @@ int query_tree_impl::pendingRankDelta(const node_ptr &node, const memory &minKey
 query_iterator_impl_ptr query_tree_impl::begin()
 {
     treepath_t rootPath;
-    rootPath.push_back(knuckle(root(), 0, memory(), memory()));
+    rootPath.push_back(knuckle(root(), memory(), memory()));
     query_iterator_impl_ptr it;
     findRec(rootPath, NULL, &it);
     return it;
 }
 
-void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &maxKey, int *delta)
+void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &maxKey, int *delta, pairlist_t::iterator *leafIter)
 {
     editmap_t::iterator start = minKey.empty() ? m_edits.begin() : m_edits.lower_bound(minKey);
-    editmap_t::iterator end = maxKey.empty() ? m_edits.end() : m_edits.lower_bound(maxKey);
+    editmap_t::iterator end   = maxKey.empty() ? m_edits.end() : m_edits.lower_bound(maxKey);
 
     for (editmap_t::iterator kit = start; kit != end; /* increment as part of erase */)
     {
         for (editlist_t::iterator it = kit->second.begin(); it != kit->second.end(); ++it)
-            applyPendingChangeRec(root(), *it, delta);
+            applyPendingChangeRec(root(), *it, delta, leafIter);
         m_edits.erase(kit++); // This is the idiomatic way to iterate+erase
     }
 }
 
-void query_tree_impl::applyPendingChangeRec(const node_ptr &node, const pending_edit &edit, int *delta)
+void query_tree_impl::applyPendingChangeRec(const node_ptr &node, const pending_edit &edit, int *delta, pairlist_t::iterator *leafIter)
 {
 NODE_CASE_LEAF
     // We only need to apply changes to leaf nodes. No need to split into overflow blocks since
@@ -287,29 +294,28 @@ NODE_CASE_LEAF
     {
         case INSERT:
             {
-                keycount_t i = FindLeafInsertKey(leaf, edit.key, m_fns);
-                leaf->insert(i, kv_pair(edit.key, edit.value));
+                leaf->insert(kv_pair(edit.key, edit.value));
                 if (delta) (*delta)++;
             }
             break;
         case UPSERT:
             {
-                keycount_t i = FindLeafUpsertKey(leaf, edit.key, m_fns);
-                if (leaf->pair(i).key == edit.key)
-                    leaf->pair(i).value = edit.value;
+                pairlist_t::iterator it = leaf->pairs.find(edit.key);
+                if (it != leaf->pairs.end())
+                    it->second = edit.value;
                 else
                 {
-                    leaf->insert(i, kv_pair(edit.key, edit.value));
+                    leaf->insert(kv_pair(edit.key, edit.value));
                     if (delta) (*delta)++;
                 }
             }
             break;
         case REMOVE_KEY:
-            erased = removeFromLeaf(leaf, edit.key, NULL);
+            erased = removeFromLeaf(leaf, edit.key, NULL, leafIter);
             if (erased && delta) (*delta)--;
             break;
         case REMOVE_KV:
-            erased = removeFromLeaf(leaf, edit.key, &edit.value);
+            erased = removeFromLeaf(leaf, edit.key, &edit.value, leafIter);
             if (erased && delta) (*delta)--;
             break;
         default:
@@ -321,7 +327,7 @@ NODE_CASE_INT
     // Drill down to leaf, only to update counts afterwards
     keycount_t i = FindInternalKey(internal, edit.key, m_fns);
     node_ptr c = child(internal->branch(i));
-    applyPendingChangeRec(c, edit, delta);
+    applyPendingChangeRec(c, edit, delta, leafIter);
     internal->branch(i).itemCount = c->itemCount();
 
 NODE_CASE_END

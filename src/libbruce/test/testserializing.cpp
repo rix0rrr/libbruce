@@ -10,20 +10,20 @@ using namespace libbruce;
 
 TEST_CASE("serializing a leaf node is symmetric", "[serializing]") {
     // Making a map of ints to ints
-    leafnode_ptr leaf = boost::make_shared<LeafNode>();
-    leaf->insert(0, kv_pair(one_r, two_r));
-    leaf->insert(1, kv_pair(two_r, one_r));
+    leafnode_ptr leaf = boost::make_shared<LeafNode>(intToIntTree);
+    leaf->insert(kv_pair(one_r, two_r));
+    leaf->insert(kv_pair(two_r, one_r));
     memory serialized = SerializeNode(leaf);
 
     leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(serialized, intToIntTree));
     REQUIRE(r->nodeType() == TYPE_LEAF);
     REQUIRE(r->pairCount() == 2);
 
-    REQUIRE( rngcmp(r->pair(0).key, one_r) == 0 );
-    REQUIRE( rngcmp(r->pair(0).value, two_r) == 0 );
+    REQUIRE( rngcmp(r->get_at(0)->first, one_r) == 0 );
+    REQUIRE( rngcmp(r->get_at(0)->second, two_r) == 0 );
 
-    REQUIRE( rngcmp(r->pair(1).key, two_r) == 0 );
-    REQUIRE( rngcmp(r->pair(1).value, one_r) == 0 );
+    REQUIRE( rngcmp(r->get_at(1)->first, two_r) == 0 );
+    REQUIRE( rngcmp(r->get_at(1)->second, one_r) == 0 );
 }
 
 TEST_CASE("serializing an internal node is symmetric", "[serializing]")
@@ -71,45 +71,46 @@ TEST_CASE("serializing an overflow node is symmetric", "[serializing]")
 
 TEST_CASE("calculating size of leaf node with different keys", "[serializing]")
 {
-    leafnode_ptr leaf = boost::make_shared<LeafNode>();
+    leafnode_ptr leaf = boost::make_shared<LeafNode>(intToIntTree);
     for (unsigned i = 0; i < 128; i++)
-        leaf->insert(i, kv_pair(intCopy(i), intCopy(i)));
+        leaf->insert(kv_pair(intCopy(i), intCopy(i)));
 
     LeafNodeSize s(leaf, 1024);
-    REQUIRE( s.splitIndex() == 64);
-    // 64 * 8 == 512, which is half of the block size
-    REQUIRE( s.overflowStart() == 64);
+    REQUIRE( s.splitStart() == leaf->get_at(61));
+    // 61 * 8 + (2 + 2 + 4 + 8) ~ just under 512, which is half of the block size
+    REQUIRE( s.overflowStart() == leaf->get_at(61));
 }
 
 TEST_CASE("calculate overflow when postfix is all the same key", "[serializing]")
 {
-    leafnode_ptr leaf = boost::make_shared<LeafNode>();
+    leafnode_ptr leaf = boost::make_shared<LeafNode>(intToIntTree);
     for (unsigned i = 0; i < 50; i++)
-        leaf->insert(i, kv_pair(intCopy(i), intCopy(i)));
+        leaf->insert(kv_pair(intCopy(i), intCopy(i)));
     for (unsigned i = 50; i < 128; i++)
-        leaf->insert(i, kv_pair(intCopy(50), intCopy(i)));
+        leaf->insert(kv_pair(intCopy(50), intCopy(i)));
 
     LeafNodeSize s(leaf, 1024);
-    REQUIRE( s.overflowStart() == 51);
+    REQUIRE( s.shouldSplit() );
+    REQUIRE( s.overflowStart() == leaf->get_at(51));
     // Put everything after 64 in the overflow block
     // 64 * 8 == 512, which is half of the block size
-    REQUIRE( s.splitIndex() == 128);
+    REQUIRE( s.splitStart() == leaf->get_at(128));
 }
 
 TEST_CASE("calculate overflow when middle is the same key", "[serializing]")
 {
-    leafnode_ptr leaf = boost::make_shared<LeafNode>();
+    leafnode_ptr leaf = boost::make_shared<LeafNode>(intToIntTree);
     for (unsigned i = 0; i < 50; i++)
-        leaf->insert(i, kv_pair(intCopy(i), intCopy(i)));
+        leaf->insert(kv_pair(intCopy(i), intCopy(i)));
     for (unsigned i = 50; i < 128; i++)
-        leaf->insert(i, kv_pair(intCopy(50), intCopy(i)));
-    leaf->insert(128, kv_pair(intCopy(51), intCopy(51)));
+        leaf->insert(kv_pair(intCopy(50), intCopy(i)));
+    leaf->insert(kv_pair(intCopy(51), intCopy(51)));
 
     LeafNodeSize s(leaf, 1024);
-    REQUIRE( s.overflowStart() == 51);
+    REQUIRE( s.overflowStart() == leaf->get_at(51));
     // Put everything after 64 in the overflow block
     // 64 * 8 == 512, which is half of the block size
-    REQUIRE( s.splitIndex() == 128 );
+    REQUIRE( s.splitStart() == leaf->get_at(128) );
 }
 
 
@@ -120,5 +121,5 @@ TEST_CASE("calculating size of overflow node", "[serializing]")
         overflow->append(intCopy(i));
 
     OverflowNodeSize s(overflow, 1024);
-    REQUIRE( s.splitIndex() == 249 );
+    REQUIRE( s.splitIndex() == 248 );
 }

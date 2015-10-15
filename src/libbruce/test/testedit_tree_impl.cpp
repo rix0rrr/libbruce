@@ -27,8 +27,8 @@ TEST_CASE("writing a new single leaf tree")
         leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
 
         REQUIRE(r->pairCount() == 1);
-        REQUIRE(rngcmp(r->pair(0).key, one_r) == 0);
-        REQUIRE(rngcmp(r->pair(0).value, two_r) == 0);
+        REQUIRE(rngcmp(r->get_at(0)->first, one_r) == 0);
+        REQUIRE(rngcmp(r->get_at(0)->second, two_r) == 0);
     }
 
     WHEN("a new key is added to it")
@@ -44,10 +44,10 @@ TEST_CASE("writing a new single leaf tree")
             leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
 
             REQUIRE(r->pairCount() == 2);
-            REQUIRE(rngcmp(r->pair(0).key, one_r) == 0);
-            REQUIRE(rngcmp(r->pair(0).value, two_r) == 0);
-            REQUIRE(rngcmp(r->pair(1).key, two_r) == 0);
-            REQUIRE(rngcmp(r->pair(1).value, one_r) == 0);
+            REQUIRE(rngcmp(r->get_at(0)->first, one_r) == 0);
+            REQUIRE(rngcmp(r->get_at(0)->second, two_r) == 0);
+            REQUIRE(rngcmp(r->get_at(1)->first, two_r) == 0);
+            REQUIRE(rngcmp(r->get_at(1)->second, one_r) == 0);
         }
     }
 }
@@ -104,14 +104,14 @@ TEST_CASE("split is kosher")
 
     for (int i = 0; i < leftNode->pairCount(); i++)
     {
-        REQUIRE( intCompare(leftNode->pair(i).key, splitKey) < 0 );
+        REQUIRE( intCompare(leftNode->get_at(i)->first, splitKey) < 0 );
         if (i > 0)
-            REQUIRE( intCompare(leftNode->pair(i-1).key, leftNode->pair(i).key) <= 0 );
+            REQUIRE( intCompare(leftNode->get_at(i-1)->first, leftNode->get_at(i)->first) <= 0 );
     }
 
     for (int i = 0; i < rightNode->pairCount(); i++)
     {
-        REQUIRE( intCompare(rightNode->pair(i).key, splitKey) >= 0 );
+        REQUIRE( intCompare(rightNode->get_at(i)->first, splitKey) >= 0 );
     }
 }
 

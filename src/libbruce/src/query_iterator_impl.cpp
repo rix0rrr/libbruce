@@ -48,8 +48,8 @@ const memory &query_iterator_impl::key() const
 {
     switch (current().nodeType())
     {
-        case TYPE_LEAF: return current().asLeaf()->pairs[current().index].key;
-        case TYPE_OVERFLOW: return current().asLeaf()->pairs.back().key;  // Because we've already exceeded the index at that level
+        case TYPE_LEAF: return current().leafIter->first;
+        case TYPE_OVERFLOW: return current().asLeaf()->pairs.rbegin()->first;  // Because we've already exceeded the index at that level
         default: throw std::runtime_error("Illegal case");
     }
 }
@@ -59,7 +59,7 @@ const memory &query_iterator_impl::value() const
     switch (current().nodeType())
     {
         case TYPE_OVERFLOW: return current().asOverflow()->values[current().index];
-        case TYPE_LEAF: return current().asLeaf()->pairs[current().index].value;
+        case TYPE_LEAF: return current().leafIter->second;
         default: throw std::runtime_error("Illegal case");
     }
 }
@@ -73,6 +73,9 @@ bool query_iterator_impl::valid() const
 {
     if (!m_rootPath.size()) return false;
 
+    if (current().nodeType() == TYPE_LEAF)
+        return current().leafIter != current().asLeaf()->pairs.end();
+
     return validIndex(current().index);
 }
 
@@ -80,7 +83,7 @@ bool query_iterator_impl::validIndex(int i) const
 {
     switch (current().nodeType())
     {
-        case TYPE_LEAF: return i < current().asLeaf()->pairCount();
+        case TYPE_LEAF: assert(false); return false;
         case TYPE_INTERNAL: return i < current().asInternal()->branchCount();
         case TYPE_OVERFLOW: return i < current().asOverflow()->valueCount();
         default: throw std::runtime_error("Illegal case");
@@ -90,11 +93,29 @@ bool query_iterator_impl::validIndex(int i) const
 void query_iterator_impl::skip(int n)
 {
     // Try to satisfy move by just moving index pointer
-    int potential = current().index + n;
-    if (potential <= 0 && validIndex(potential))
+    switch (current().nodeType())
     {
-        current().index = potential;
-        return;
+        case TYPE_LEAF:
+            {
+                int i = 0;
+                while (i < n && current().leafIter != current().asLeaf()->pairs.end())
+                {
+                    ++i;
+                    ++current().leafIter;
+                }
+                if (i == n) return; // Success
+                break;
+            }
+        default:
+            {
+                int potential = current().index + n;
+                if (potential <= 0 && validIndex(potential))
+                {
+                    current().index = potential;
+                    return;
+                }
+                break;
+            }
     }
 
     // Otherwise do a complete re-seek
@@ -106,14 +127,20 @@ bool query_iterator_impl::pastCurrentEnd() const
     switch (current().nodeType())
     {
         case TYPE_OVERFLOW: return current().asOverflow()->values.size() <= current().index;
-        case TYPE_LEAF: return current().asLeaf()->pairs.size() <= current().index;
+        case TYPE_LEAF: return current().leafIter == current().asLeaf()->pairs.end();
         default: throw std::runtime_error("Illegal case");
     }
 }
 
 void query_iterator_impl::next()
 {
-    current().index++;
+    if (current().nodeType() == TYPE_LEAF)
+    {
+        assert(current().leafIter != current().asLeaf()->pairs.end());
+        ++current().leafIter;
+    }
+    else
+        ++current().index;
     if (pastCurrentEnd()) advanceCurrent();
 }
 
@@ -158,7 +185,7 @@ void query_iterator_impl::travelToNextLeaf()
             const memory &minK = internal->branch(current().index).minKey.size() ? internal->branch(current().index).minKey : current().minKey;
             const memory &maxK = current().index < internal->branchCount() - 1 ? internal->branch(current().index+1).minKey : current().maxKey;
 
-            m_rootPath.push_back(knuckle(next, 0, minK, maxK));
+            m_rootPath.push_back(knuckle(next, minK, maxK));
         }
         else
             popCurrentNode();
@@ -166,13 +193,13 @@ void query_iterator_impl::travelToNextLeaf()
 
     if (m_rootPath.size() && current().nodeType() == TYPE_LEAF)
     {
-        m_tree->applyPendingChanges(current().minKey, current().maxKey, NULL);
+        m_tree->applyPendingChanges(current().minKey, current().maxKey, NULL, &current().leafIter);
     }
 }
 
 void query_iterator_impl::pushOverflow(const node_ptr &overflow)
 {
-    m_rootPath.push_back(knuckle(overflow, 0, memory(), memory()));
+    m_rootPath.push_back(knuckle(overflow, memory(), memory()));
 }
 
 void query_iterator_impl::popOverflows()

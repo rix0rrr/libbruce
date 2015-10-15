@@ -42,6 +42,8 @@ nodeid_t s3be::id(const libbruce::memory &block)
 
 memory s3be::get(const nodeid_t &id)
 {
+    std::cerr << "GET " << id << std::endl;
+
     // Look in the cache
     {
         memory ret;
@@ -102,6 +104,7 @@ void s3be::put_all(putblocklist_t &blocklist)
 
 PutObjectOutcomeCallable s3be::put_one(libbruce::be::putblock_t &block)
 {
+    std::cerr << "PUT " << block.id << std::endl;
     io::basic_array_source<char> memstream((char*)block.mem.ptr(), block.mem.size());
 
     std::shared_ptr<std::stringstream> ss = std::make_shared<std::stringstream>();
@@ -150,6 +153,8 @@ void s3be::del_all(delblocklist_t &ids)
 
 DeleteObjectOutcomeCallable s3be::del_one(libbruce::be::delblock_t &block)
 {
+    std::cerr << "DEL " << block.id << std::endl;
+
     DeleteObjectRequest request;
     request.SetBucket(m_bucket);
     request.SetKey(m_prefix + boost::lexical_cast<std::string>(block.id));

@@ -8,6 +8,7 @@
 #include <boost/make_shared.hpp>
 
 #include <vector>
+#include <map>
 
 namespace libbruce {
 
@@ -21,17 +22,7 @@ class Node;
 
 typedef boost::shared_ptr<Node> node_ptr;
 
-struct kv_pair
-{
-    kv_pair(const memory &key, const memory &value)
-        : key(key), value(value) { }
-
-    memory key;
-    memory value;
-};
-
-typedef std::vector<kv_pair> pairlist_t;
-typedef std::vector<memory> valuelist_t;
+typedef std::pair<memory, memory> kv_pair;
 
 struct node_branch {
     node_branch(const memory &minKey, nodeid_t nodeID, itemcount_t itemCount)
@@ -47,6 +38,25 @@ struct node_branch {
 
     node_ptr child; // Only valid while mutating the tree
 };
+
+
+struct KeyOrder
+{
+    KeyOrder(const tree_functions &fns) : fns(fns) { }
+    const tree_functions &fns;
+
+    bool operator()(const memory &a, const memory &b) const
+    {
+        if (a.empty()) return true;
+        if (b.empty()) return false;
+
+        return fns.keyCompare(a, b) < 0;
+    }
+};
+
+typedef std::multimap<memory, memory, KeyOrder> pairlist_t;
+
+typedef std::vector<memory> valuelist_t;
 
 typedef std::vector<node_branch> branchlist_t;
 
@@ -83,21 +93,20 @@ private:
  */
 struct LeafNode : public Node
 {
-    LeafNode(size_t sizeHint=0);
-    LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end);
+    LeafNode(const tree_functions &fns);
+    LeafNode(std::vector<kv_pair>::const_iterator begin, std::vector<kv_pair>::const_iterator end, const tree_functions &fns);
+    LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end, const tree_functions &fns);
 
     keycount_t pairCount() const { return pairs.size(); }
     virtual const memory &minKey() const;
     virtual itemcount_t itemCount() const;
 
-    void insert(size_t i, const kv_pair &item) { pairs.insert(pairs.begin() + i, item); }
-    void erase(size_t i) { pairs.erase(pairs.begin() + i); }
-    void append(const kv_pair &item) { pairs.push_back(item); }
+    void insert(const kv_pair &item) { pairs.insert(item); }
+    void erase(const pairlist_t::const_iterator &it) { pairs.erase(it); }
 
-    pairlist_t::const_iterator at(keycount_t i) const { return pairs.begin() + i; }
-    pairlist_t::iterator at(keycount_t i) { return pairs.begin() + i; }
-
-    kv_pair &pair(keycount_t i) { return pairs[i]; }
+    // Return a value by index (slow, only for testing!)
+    pairlist_t::const_iterator get_at(int n) const;
+    pairlist_t::iterator get_at(int n);
 
     void setOverflow(const node_ptr &node);
 
@@ -160,18 +169,6 @@ struct InternalNode : public Node
 typedef boost::shared_ptr<LeafNode> leafnode_ptr;
 typedef boost::shared_ptr<OverflowNode> overflownode_ptr;
 typedef boost::shared_ptr<InternalNode> internalnode_ptr;
-
-/**
- * Return the index where to INSERT a particular key.
- *
- * POST: leaf[ret-1].key <= key < leaf[ret].key
- */
-keycount_t FindLeafInsertKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns);
-
-/**
- * Return the index where to UPDATE or INSERT a particular key in a leaf.
- */
-keycount_t FindLeafUpsertKey(const leafnode_ptr &leaf, const memory &key, const tree_functions &fns);
 
 /**
  * Return the index where the subtree for a particular key will be located

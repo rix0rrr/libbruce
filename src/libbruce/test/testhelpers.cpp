@@ -66,14 +66,14 @@ nodeid_t putNode(be::mem &mem, const node_ptr &node)
 
 //----------------------------------------------------------------------
 
-make_leaf::make_leaf()
-    : leaf(boost::make_shared<LeafNode>())
+make_leaf::make_leaf(const tree_functions &fns)
+    : leaf(boost::make_shared<LeafNode>(fns))
 {
 }
 
 make_leaf &make_leaf::kv(const memory &k, const memory &v)
 {
-    leaf->append(kv_pair(k, v));
+    leaf->insert(kv_pair(k, v));
     return *this;
 }
 

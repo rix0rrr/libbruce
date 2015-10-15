@@ -21,11 +21,11 @@ TEST_CASE("int to int tree")
 
     memory page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
-    memory k = node->pair(0).key;
-    REQUIRE( traits::convert<uint32_t>::from_bytes(node->pair(0).key) == 1 );
-    REQUIRE( traits::convert<uint32_t>::from_bytes(node->pair(0).value) == 1 );
-    REQUIRE( traits::convert<uint32_t>::from_bytes(node->pair(1).key) == 2 );
-    REQUIRE( traits::convert<uint32_t>::from_bytes(node->pair(1).value) == 2 );
+
+    REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(0)->first) == 1 );
+    REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(0)->second) == 1 );
+    REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(1)->first) == 2 );
+    REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(1)->second) == 2 );
 }
 
 TEST_CASE("string to int tree")
@@ -39,11 +39,11 @@ TEST_CASE("string to int tree")
 
     memory page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, uint32_t>::fns()));
-    memory k = node->pair(0).key;
-    REQUIRE( traits::convert<std::string>::from_bytes(node->pair(0).key) == "one" );
-    REQUIRE( traits::convert<uint32_t>::from_bytes(node->pair(0).value) == 1 );
-    REQUIRE( traits::convert<std::string>::from_bytes(node->pair(1).key) == "two" );
-    REQUIRE( traits::convert<uint32_t>::from_bytes(node->pair(1).value) == 2 );
+
+    REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(0)->first) == "one" );
+    REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(0)->second) == 1 );
+    REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(1)->first) == "two" );
+    REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(1)->second) == 2 );
 }
 
 TEST_CASE("in to string tree")
@@ -57,11 +57,11 @@ TEST_CASE("in to string tree")
 
     memory page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<uint32_t, std::string>::fns()));
-    memory k = node->pair(0).key;
-    REQUIRE( traits::convert<uint32_t>::from_bytes(node->pair(0).key) == 1 );
-    REQUIRE( traits::convert<std::string>::from_bytes(node->pair(0).value) == "one is one" );
-    REQUIRE( traits::convert<uint32_t>::from_bytes(node->pair(1).key) == 2 );
-    REQUIRE( traits::convert<std::string>::from_bytes(node->pair(1).value) == "two is two" );
+
+    REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(0)->first) == 1 );
+    REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(0)->second) == "one is one" );
+    REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(1)->first) == 2 );
+    REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(1)->second) == "two is two" );
 }
 
 TEST_CASE("binary to string tree")
@@ -75,19 +75,19 @@ TEST_CASE("binary to string tree")
 
     memory page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, binary>::fns()));
-    memory k = node->pair(0).key;
-    REQUIRE( traits::convert<std::string>::from_bytes(node->pair(0).key) == "one" );
-    REQUIRE( traits::convert<binary>::from_bytes(node->pair(0).value) == binary("\x01\x00\x01", 3) );
-    REQUIRE( traits::convert<std::string>::from_bytes(node->pair(1).key) == "two" );
-    REQUIRE( traits::convert<binary>::from_bytes(node->pair(1).value) == binary("\x02\x00\x02", 3) );
+    memory k = node->get_at(0)->first;
+    REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(0)->first) == "one" );
+    REQUIRE( traits::convert<binary>::from_bytes(node->get_at(0)->second) == binary("\x01\x00\x01", 3) );
+    REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(1)->first) == "two" );
+    REQUIRE( traits::convert<binary>::from_bytes(node->get_at(1)->second) == binary("\x02\x00\x02", 3) );
 }
 
-TEST_CASE("test inserting into overflow block ", "[nodes]")
+TEST_CASE("test inserting into overflow block", "[nodes]")
 {
     be::mem mem(1024);
     edit_tree<int, int> t(maybe_nodeid(), mem);
 
-    // This should produce 2 overflow blocks
+    // This should produce a leaf node with 1 key and 2 overflow blocks
     for (int i = 0; i < 300; i++)
         t.insert(0, i);
 
@@ -103,10 +103,10 @@ TEST_CASE("remove branch when empty")
 
     // GIVEN
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1)
            .put(mem)) // 0
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(2, 2)
            .put(mem)) // 1
         .put(mem); // 2
@@ -132,10 +132,10 @@ TEST_CASE("upserts")
 
     // GIVEN
     put_result root = make_internal()
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(1, 1)
            .put(mem)) // 0
-        .brn(make_leaf()
+        .brn(make_leaf(intToIntTree)
            .kv(3, 3)
            .put(mem)) // 1
         .put(mem); // 2

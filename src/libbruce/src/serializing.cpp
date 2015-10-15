@@ -26,7 +26,8 @@ struct NodeParser
 
     leafnode_ptr parseLeafNode()
     {
-        leafnode_ptr ret = boost::make_shared<LeafNode>(keyCount());
+        std::vector<kv_pair> items;
+        items.reserve(keyCount());
 
         // Read N keys
         for (keycount_t i = 0; i < keyCount(); i++)
@@ -35,7 +36,7 @@ struct NodeParser
             uint32_t size = fns.keySize(m_input.at<const char>(m_offset));
 
             // Push back
-            ret->pairs.push_back(kv_pair(m_input.slice(m_offset, size), memory()));
+            items.push_back(kv_pair(m_input.slice(m_offset, size), memory()));
 
             m_offset += size;
         }
@@ -47,10 +48,12 @@ struct NodeParser
             uint32_t size = fns.valueSize(m_input.at<const char>(m_offset));
 
             // Couple value to key
-            ret->pairs[i].value = m_input.slice(m_offset, size);
+            items[i].second = m_input.slice(m_offset, size);
 
             m_offset += size;
         }
+
+        leafnode_ptr ret = boost::make_shared<LeafNode>(items.begin(), items.end(), fns);
 
         validateOffset();
         ret->overflow.count = *m_input.at<itemcount_t>(m_offset);
@@ -195,45 +198,60 @@ bool NodeSize::shouldSplit()
     return m_blockSize < m_size;
 }
 
-keycount_t NodeSize::splitIndex()
-{
-    return m_splitIndex;
-}
+//----------------------------------------------------------------------
 
 LeafNodeSize::LeafNodeSize(const leafnode_ptr &node, uint32_t blockSize)
     : NodeSize(blockSize)
 {
-    uint32_t splitSize = m_size;
-
     m_size += sizeof(itemcount_t) + sizeof(nodeid_t);  // For the chained overflow block
+    uint32_t splitSize = m_size; // Header
 
-    // Calculate size
+    // Calculate ACTUAL size
     BOOST_FOREACH(const kv_pair &p, node->pairs)
     {
-        m_size += p.key.size() + p.value.size();
+        m_size += p.first.size() + p.second.size();
     }
 
-    if (shouldSplit())
+    if (shouldSplit() && !node->pairs.empty())
     {
+        // FIXME: These 2 loops can be rolled into one
         uint32_t pieceSize = std::ceil(m_blockSize / 2.0);
 
-        for (m_splitIndex = 1; m_splitIndex < node->pairCount(); m_splitIndex++)
+        pairlist_t::const_iterator here;
+        pairlist_t::const_iterator startOfThisKey = node->pairs.begin();
+
+        for (pairlist_t::const_iterator it = node->pairs.begin(); it != node->pairs.end(); ++it)
         {
-            splitSize += node->pair(m_splitIndex-1).key.size() + node->pair(m_splitIndex-1).value.size();
+            if (!(it->first == startOfThisKey->first))
+                startOfThisKey = it;
+
+            splitSize += it->first.size() + it->second.size();
             if (splitSize > pieceSize)
+            {
+                here = it;
                 break;
+            }
         }
 
-        m_overflowStart = m_splitIndex;
+        // 'here' is in the middle of the highest key range that should still be included.
+        //
+        // [K][K............K)[L]
+        //    |     |         |
+        //    |    here      splitStart
+        //   overflowstart
 
         // Move the split index forwards while we're on the same key
-        while (m_splitIndex < node->pairCount() && node->pair(m_overflowStart-1).key == node->pair(m_splitIndex).key)
-            m_splitIndex++;
+        m_splitStart = here;
+        while (m_splitStart != node->pairs.end() && m_splitStart->first == here->first)
+            ++m_splitStart;
+
         // Move the overflow start back while there is still a key before it that is the same
-        while (1 < m_overflowStart && node->pair(m_overflowStart-2).key == node->pair(m_overflowStart-1).key)
-            m_overflowStart--;
+        m_overflowStart = startOfThisKey;
+        ++m_overflowStart;
     }
 }
+
+//----------------------------------------------------------------------
 
 OverflowNodeSize::OverflowNodeSize(const overflownode_ptr &node, uint32_t blockSize)
     : NodeSize(blockSize)
@@ -312,15 +330,15 @@ memory SerializeLeafNode(const leafnode_ptr &node)
     // Keys
     BOOST_FOREACH(const kv_pair &pair, node->pairs)
     {
-        memcpy(mem.at<char>(offset), pair.key.ptr(), pair.key.size());
-        offset += pair.key.size();
+        memcpy(mem.at<char>(offset), pair.first.ptr(), pair.first.size());
+        offset += pair.first.size();
     }
 
     // Values
     BOOST_FOREACH(const kv_pair &pair, node->pairs)
     {
-        memcpy(mem.at<char>(offset), pair.value.ptr(), pair.value.size());
-        offset += pair.value.size();
+        memcpy(mem.at<char>(offset), pair.second.ptr(), pair.second.size());
+        offset += pair.second.size();
     }
 
     // Overflow block
