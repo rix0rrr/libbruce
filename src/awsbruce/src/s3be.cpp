@@ -114,10 +114,6 @@ PutObjectOutcomeCallable s3be::put_one(libbruce::be::putblock_t &block)
     in.push(*ss);
     io::copy(memstream, in);
 
-    std::fstream of("test.bin", std::fstream::out | std::fstream::binary |
-                    std::fstream::trunc);
-    io::copy(memstream, of);
-
     PutObjectRequest request;
     request.SetBucket(m_bucket);
     request.SetKey(m_prefix + boost::lexical_cast<std::string>(block.id));
