@@ -195,7 +195,7 @@ NodeSize::NodeSize(uint32_t blockSize)
 
 bool NodeSize::shouldSplit()
 {
-    return m_blockSize < m_size;
+    return m_blockSize && m_blockSize < m_size;
 }
 
 //----------------------------------------------------------------------

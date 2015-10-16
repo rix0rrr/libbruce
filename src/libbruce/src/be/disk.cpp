@@ -45,6 +45,9 @@ nodeid_t disk::id(const memory &block)
 
 void disk::put_all(putblocklist_t &blocklist)
 {
+    if (!m_maxBlockSize)
+        throw be_error("Can't put; engine is read-only");
+
     for (int i = 0; i < blocklist.size(); i++)
     {
         put_one(blocklist[i]);
@@ -63,6 +66,9 @@ void disk::put_one(putblock_t &block)
 
 void disk::del_all(delblocklist_t &ids)
 {
+    if (!m_maxBlockSize)
+        throw be_error("Can't delete; engine is read-only");
+
     for (int i = 0; i < ids.size(); i++)
     {
         del_one(ids[i]);
