@@ -3,7 +3,6 @@
 #include <cassert>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 
 #include "nodes.h"
 #include "serializing.h"
@@ -270,18 +269,18 @@ mutation edit_tree_impl::collectMutation()
     mutation ret(m_rootID);
     bool failed = false;
 
-    BOOST_FOREACH(const be::putblock_t &put, m_putBlocks)
+    for (be::putblocklist_t::const_iterator it = m_putBlocks.begin(); it != m_putBlocks.end(); ++it)
     {
-        if (put.success)
-            ret.addCreated(put.id);
+        if (it->success)
+            ret.addCreated(it->id);
         else
             failed = true;
     }
     if (failed)
         ret.fail("Failed to write some blocks to the block engine");
 
-    BOOST_FOREACH(nodeid_t id, m_loadedIDs)
-        ret.addObsolete(id);
+    for (std::vector<nodeid_t>::const_iterator it = m_loadedIDs.begin(); it != m_loadedIDs.end(); ++it)
+        ret.addObsolete(*it);
 
     return ret;
 }
@@ -297,10 +296,10 @@ NODE_CASE_OVERFLOW
         overflow->next.nodeID = collectBlocksToPutRec(overflow->next.node);
 
 NODE_CASE_INT
-    BOOST_FOREACH(node_branch &b, internal->branches)
+    for (branchlist_t::iterator it = internal->branches.begin(); it != internal->branches.end(); ++it)
     {
-        if (b.child)
-            b.nodeID = collectBlocksToPutRec(b.child);
+        if (it->child)
+            it->nodeID = collectBlocksToPutRec(it->child);
     }
 
 NODE_CASE_END

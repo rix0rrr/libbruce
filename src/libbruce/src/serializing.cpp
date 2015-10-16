@@ -12,7 +12,6 @@
 
 #include <cmath>
 #include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 
 #define to_string boost::lexical_cast<std::string>
 
@@ -254,9 +253,9 @@ OverflowNodeSize::OverflowNodeSize(const overflownode_ptr &node, uint32_t blockS
     m_size += sizeof(itemcount_t) + sizeof(nodeid_t);  // For the chained overflow block
     uint32_t baseSize = m_size;
 
-    BOOST_FOREACH(const memory &value, node->values)
+    for (valuelist_t::const_iterator it = node->values.begin(); it != node->values.end(); ++it)
     {
-        m_size += value.size();
+        m_size += it->size();
     }
 
     if (shouldSplit())
@@ -280,11 +279,11 @@ InternalNodeSize::InternalNodeSize(const internalnode_ptr &node, uint32_t blockS
     uint32_t splitSize = m_size;
     bool first = true;
 
-    BOOST_FOREACH(const node_branch &b, node->branches)
+    for (branchlist_t::const_iterator it = node->branches.begin(); it != node->branches.end(); ++it)
     {
         // We never store the first key
         if (!first)
-            m_size += b.minKey.size();
+            m_size += it->minKey.size();
         m_size += sizeof(nodeid_t) + sizeof(itemcount_t);
         first = false;
     }
@@ -323,17 +322,17 @@ memory SerializeLeafNode(const leafnode_ptr &node)
     offset += sizeof(keycount_t);
 
     // Keys
-    BOOST_FOREACH(const kv_pair &pair, node->pairs)
+    for (pairlist_t::const_iterator it = node->pairs.begin(); it != node->pairs.end(); ++it)
     {
-        memcpy(mem.at<char>(offset), pair.first.ptr(), pair.first.size());
-        offset += pair.first.size();
+        memcpy(mem.at<char>(offset), it->first.ptr(), it->first.size());
+        offset += it->first.size();
     }
 
     // Values
-    BOOST_FOREACH(const kv_pair &pair, node->pairs)
+    for (pairlist_t::const_iterator it = node->pairs.begin(); it != node->pairs.end(); ++it)
     {
-        memcpy(mem.at<char>(offset), pair.second.ptr(), pair.second.size());
-        offset += pair.second.size();
+        memcpy(mem.at<char>(offset), it->second.ptr(), it->second.size());
+        offset += it->second.size();
     }
 
     // Overflow block
@@ -362,10 +361,10 @@ memory SerializeOverflowNode(const overflownode_ptr &node)
     offset += sizeof(keycount_t);
 
     // Values
-    BOOST_FOREACH(const memory &value, node->values)
+    for (valuelist_t::const_iterator it = node->values.begin(); it != node->values.end(); ++it)
     {
-        memcpy(mem.at<char>(offset), value.ptr(), value.size());
-        offset += value.size();
+        memcpy(mem.at<char>(offset), it->ptr(), it->size());
+        offset += it->size();
     }
 
     // Next overflow block
@@ -395,27 +394,27 @@ memory SerializeInternalNode(const internalnode_ptr &node)
 
     // Keys (except the 1st one)
     bool first = true;
-    BOOST_FOREACH(const node_branch &b, node->branches)
+    for (branchlist_t::const_iterator it = node->branches.begin(); it != node->branches.end(); ++it)
     {
         if (!first)
         {
-            memcpy(mem.at<char>(offset), b.minKey.ptr(), b.minKey.size());
-            offset += b.minKey.size();
+            memcpy(mem.at<char>(offset), it->minKey.ptr(), it->minKey.size());
+            offset += it->minKey.size();
         }
         first = false;
     }
 
     // IDs
-    BOOST_FOREACH(const node_branch &b, node->branches)
+    for (branchlist_t::const_iterator it = node->branches.begin(); it != node->branches.end(); ++it)
     {
-        *mem.at<nodeid_t>(offset) = b.nodeID;
+        *mem.at<nodeid_t>(offset) = it->nodeID;
         offset += sizeof(nodeid_t);
     }
 
     // Item counts
-    BOOST_FOREACH(const node_branch &b, node->branches)
+    for (branchlist_t::const_iterator it = node->branches.begin(); it != node->branches.end(); ++it)
     {
-        *mem.at<itemcount_t>(offset) = b.itemCount;
+        *mem.at<itemcount_t>(offset) = it->itemCount;
         offset += sizeof(itemcount_t);
     }
 
