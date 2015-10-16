@@ -101,8 +101,22 @@ struct LeafNode : public Node
     virtual const memory &minKey() const;
     virtual itemcount_t itemCount() const;
 
-    void insert(const kv_pair &item) { pairs.insert(item); }
-    void erase(const pairlist_t::const_iterator &it) { pairs.erase(it); }
+    void insert(const kv_pair &item)
+    {
+        m_elementsSize += item.first.size() + item.second.size();
+        pairs.insert(item);
+    }
+    pairlist_t::iterator erase(const pairlist_t::iterator &it)
+    {
+        m_elementsSize -= it->first.size() + it->second.size();
+        return pairs.erase(it);
+    }
+    void update_value(pairlist_t::iterator &it, const memory &value)
+    {
+        m_elementsSize -= it->second.size();
+        m_elementsSize += value.size();
+        it->second = value;
+    }
 
     // Return a value by index (slow, only for testing!)
     pairlist_t::const_iterator get_at(int n) const;
@@ -112,6 +126,11 @@ struct LeafNode : public Node
 
     pairlist_t pairs;
     overflow_t overflow;
+
+    size_t elementsSize() const { return m_elementsSize; }
+private:
+    size_t m_elementsSize;
+    void calcSize();
 };
 
 /**

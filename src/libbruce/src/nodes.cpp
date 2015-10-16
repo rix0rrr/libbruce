@@ -21,18 +21,28 @@ Node::~Node()
 //----------------------------------------------------------------------
 
 LeafNode::LeafNode(const tree_functions &fns)
-    : Node(TYPE_LEAF), pairs(KeyOrder(fns))
+    : Node(TYPE_LEAF), pairs(KeyOrder(fns)), m_elementsSize(0)
 {
 }
 
 LeafNode::LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end, const tree_functions &fns)
-    : Node(TYPE_LEAF), pairs(begin, end, KeyOrder(fns))
+    : Node(TYPE_LEAF), pairs(begin, end, KeyOrder(fns)), m_elementsSize(0)
 {
+    calcSize();
 }
 
 LeafNode::LeafNode(std::vector<kv_pair>::const_iterator begin, std::vector<kv_pair>::const_iterator end, const tree_functions &fns)
-    : Node(TYPE_LEAF), pairs(begin, end, KeyOrder(fns))
+    : Node(TYPE_LEAF), pairs(begin, end, KeyOrder(fns)), m_elementsSize(0)
 {
+    calcSize();
+}
+
+void LeafNode::calcSize()
+{
+    for (pairlist_t::const_iterator it = pairs.begin(); it != pairs.end(); ++it)
+    {
+        m_elementsSize += it->first.size() + it->second.size();
+    }
 }
 
 const memory &LeafNode::minKey() const

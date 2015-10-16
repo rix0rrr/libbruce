@@ -79,11 +79,11 @@ bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, cons
         // Adjust an existing pointer into this leaf if necessary.
         if (leafIter && *leafIter == eraseLocation)
         {
-            *leafIter = leaf->pairs.erase(eraseLocation);
+            *leafIter = leaf->erase(eraseLocation);
             eraseLocation = *leafIter;
         }
         else {
-            eraseLocation = leaf->pairs.erase(eraseLocation);
+            eraseLocation = leaf->erase(eraseLocation);
         }
 
         // If we removed the final position, pull back from the overflow block
@@ -91,7 +91,7 @@ bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, cons
         if (eraseLocation == leaf->pairs.end() && !leaf->overflow.empty())
         {
             memory ret = pullFromOverflow(leaf->overflow.node);
-            leaf->pairs.insert(kv_pair(key, ret));
+            leaf->insert(kv_pair(key, ret));
             leaf->setOverflow(leaf->overflow.node);
 
             // If we had a pointer to adjust, it was just invalidated, so point to the back item

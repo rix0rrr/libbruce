@@ -302,7 +302,7 @@ NODE_CASE_LEAF
             {
                 pairlist_t::iterator it = leaf->pairs.find(edit.key);
                 if (it != leaf->pairs.end())
-                    it->second = edit.value;
+                    leaf->update_value(it, edit.value);
                 else
                 {
                     leaf->insert(kv_pair(edit.key, edit.value));

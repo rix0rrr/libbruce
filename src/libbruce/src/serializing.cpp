@@ -206,15 +206,10 @@ LeafNodeSize::LeafNodeSize(const leafnode_ptr &node, uint32_t blockSize)
     m_size += sizeof(itemcount_t) + sizeof(nodeid_t);  // For the chained overflow block
     uint32_t splitSize = m_size; // Header
 
-    // Calculate ACTUAL size
-    BOOST_FOREACH(const kv_pair &p, node->pairs)
-    {
-        m_size += p.first.size() + p.second.size();
-    }
+    m_size += node->elementsSize();
 
     if (shouldSplit() && !node->pairs.empty())
     {
-        // FIXME: These 2 loops can be rolled into one
         uint32_t pieceSize = std::ceil(m_blockSize / 2.0);
 
         pairlist_t::const_iterator here;

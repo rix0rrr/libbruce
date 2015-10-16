@@ -66,7 +66,7 @@ NODE_CASE_LEAF
     if (upsert && it != leaf->pairs.end())
     {
         // Update
-        it->second = value;
+        leaf->update_value(it, value);
     }
     else
     {
