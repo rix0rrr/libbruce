@@ -26,24 +26,14 @@ LeafNode::LeafNode(const tree_functions &fns)
 }
 
 LeafNode::LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end, const tree_functions &fns)
-    : Node(TYPE_LEAF), pairs(KeyOrder(fns)), m_elementsSize(0)
+    : Node(TYPE_LEAF), pairs(begin, end, KeyOrder(fns)), m_elementsSize(0)
 {
-    for (pairlist_t::const_iterator it = begin; it != end; ++it)
-    {
-        pairs.insert(pairs.end(), *it);
-    }
-
     calcSize();
 }
 
 LeafNode::LeafNode(std::vector<kv_pair>::const_iterator begin, std::vector<kv_pair>::const_iterator end, const tree_functions &fns)
-    : Node(TYPE_LEAF), pairs(KeyOrder(fns)), m_elementsSize(0)
+    : Node(TYPE_LEAF), pairs(boost::container::ordered_range_t(), begin, end, KeyOrder(fns)), m_elementsSize(0)
 {
-    for (std::vector<kv_pair>::const_iterator it = begin; it != end; ++it)
-    {
-        pairs.insert(pairs.end(), *it);
-    }
-
     calcSize();
 }
 

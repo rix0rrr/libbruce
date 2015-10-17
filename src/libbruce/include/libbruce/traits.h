@@ -11,8 +11,6 @@
 
 #include <boost/lexical_cast.hpp>
 
-#define to_string boost::lexical_cast<std::string>
-
 namespace libbruce {
 
 namespace traits {
@@ -45,7 +43,7 @@ struct convert
     {
         // Assume types are little-endian, so compare from the back
         if (a.size() != b.size())
-            throw std::runtime_error((std::string("Type sizes not equal. ") + to_string(a.size()) + " != " + to_string(b.size())).c_str());
+            throw std::runtime_error((std::string("Type sizes not equal. ") + boost::lexical_cast<std::string>(a.size()) + " != " + boost::lexical_cast<std::string>(b.size())).c_str());
 
         const T &aa = *a.at<T>(0);
         const T &bb = *b.at<T>(0);

@@ -6,6 +6,8 @@
 #include <libbruce/memory.h>
 #include <libbruce/types.h>
 #include <boost/make_shared.hpp>
+#include <boost/container/container_fwd.hpp>
+#include <boost/container/flat_map.hpp>
 
 #include <vector>
 #include <map>
@@ -39,11 +41,10 @@ struct node_branch {
     node_ptr child; // Only valid while mutating the tree
 };
 
-
 struct KeyOrder
 {
     KeyOrder(const tree_functions &fns) : fns(fns) { }
-    const tree_functions &fns;
+    tree_functions fns;
 
     bool operator()(const memory &a, const memory &b) const
     {
@@ -54,7 +55,7 @@ struct KeyOrder
     }
 };
 
-typedef std::multimap<memory, memory, KeyOrder> pairlist_t;
+typedef boost::container::flat_multimap<memory, memory, KeyOrder > pairlist_t;
 
 typedef std::vector<memory> valuelist_t;
 

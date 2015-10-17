@@ -67,7 +67,7 @@ Vagrant.configure(2) do |config|
   #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
   # end
 
-  config.vm.synced_folder "src", "/home/vagrant/bruce/src",
+  config.vm.synced_folder "..", "/home/vagrant/bruce",
       owner: "vagrant"
 
   # Enable provisioning with a shell script. Additional provisioners such as
