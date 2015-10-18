@@ -30,16 +30,18 @@ StatsCollector::~StatsCollector()
 {
 }
 
-void StatsCollector::visitInternal(const internalnode_ptr &node, int depth)
+void StatsCollector::visitInternal(const nodeid_t &id, const internalnode_ptr &node, int depth)
 {
+    m_ids.push_back(id);
     m_maxDepth = std::max(depth, m_maxDepth);
 
     InternalNodeSize s(node, 0);
     m_internalSizes.push_back(s.size());
 }
 
-void StatsCollector::visitLeaf(const leafnode_ptr &leaf, int depth)
+void StatsCollector::visitLeaf(const nodeid_t &id, const leafnode_ptr &leaf, int depth)
 {
+    m_ids.push_back(id);
     m_maxDepth = std::max(depth, m_maxDepth);
     m_maxLeafDepth = std::max(depth, m_maxLeafDepth);
 
@@ -51,8 +53,9 @@ void StatsCollector::visitLeaf(const leafnode_ptr &leaf, int depth)
     m_lastLeafDepth = depth;
 }
 
-void StatsCollector::visitOverflow(const overflownode_ptr &overflow, int depth)
+void StatsCollector::visitOverflow(const nodeid_t &id, const overflownode_ptr &overflow, int depth)
 {
+    m_ids.push_back(id);
     m_maxDepth = std::max(depth, m_maxDepth);
     m_longestOverflowChain = std::max(depth - m_lastLeafDepth, m_longestOverflowChain);
 
@@ -67,7 +70,13 @@ void StatsCollector::print(std::ostream &os)
     int nodeCount = m_leafSizes.size() + m_overflowSizes.size() + m_internalSizes.size();
     size_t totalSize = sum(m_leafSizes) + sum(m_overflowSizes) + sum(m_internalSizes);
 
-    os  << "Leaf values                : " << m_leafValues << std::endl
+    os << "Node list:" << std::endl;
+
+    for (idlist_t::const_iterator it = m_ids.begin(); it != m_ids.end(); ++it)
+        os << *it << std::endl;
+
+    os  << std::endl
+        << "Leaf values                : " << m_leafValues << std::endl
         << "Overflow values            : " << m_overflowValues << std::endl
         << "Total values               : " << (m_leafValues + m_overflowValues) << std::endl
         << std::endl
@@ -80,7 +89,8 @@ void StatsCollector::print(std::ostream &os)
         << "Overflow size              : " << sum(m_overflowSizes) << std::endl
         << "Internal size              : " << sum(m_internalSizes) << std::endl
         << "Total size                 : " << totalSize << std::endl
-        << "Fill degree                : " << ((double)(100 * totalSize) / (nodeCount * m_blockSize)) << "%" << std::endl
+        << "Leaf fill degree           : " << ((double)(100 * sum(m_leafSizes)) / (m_leafSizes.size() * m_blockSize)) << "%" << std::endl
+        << "Average fill degree        : " << ((double)(100 * totalSize) / (nodeCount * m_blockSize)) << "%" << std::endl
         << std::endl
         << "Depth                      : " << m_maxDepth << std::endl
         << "Leaf depth                 : " << m_maxLeafDepth << std::endl

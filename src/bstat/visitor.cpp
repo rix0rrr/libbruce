@@ -18,7 +18,7 @@ void doWalk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, cons
         case TYPE_LEAF:
             {
                 leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(node);
-                visitor.visitLeaf(leaf, depth);
+                visitor.visitLeaf(id, leaf, depth);
 
                 if (!leaf->overflow.empty())
                     doWalk(leaf->overflow.nodeID, visitor, blockEngine, fns, depth+1);
@@ -29,7 +29,7 @@ void doWalk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, cons
         case TYPE_INTERNAL:
             {
                 internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(node);
-                visitor.visitInternal(internal, depth);
+                visitor.visitInternal(id, internal, depth);
 
                 for (branchlist_t::iterator it = internal->branches.begin(); it != internal->branches.end(); ++it)
                 {
@@ -42,7 +42,7 @@ void doWalk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, cons
         case TYPE_OVERFLOW:
             {
                 overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
-                visitor.visitOverflow(overflow, depth);
+                visitor.visitOverflow(id, overflow, depth);
 
                 if (!overflow->next.empty())
                     doWalk(overflow->next.nodeID, visitor, blockEngine, fns, depth+1);
