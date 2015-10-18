@@ -9,7 +9,7 @@ BruceVisitor::~BruceVisitor()
 {
 }
 
-void walk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, const tree_functions &fns)
+void doWalk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, const tree_functions &fns, int depth)
 {
     mempage mem = blockEngine.get(id);
     node_ptr node = ParseNode(mem, fns);
@@ -18,10 +18,10 @@ void walk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, const 
         case TYPE_LEAF:
             {
                 leafnode_ptr leaf = boost::static_pointer_cast<LeafNode>(node);
-                visitor.visitLeaf(leaf);
+                visitor.visitLeaf(leaf, depth);
 
                 if (!leaf->overflow.empty())
-                    walk(leaf->overflow.nodeID, visitor, blockEngine, fns);
+                    doWalk(leaf->overflow.nodeID, visitor, blockEngine, fns, depth+1);
 
                 break;
             }
@@ -29,11 +29,11 @@ void walk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, const 
         case TYPE_INTERNAL:
             {
                 internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(node);
-                visitor.visitInternal(internal);
+                visitor.visitInternal(internal, depth);
 
                 for (branchlist_t::iterator it = internal->branches.begin(); it != internal->branches.end(); ++it)
                 {
-                    walk(it->nodeID, visitor, blockEngine, fns);
+                    doWalk(it->nodeID, visitor, blockEngine, fns, depth+1);
                 }
 
                 break;
@@ -42,10 +42,10 @@ void walk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, const 
         case TYPE_OVERFLOW:
             {
                 overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
-                visitor.visitOverflow(overflow);
+                visitor.visitOverflow(overflow, depth);
 
                 if (!overflow->next.empty())
-                    walk(overflow->next.nodeID, visitor, blockEngine, fns);
+                    doWalk(overflow->next.nodeID, visitor, blockEngine, fns, depth+1);
 
                 break;
             }
@@ -53,4 +53,9 @@ void walk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, const 
         default:
             throw std::runtime_error("Unrecognized node type");
     }
+}
+
+void walk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, const tree_functions &fns)
+{
+    doWalk(id, visitor, blockEngine, fns, 1);
 }

@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 #include <libbruce/bruce.h>
-#include "visitor.h"
+#include "stats.h"
 
 using namespace libbruce;
 
@@ -23,5 +23,10 @@ int main(int argc, char* argv[])
     }
 
     be::disk be(argv[1], 0); // Block size doesn't matter, we're only reading
-    stringbruce b(be);
+
+    nodeid_t id = boost::lexical_cast<nodeid_t>(std::string(argv[2]));
+
+    StatsCollector collector(1024 * 1024);
+    walk(id, collector, be, stringbruce::fns);
+    collector.print(std::cout);
 }
