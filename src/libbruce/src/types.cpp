@@ -1,4 +1,5 @@
 #include <libbruce/types.h>
+#include <stdio.h>
 
 namespace libbruce {
 

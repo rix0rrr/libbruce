@@ -3,6 +3,7 @@
 #define BRUCE_TYPES_H
 
 #include <utility>
+#include <string.h>
 #include <boost/optional.hpp>
 
 #include <libbruce/memory.h>

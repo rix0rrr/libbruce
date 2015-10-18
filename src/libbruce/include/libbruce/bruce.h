@@ -15,6 +15,8 @@
 
 namespace libbruce {
 
+bool doFinish(be::be &blockEngine, mutation &mut, bool success);
+
 template<typename K, typename V>
 class bruce
 {
@@ -77,8 +79,6 @@ public:
 private:
     be::be &m_blockEngine;
 };
-
-bool doFinish(be::be &blockEngine, mutation &mut, bool success);
 
 }
 

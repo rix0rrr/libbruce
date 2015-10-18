@@ -17,7 +17,7 @@ disk::disk(std::string pathPrefix, uint32_t maxBlockSize)
 
 memory disk::get(const nodeid_t &id)
 {
-    std::fstream file(m_pathPrefix + boost::lexical_cast<std::string>(id),
+    std::fstream file((m_pathPrefix + boost::lexical_cast<std::string>(id)).c_str(),
                       std::fstream::in | std::fstream::binary | std::fstream::ate);
     size_t size = file.tellg();
     file.seekg(0);
@@ -58,7 +58,7 @@ void disk::put_one(putblock_t &block)
 {
     io::basic_array_source<char> memstream((char*)block.mem.ptr(), block.mem.size());
 
-    std::fstream file(m_pathPrefix + boost::lexical_cast<std::string>(block.id),
+    std::fstream file((m_pathPrefix + boost::lexical_cast<std::string>(block.id)).c_str(),
                       std::fstream::out | std::fstream::binary | std::fstream::trunc);
     io::copy(memstream, file);
     block.success = true;
