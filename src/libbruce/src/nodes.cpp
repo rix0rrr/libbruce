@@ -32,6 +32,7 @@ LeafNode::LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator 
 }
 
 LeafNode::LeafNode(std::vector<kv_pair>::const_iterator begin, std::vector<kv_pair>::const_iterator end, const tree_functions &fns)
+    // Do a guaranteed ordered map construction (faster than individual inserts)
     : Node(TYPE_LEAF), pairs(boost::container::ordered_range_t(), begin, end, KeyOrder(fns)), m_elementsSize(0)
 {
     calcSize();
