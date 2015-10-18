@@ -15,6 +15,10 @@
 
 #define to_string boost::lexical_cast<std::string>
 
+#define VALIDATE_OFFSET \
+    if (m_offset >= m_input.size()) \
+        throw std::runtime_error((std::string("End of block while parsing node data: ") + to_string(m_offset) + " >= " + to_string(m_input.size())).c_str())
+
 namespace libbruce {
 
 
@@ -31,7 +35,7 @@ struct NodeParser
         // Read N keys
         for (keycount_t i = 0; i < keyCount(); i++)
         {
-            validateOffset();
+            VALIDATE_OFFSET;
             uint32_t size = fns.keySize(m_input.at<const char>(m_offset));
 
             // Push back
@@ -43,7 +47,7 @@ struct NodeParser
         // Read N values
         for (keycount_t i = 0; i < keyCount(); i++)
         {
-            validateOffset();
+            VALIDATE_OFFSET;
             uint32_t size = fns.valueSize(m_input.at<const char>(m_offset));
 
             // Couple value to key
@@ -54,11 +58,11 @@ struct NodeParser
 
         leafnode_ptr ret = boost::make_shared<LeafNode>(items.begin(), items.end(), fns);
 
-        validateOffset();
+        VALIDATE_OFFSET;
         ret->overflow.count = *m_input.at<itemcount_t>(m_offset);
         m_offset += sizeof(itemcount_t);
 
-        validateOffset();
+        VALIDATE_OFFSET;
         ret->overflow.nodeID = *m_input.at<nodeid_t>(m_offset);
         m_offset += sizeof(nodeid_t);
 
@@ -74,7 +78,7 @@ struct NodeParser
         // Read N values
         for (keycount_t i = 0; i < keyCount(); i++)
         {
-            validateOffset();
+            VALIDATE_OFFSET;
             uint32_t size = fns.valueSize(m_input.at<const char>(m_offset));
 
             // Couple value to key
@@ -83,11 +87,11 @@ struct NodeParser
             m_offset += size;
         }
 
-        validateOffset();
+        VALIDATE_OFFSET;
         ret->next.count = *m_input.at<itemcount_t>(m_offset);
         m_offset += sizeof(itemcount_t);
 
-        validateOffset();
+        VALIDATE_OFFSET;
         ret->next.nodeID = *m_input.at<nodeid_t>(m_offset);
         m_offset += sizeof(nodeid_t);
 
@@ -104,7 +108,7 @@ struct NodeParser
         ret->branches.push_back(node_branch(memslice(), nodeid_t(), 0));
         for (keycount_t i = 1; i < keyCount(); i++)
         {
-            validateOffset();
+            VALIDATE_OFFSET;
             uint32_t size = fns.keySize(m_input.at<const char>(m_offset));
 
             ret->branches.push_back(node_branch(m_input.slice(m_offset, size), nodeid_t(), 0));
@@ -115,7 +119,7 @@ struct NodeParser
         // Read N node identifiers
         for (keycount_t i = 0; i < keyCount(); i++)
         {
-            validateOffset();
+            VALIDATE_OFFSET;
             uint32_t size = sizeof(nodeid_t);
 
             ret->branches[i].nodeID = *m_input.at<nodeid_t>(m_offset);
@@ -126,7 +130,7 @@ struct NodeParser
         // Read N item counts
         for (keycount_t i = 0; i < keyCount(); i++)
         {
-            validateOffset();
+            VALIDATE_OFFSET;
             uint32_t size = sizeof(itemcount_t);
 
             ret->branches[i].itemCount = *m_input.at<itemcount_t>(m_offset);
@@ -143,12 +147,6 @@ private:
     keycount_t keyCount()
     {
         return *m_input.at<keycount_t>(sizeof(flags_t));
-    }
-
-    void validateOffset()
-    {
-        if (m_offset >= m_input.size())
-            throw std::runtime_error((std::string("End of block while parsing node data: ") + to_string(m_offset) + " >= " + to_string(m_input.size())).c_str());
     }
 
     void validateAtEnd()
