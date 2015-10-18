@@ -76,7 +76,7 @@ private:
 
     editmap_t m_edits;
 
-    void pushChildKnuckle(treepath_t &rootPath);
+    void pushChildFork(treepath_t &rootPath);
     void findRec(treepath_t &rootPath, const memslice *key, query_iterator_impl_ptr *iter_ptr);
     void seekRec(treepath_t &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr);
     void applyPendingChangeRec(const node_ptr &node, const pending_edit &edit, int *delta);

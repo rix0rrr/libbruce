@@ -40,7 +40,7 @@ bool query_tree_impl::get(const memslice &key, memslice *value)
 query_iterator_impl_ptr query_tree_impl::find(const memslice &key)
 {
     treepath_t rootPath;
-    rootPath.push_back(knuckle(root(), memslice(), memslice()));
+    rootPath.push_back(fork(root(), memslice(), memslice()));
 
     query_iterator_impl_ptr it;
     findRec(rootPath, &key, &it);
@@ -50,27 +50,27 @@ query_iterator_impl_ptr query_tree_impl::find(const memslice &key)
 query_iterator_impl_ptr query_tree_impl::seek(itemcount_t n)
 {
     treepath_t rootPath;
-    rootPath.push_back(knuckle(root(), memslice(), memslice()));
+    rootPath.push_back(fork(root(), memslice(), memslice()));
 
     query_iterator_impl_ptr it;
     seekRec(rootPath, n, &it);
     return it;
 }
 
-void query_tree_impl::pushChildKnuckle(treepath_t &rootPath)
+void query_tree_impl::pushChildFork(treepath_t &rootPath)
 {
-    knuckle &top = rootPath.back();
+    fork &top = rootPath.back();
     internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(top.node);
 
     const memslice &minK = internal->branch(top.index).minKey.size() ? internal->branch(top.index).minKey : top.minKey;
     const memslice &maxK = top.index < internal->branchCount() - 1 ? internal->branch(top.index+1).minKey : top.maxKey;
 
-    rootPath.push_back(knuckle(child(internal->branch(top.index)), minK, maxK));
+    rootPath.push_back(fork(child(internal->branch(top.index)), minK, maxK));
 }
 
 void query_tree_impl::findRec(treepath_t &rootPath, const memslice *key, query_iterator_impl_ptr *iter_ptr)
 {
-    knuckle &top = rootPath.back();
+    fork &top = rootPath.back();
     node_ptr node = rootPath.back().node;
 
 NODE_CASE_LEAF
@@ -93,7 +93,7 @@ NODE_CASE_OVERFLOW
 
 NODE_CASE_INT
     top.index = key ? FindInternalKey(internal, *key, m_fns) : 0;
-    pushChildKnuckle(rootPath);
+    pushChildFork(rootPath);
     findRec(rootPath, key, iter_ptr);
 
 NODE_CASE_END
@@ -116,7 +116,7 @@ bool query_tree_impl::isGuaranteed(const editlist_t::iterator &cur, const editli
 
 void query_tree_impl::seekRec(treepath_t &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr)
 {
-    knuckle &top = rootPath.back();
+    fork &top = rootPath.back();
     node_ptr node = rootPath.back().node;
 
 NODE_CASE_LEAF
@@ -133,7 +133,7 @@ NODE_CASE_LEAF
 
     if (!leaf->overflow.empty())
     {
-        rootPath.push_back(knuckle(overflowNode(leaf->overflow), memslice(), memslice()));
+        rootPath.push_back(fork(overflowNode(leaf->overflow), memslice(), memslice()));
         seekRec(rootPath, n, iter_ptr);
     }
 
@@ -149,7 +149,7 @@ NODE_CASE_OVERFLOW
     n -= overflow->valueCount();
 
     if (!overflow->next.empty())
-        rootPath.push_back(knuckle(overflowNode(overflow->next), memslice(), memslice()));
+        rootPath.push_back(fork(overflowNode(overflow->next), memslice(), memslice()));
         seekRec(rootPath, n, iter_ptr);
 
 NODE_CASE_INT
@@ -173,7 +173,7 @@ NODE_CASE_INT
         }
         else {
             // Found where to descend
-            pushChildKnuckle(rootPath);
+            pushChildFork(rootPath);
             seekRec(rootPath, n, iter_ptr);
             return;
         }
@@ -263,7 +263,7 @@ int query_tree_impl::pendingRankDelta(const node_ptr &node, const memslice &minK
 query_iterator_impl_ptr query_tree_impl::begin()
 {
     treepath_t rootPath;
-    rootPath.push_back(knuckle(root(), memslice(), memslice()));
+    rootPath.push_back(fork(root(), memslice(), memslice()));
     query_iterator_impl_ptr it;
     findRec(rootPath, NULL, &it);
     return it;

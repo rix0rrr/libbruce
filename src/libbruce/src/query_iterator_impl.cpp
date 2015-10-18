@@ -5,40 +5,40 @@
 
 namespace libbruce {
 
-bool knuckle::operator==(const knuckle &other) const
+bool fork::operator==(const fork &other) const
 {
     return node == other.node && index == other.index;
 }
 
-node_type_t knuckle::nodeType() const
+node_type_t fork::nodeType() const
 {
     return node->nodeType();
 }
 
-internalnode_ptr knuckle::asInternal() const
+internalnode_ptr fork::asInternal() const
 {
     return boost::static_pointer_cast<InternalNode>(node);
 }
 
-leafnode_ptr knuckle::asLeaf() const
+leafnode_ptr fork::asLeaf() const
 {
     return boost::static_pointer_cast<LeafNode>(node);
 }
 
-overflownode_ptr knuckle::asOverflow() const
+overflownode_ptr fork::asOverflow() const
 {
     return boost::static_pointer_cast<OverflowNode>(node);
 }
 
-query_iterator_impl::query_iterator_impl(query_tree_impl_ptr tree, const std::vector<knuckle> &rootPath)
+query_iterator_impl::query_iterator_impl(query_tree_impl_ptr tree, const std::vector<fork> &rootPath)
     : m_tree(tree), m_rootPath(rootPath)
 {
 }
 
-const knuckle &query_iterator_impl::leaf() const
+const fork &query_iterator_impl::leaf() const
 {
     // Get the top leaf
-    for (std::vector<knuckle>::const_reverse_iterator it = m_rootPath.rbegin(); it != m_rootPath.rend(); ++it)
+    for (std::vector<fork>::const_reverse_iterator it = m_rootPath.rbegin(); it != m_rootPath.rend(); ++it)
         if (it->nodeType() == TYPE_LEAF)
             return *it;
     return m_rootPath.back();
@@ -185,7 +185,7 @@ void query_iterator_impl::travelToNextLeaf()
             const memslice &minK = internal->branch(current().index).minKey.size() ? internal->branch(current().index).minKey : current().minKey;
             const memslice &maxK = current().index < internal->branchCount() - 1 ? internal->branch(current().index+1).minKey : current().maxKey;
 
-            m_rootPath.push_back(knuckle(next, minK, maxK));
+            m_rootPath.push_back(fork(next, minK, maxK));
         }
         else
             popCurrentNode();
@@ -202,7 +202,7 @@ void query_iterator_impl::travelToNextLeaf()
 
 void query_iterator_impl::pushOverflow(const node_ptr &overflow)
 {
-    m_rootPath.push_back(knuckle(overflow, memslice(), memslice()));
+    m_rootPath.push_back(fork(overflow, memslice(), memslice()));
 }
 
 void query_iterator_impl::popOverflows()

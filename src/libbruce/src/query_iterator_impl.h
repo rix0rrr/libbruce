@@ -8,10 +8,10 @@
 
 namespace libbruce {
 
-struct knuckle
+struct fork
 {
-    knuckle() : index(0) {}
-    knuckle(node_ptr node, const memslice &minKey, const memslice &maxKey)
+    fork() : index(0) {}
+    fork(node_ptr node, const memslice &minKey, const memslice &maxKey)
         : node(node), index(0), minKey(minKey), maxKey(maxKey)
     {
         if (nodeType() == TYPE_LEAF) leafIter = asLeaf()->pairs.begin();
@@ -38,11 +38,11 @@ struct knuckle
     leafnode_ptr asLeaf() const;
     overflownode_ptr asOverflow() const;
 
-    bool operator==(const knuckle &other) const;
-    bool operator!=(const knuckle &other) const { return !(*this == other); }
+    bool operator==(const fork &other) const;
+    bool operator!=(const fork &other) const { return !(*this == other); }
 };
 
-typedef std::vector<knuckle> treepath_t;
+typedef std::vector<fork> treepath_t;
 
 struct query_iterator_impl
 {
@@ -62,9 +62,9 @@ private:
     query_tree_impl_ptr m_tree;
     mutable treepath_t m_rootPath;
 
-    const knuckle &leaf() const;
-    knuckle &current() { return m_rootPath.back(); }
-    const knuckle &current() const { return m_rootPath.back(); }
+    const fork &leaf() const;
+    fork &current() { return m_rootPath.back(); }
+    const fork &current() const { return m_rootPath.back(); }
 
     void advanceCurrent();
     bool pastCurrentEnd() const;
