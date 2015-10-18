@@ -1,6 +1,9 @@
 #include <libbruce/be/disk.h>
 #include <cstdio>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
 extern "C" {
 
@@ -49,16 +52,16 @@ disk::disk(std::string pathPrefix, uint32_t maxBlockSize)
 
 mempage disk::get(const nodeid_t &id)
 {
-    FILE *f = std::fopen((m_pathPrefix + boost::lexical_cast<std::string>(id)).c_str(), "rb");
-    if (!f) throw std::runtime_error("Error opening file for reading");
+    int f = open((m_pathPrefix + boost::lexical_cast<std::string>(block.id)).c_str(), O_RDONLY);
+    if (f == -1) throw std::runtime_error("Error opening file for reading");
 
     struct stat stat_info;
-    if (fstat(fileno(f), &stat_info) != 0)
+    if (fstat(f, &stat_info) != 0)
         throw std::runtime_error("Error stat'ing file");
 
     mempage ret(stat_info.st_size);
-    fread(ret.ptr(), stat_info.st_size, 1, f);
-    // FIXME: Check return code
+    read(f, ret.ptr(), stat_info.st_size); // FIXME: Check return code
+    close(f);
     return ret;
 }
 
@@ -87,12 +90,11 @@ void disk::put_all(putblocklist_t &blocklist)
 
 void disk::put_one(putblock_t &block)
 {
+    int f = open((m_pathPrefix + boost::lexical_cast<std::string>(block.id)).c_str(), O_WRONLY|O_CREAT, 0644);
     // Used to use fstream here but it's too slow
-    FILE *f = std::fopen((m_pathPrefix + boost::lexical_cast<std::string>(block.id)).c_str(), "wb");
-    if (!f) throw std::runtime_error("Error opening file for writing");
-    std::fwrite(block.mem.ptr(), block.mem.size(), 1, f);
-    // FIXME: Check return code
-    fclose(f);
+    if (f == -1) throw std::runtime_error(strerror(errno));
+    write(f, block.mem.ptr(), block.mem.size()); // FIXME: Check return code
+    close(f);
 
     block.success = true;
 }
