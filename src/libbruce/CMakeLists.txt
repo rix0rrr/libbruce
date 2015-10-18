@@ -2,6 +2,9 @@ project(libbruce VERSION 0.1 LANGUAGES CXX)
 
 #----------------------------------------------------------------------
 
+enable_language(ASM)
+#set(can_use_assembler TRUE)
+
 add_library(bruce 
     src/bruce.cpp
     src/be/mem.cpp
@@ -19,7 +22,7 @@ add_library(bruce
     src/query_iterator_impl.cpp
     src/nodes.cpp
     src/types.cpp
-    src/sha1.cpp
+    src/sha1-fast-64.s
     src/util/blockcache.cpp)
 
 target_include_directories(bruce PUBLIC

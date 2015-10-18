@@ -3,10 +3,47 @@
 #include <boost/iostreams/copy.hpp>
 #include <cstdio>
 
-#include <sha1.h>
 #include <fstream>
 
 namespace io = boost::iostreams;
+
+extern "C" {
+
+void sha1_compress(uint32_t state[5], const uint8_t block[64]);
+
+}
+
+void sha1_hash(const uint8_t *message, uint32_t len, uint32_t hash[5])
+{
+	hash[0] = UINT32_C(0x67452301);
+	hash[1] = UINT32_C(0xEFCDAB89);
+	hash[2] = UINT32_C(0x98BADCFE);
+	hash[3] = UINT32_C(0x10325476);
+	hash[4] = UINT32_C(0xC3D2E1F0);
+
+	uint32_t i;
+	for (i = 0; len - i >= 64; i += 64)
+		sha1_compress(hash, message + i);
+
+	uint8_t block[64];
+	uint32_t rem = len - i;
+	memcpy(block, message + i, rem);
+
+	block[rem] = 0x80;
+	rem++;
+	if (64 - rem >= 8)
+		memset(block + rem, 0, 56 - rem);
+	else {
+		memset(block + rem, 0, 64 - rem);
+		sha1_compress(hash, block);
+		memset(block, 0, 56);
+	}
+
+	uint64_t longLen = ((uint64_t)len) << 3;
+	for (i = 0; i < 8; i++)
+		block[64 - 1 - i] = (uint8_t)(longLen >> (i * 8));
+	sha1_compress(hash, block);
+}
 
 namespace libbruce { namespace be {
 
@@ -33,13 +70,13 @@ typedef io::stream<io::array_source > memsourcestream;
 
 nodeid_t disk::id(const mempage &block)
 {
-    io::stream<io::array_source> memstream(io::array_source((char*)block.ptr(), block.size()));
+    uint32_t hash[5];
+    sha1_hash(block.ptr(), block.size(), hash);
 
-    SHA1 digest;
-    digest.update(memstream);
-    std::string hash = digest.final();
+    BOOST_STATIC_ASSERT(sizeof(nodeid_t) == sizeof(hash));
 
-    nodeid_t ret = boost::lexical_cast<nodeid_t>(hash);
+    nodeid_t ret;
+    memcpy(ret.data(), hash, sizeof(hash));
     return ret;
 }
 
