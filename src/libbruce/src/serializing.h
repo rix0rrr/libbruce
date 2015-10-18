@@ -62,7 +62,7 @@
 
 #include <boost/make_shared.hpp>
 
-#include <libbruce/memory.h>
+#include <libbruce/mempage.h>
 #include <libbruce/types.h>
 
 #include "nodes.h"
@@ -72,9 +72,9 @@ namespace libbruce {
 // Sizes of types inside the block
 typedef uint16_t flags_t;
 
-node_ptr ParseNode(memory &input, const tree_functions &fns);
+node_ptr ParseNode(mempage &input, const tree_functions &fns);
 
-memory SerializeNode(const node_ptr &node);
+mempage SerializeNode(const node_ptr &node);
 
 
 struct NodeSize

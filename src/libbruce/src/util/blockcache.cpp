@@ -8,7 +8,7 @@ BlockCache::BlockCache(size_t maxSize)
 {
 }
 
-bool BlockCache::get(nodeid_t id, memory *mem)
+bool BlockCache::get(nodeid_t id, mempage *mem)
 {
     map_t::iterator it = m_cache.get<0>().find(id);
     if (it == m_cache.get<0>().end())
@@ -25,7 +25,7 @@ bool BlockCache::get(nodeid_t id, memory *mem)
     return true;
 }
 
-void BlockCache::put(nodeid_t id, const memory &mem)
+void BlockCache::put(nodeid_t id, const mempage &mem)
 {
     m_cache.insert(CacheEntry(id, mem));
     m_size += mem.size();

@@ -23,8 +23,8 @@ void chop(const overflownode_ptr &overflow, keycount_t i)
 
 //----------------------------------------------------------------------
 
-edit_tree_impl::edit_tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns)
-    : tree_impl(be, rootID, fns), m_frozen(false)
+edit_tree_impl::edit_tree_impl(be::be &be, maybe_nodeid rootID, mempool &mempool, const tree_functions &fns)
+    : tree_impl(be, rootID, mempool, fns), m_frozen(false)
 {
 }
 
@@ -230,7 +230,7 @@ splitresult_t edit_tree_impl::removeRec(const node_ptr &node, const memory &key,
     // However, when shifting values from an overflow node, we may need to split
     // our leaf.
 NODE_CASE_LEAF
-    removeFromLeaf(leaf, key, value, NULL);
+    removeFromLeaf(leaf, key, value);
     return maybeSplitLeaf(leaf);
 
 NODE_CASE_OVERFLOW
@@ -305,7 +305,7 @@ NODE_CASE_INT
 NODE_CASE_END
 
     // Serialize this node, request an ID for it, and store it to put later
-    memory serialized = SerializeNode(node);
+    mempage serialized = SerializeNode(node);
     nodeid_t id = m_be.id(serialized);
     m_putBlocks.push_back(be::putblock_t(id, serialized));
     return id;

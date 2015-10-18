@@ -17,6 +17,16 @@ struct knuckle
         if (nodeType() == TYPE_LEAF) leafIter = asLeaf()->pairs.begin();
     }
 
+    keycount_t leafIndex() const
+    {
+        return leafIter - asLeaf()->pairs.begin();
+    }
+
+    void setLeafIndex(keycount_t index)
+    {
+        leafIter = asLeaf()->pairs.begin() + index;
+    }
+
     node_ptr node;
     pairlist_t::iterator leafIter;
     keycount_t index;

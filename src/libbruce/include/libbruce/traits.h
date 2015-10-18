@@ -4,7 +4,7 @@
 
 // Conversions for converting types to byte ranges
 
-#include <libbruce/memory.h>
+#include <libbruce/mempool.h>
 #include <libbruce/types.h>
 #include <arpa/inet.h>
 #include <algorithm>
@@ -26,10 +26,10 @@ namespace traits {
 template<typename T>
 struct convert
 {
-    static memory to_bytes(const T &t)
+    static memory to_bytes(const T &t, mempool &pool)
     {
         // Copying here is not awesome, but not really a good way around it :(
-        memory m(sizeof(t));
+        memory m = pool.alloc(sizeof(t));
         memcpy((void*)m.ptr(), &t, sizeof(t));
         return m;
     }
@@ -64,9 +64,9 @@ struct convert
 template<>
 struct convert<std::string>
 {
-    static memory to_bytes(const std::string &t)
+    static memory to_bytes(const std::string &t, mempool &pool)
     {
-        memory m(t.size() + 1);
+        memory m = pool.alloc(t.size() + 1);
         memcpy((void*)m.ptr(), t.c_str(), t.size() + 1);
         return m;
     }
@@ -92,22 +92,22 @@ struct convert<std::string>
 template<>
 struct convert<binary>
 {
-    static memory to_bytes(const binary &t)
+    static memory to_bytes(const binary &t, mempool &pool)
     {
-        memory m(t.size() + sizeof(uint32_t));
+        memory m = pool.alloc(t.size() + sizeof(uint32_t));
         *m.at<uint32_t>(0) = t.size();
-        memcpy((void*)(m.byte_ptr() + sizeof(uint32_t)), t.c_str(), t.size());
+        memcpy((void*)(m.ptr() + sizeof(uint32_t)), t.c_str(), t.size());
         return m;
     }
 
     static binary from_bytes(const memory &r)
     {
-        return binary((char*)(r.byte_ptr() + sizeof(uint32_t)), *r.at<uint32_t>(0));
+        return binary((char*)(r.ptr() + sizeof(uint32_t)), *r.at<uint32_t>(0));
     }
 
     static int compare(const memory &a, const memory &b)
     {
-        int r = bcmp(a.byte_ptr() + sizeof(uint32_t), b.byte_ptr() + sizeof(uint32_t), std::min(a.size(), b.size()) - sizeof(uint32_t));
+        int r = bcmp(a.ptr() + sizeof(uint32_t), b.ptr() + sizeof(uint32_t), std::min(a.size(), b.size()) - sizeof(uint32_t));
         if (r != 0) return r;
         return a.size() < b.size() ? -1 : 1;
     }

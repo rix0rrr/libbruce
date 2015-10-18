@@ -8,6 +8,7 @@ add_library(bruce
     src/be/disk.cpp
     src/mutation.cpp
     src/memory.cpp
+    src/mempool.cpp
     src/serializing.cpp
     src/tree_impl.cpp
     src/edit_tree.cpp

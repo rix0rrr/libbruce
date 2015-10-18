@@ -20,7 +20,7 @@ namespace libbruce {
 
 struct NodeParser
 {
-    NodeParser(memory &input, const tree_functions &fns)
+    NodeParser(mempage &input, const tree_functions &fns)
         : m_input(input), fns(fns), m_offset(sizeof(flags_t) + sizeof(keycount_t)) { }
 
     leafnode_ptr parseLeafNode()
@@ -162,13 +162,13 @@ private:
     }
 
     size_t m_offset;
-    memory &m_input;
+    mempage &m_input;
     const tree_functions &fns;
 };
 
 //----------------------------------------------------------------------
 
-node_ptr ParseNode(memory &input, const tree_functions &fns)
+node_ptr ParseNode(mempage &input, const tree_functions &fns)
 {
     NodeParser parser(input, fns);
 
@@ -306,10 +306,10 @@ InternalNodeSize::InternalNodeSize(const internalnode_ptr &node, uint32_t blockS
 
 //----------------------------------------------------------------------
 
-memory SerializeLeafNode(const leafnode_ptr &node)
+mempage SerializeLeafNode(const leafnode_ptr &node)
 {
     LeafNodeSize size(node, 0);
-    memory mem(memory::memptr(new char[size.size()]), size.size());
+    mempage mem(size.size());
 
     uint32_t offset = 0;
 
@@ -345,10 +345,10 @@ memory SerializeLeafNode(const leafnode_ptr &node)
     return mem;
 }
 
-memory SerializeOverflowNode(const overflownode_ptr &node)
+mempage SerializeOverflowNode(const overflownode_ptr &node)
 {
     OverflowNodeSize size(node, 0);
-    memory mem(memory::memptr(new char[size.size()]), size.size());
+    mempage mem(size.size());
 
     uint32_t offset = 0;
 
@@ -377,10 +377,10 @@ memory SerializeOverflowNode(const overflownode_ptr &node)
     return mem;
 }
 
-memory SerializeInternalNode(const internalnode_ptr &node)
+mempage SerializeInternalNode(const internalnode_ptr &node)
 {
     InternalNodeSize size(node, 0);
-    memory mem(memory::memptr(new char[size.size()]), size.size());
+    mempage mem(size.size());
 
     uint32_t offset = 0;
 
@@ -421,7 +421,7 @@ memory SerializeInternalNode(const internalnode_ptr &node)
     return mem;
 }
 
-memory SerializeNode(const node_ptr &node)
+mempage SerializeNode(const node_ptr &node)
 {
     switch (node->nodeType())
     {

@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     size_t size = file.tellg();
     file.seekg(0);
 
-    memory mem(size);
+    mempage mem(size);
     io::basic_array_sink<char> memstream((char*)mem.ptr(), mem.size());
     io::copy(file, memstream);
 

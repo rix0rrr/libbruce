@@ -13,7 +13,7 @@ TEST_CASE("serializing a leaf node is symmetric", "[serializing]") {
     leafnode_ptr leaf = boost::make_shared<LeafNode>(intToIntTree);
     leaf->insert(kv_pair(one_r, two_r));
     leaf->insert(kv_pair(two_r, one_r));
-    memory serialized = SerializeNode(leaf);
+    mempage serialized = SerializeNode(leaf);
 
     leafnode_ptr r = boost::dynamic_pointer_cast<LeafNode>(ParseNode(serialized, intToIntTree));
     REQUIRE(r->nodeType() == TYPE_LEAF);
@@ -33,7 +33,7 @@ TEST_CASE("serializing an internal node is symmetric", "[serializing]")
     internal->insert(0, node_branch(one_r, 1, 1));
     internal->insert(1, node_branch(two_r, 2, 2));
     internal->insert(2, node_branch(three_r, 3, 3));
-    memory serialized = SerializeNode(internal);
+    mempage serialized = SerializeNode(internal);
 
     internalnode_ptr r = boost::dynamic_pointer_cast<InternalNode>(ParseNode(serialized, intToIntTree));
     REQUIRE(r->nodeType() == TYPE_INTERNAL);
@@ -60,7 +60,7 @@ TEST_CASE("serializing an overflow node is symmetric", "[serializing]")
     overflownode_ptr overflow = boost::make_shared<OverflowNode>();
     overflow->append(one_r);
     overflow->append(two_r);
-    memory serialized = SerializeNode(overflow);
+    mempage serialized = SerializeNode(overflow);
 
     overflownode_ptr r = boost::dynamic_pointer_cast<OverflowNode>(ParseNode(serialized, intToIntTree));
     REQUIRE(r->nodeType() == TYPE_OVERFLOW);

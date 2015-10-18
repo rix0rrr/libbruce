@@ -5,8 +5,8 @@
 
 namespace libbruce {
 
-query_tree_impl::query_tree_impl(be::be &be, nodeid_t rootID, const tree_functions &fns)
-    : tree_impl(be, rootID, fns), m_edits(callback_memcmp(fns))
+query_tree_impl::query_tree_impl(be::be &be, nodeid_t rootID, mempool &mempool, const tree_functions &fns)
+    : tree_impl(be, rootID, mempool, fns), m_edits(callback_memcmp(fns))
 {
 }
 
@@ -74,7 +74,7 @@ void query_tree_impl::findRec(treepath_t &rootPath, const memory *key, query_ite
     node_ptr node = rootPath.back().node;
 
 NODE_CASE_LEAF
-    applyPendingChanges(top.minKey, top.maxKey, NULL, NULL);
+    applyPendingChanges(top.minKey, top.maxKey, NULL);
 
     pairlist_t::iterator begin = leaf->pairs.begin();
     pairlist_t::iterator end = leaf->pairs.end();
@@ -120,7 +120,7 @@ void query_tree_impl::seekRec(treepath_t &rootPath, itemcount_t n, query_iterato
     node_ptr node = rootPath.back().node;
 
 NODE_CASE_LEAF
-    applyPendingChanges(top.minKey, top.maxKey, NULL, NULL);
+    applyPendingChanges(top.minKey, top.maxKey, NULL);
 
     if (n < leaf->pairCount())
     {
@@ -190,17 +190,15 @@ itemcount_t query_tree_impl::rank(treepath_t &rootPath)
         node_ptr node = it->node;
 
     NODE_CASE_LEAF
-        // This WILL change the index of dude. Need to shift it to stay on the same element.
+        const memory &maxK = it->leafIter != leaf->pairs.end() ? it->leafIter->first : it->maxKey;
+
+        // This will invalidate the iterator we have into the leaf,
+        // so get the index before and readjust afterwards.
+        int index = it->leafIndex();
         int delta = 0;
-        const memory &maxK = it->index < leaf->pairCount() ? it->leafIter->first : it->maxKey;
-
-        // FIXME: Shouldn't the next applyPendingChanges() always apply 0 changes?
-        applyPendingChanges(it->minKey, maxK, &delta, &it->leafIter); // Apply up to this key
-
-        // Unfortunately, we need to do linear search here.
-        itemcount_t index = 0;
-        for (pairlist_t::const_iterator i = leaf->pairs.begin(); i != it->leafIter; ++i)
-            index++;
+        applyPendingChanges(it->minKey, maxK, &delta); // Apply up to this key
+        index += delta;
+        it->setLeafIndex(index);
 
         ret += index;
     NODE_CASE_OVERFLOW
@@ -247,7 +245,7 @@ int query_tree_impl::pendingRankDelta(const node_ptr &node, const memory &minKey
             }
             else
             {
-                applyPendingChangeRec(node, *it, NULL, NULL);
+                applyPendingChangeRec(node, *it, NULL);
                 kit->second.erase(it);
             }
         }
@@ -271,7 +269,7 @@ query_iterator_impl_ptr query_tree_impl::begin()
     return it;
 }
 
-void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &maxKey, int *delta, pairlist_t::iterator *leafIter)
+void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &maxKey, int *delta)
 {
     editmap_t::iterator start = minKey.empty() ? m_edits.begin() : m_edits.lower_bound(minKey);
     editmap_t::iterator end   = maxKey.empty() ? m_edits.end() : m_edits.lower_bound(maxKey);
@@ -279,12 +277,12 @@ void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &ma
     for (editmap_t::iterator kit = start; kit != end; /* increment as part of erase */)
     {
         for (editlist_t::iterator it = kit->second.begin(); it != kit->second.end(); ++it)
-            applyPendingChangeRec(root(), *it, delta, leafIter);
+            applyPendingChangeRec(root(), *it, delta);
         m_edits.erase(kit++); // This is the idiomatic way to iterate+erase
     }
 }
 
-void query_tree_impl::applyPendingChangeRec(const node_ptr &node, const pending_edit &edit, int *delta, pairlist_t::iterator *leafIter)
+void query_tree_impl::applyPendingChangeRec(const node_ptr &node, const pending_edit &edit, int *delta)
 {
 NODE_CASE_LEAF
     // We only need to apply changes to leaf nodes. No need to split into overflow blocks since
@@ -311,11 +309,11 @@ NODE_CASE_LEAF
             }
             break;
         case REMOVE_KEY:
-            erased = removeFromLeaf(leaf, edit.key, NULL, leafIter);
+            erased = removeFromLeaf(leaf, edit.key, NULL);
             if (erased && delta) (*delta)--;
             break;
         case REMOVE_KV:
-            erased = removeFromLeaf(leaf, edit.key, &edit.value, leafIter);
+            erased = removeFromLeaf(leaf, edit.key, &edit.value);
             if (erased && delta) (*delta)--;
             break;
         default:
@@ -327,7 +325,7 @@ NODE_CASE_INT
     // Drill down to leaf, only to update counts afterwards
     keycount_t i = FindInternalKey(internal, edit.key, m_fns);
     node_ptr c = child(internal->branch(i));
-    applyPendingChangeRec(c, edit, delta, leafIter);
+    applyPendingChangeRec(c, edit, delta);
     internal->branch(i).itemCount = c->itemCount();
 
 NODE_CASE_END

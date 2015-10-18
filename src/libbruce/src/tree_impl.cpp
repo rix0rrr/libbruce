@@ -4,8 +4,8 @@
 
 namespace libbruce {
 
-tree_impl::tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns)
-    : m_be(be), m_rootID(rootID), m_fns(fns)
+tree_impl::tree_impl(be::be &be, maybe_nodeid rootID, mempool &mempool, const tree_functions &fns)
+    : m_be(be), m_rootID(rootID), m_mempool(mempool), m_fns(fns)
 {
 }
 
@@ -39,7 +39,8 @@ const node_ptr &tree_impl::overflowNode(overflow_t &overflow)
 node_ptr tree_impl::load(nodeid_t id)
 {
     m_loadedIDs.push_back(id);
-    memory mem = m_be.get(id);
+    mempage mem = m_be.get(id);
+    m_mempool.retain(mem);
     return ParseNode(mem, m_fns);
 }
 
@@ -56,7 +57,7 @@ int tree_impl::safeCompare(const memory &a, const memory &b)
     return m_fns.keyCompare(a, b);
 }
 
-bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value, pairlist_t::iterator *leafIter)
+bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value)
 {
     pairlist_t::iterator begin, end;
     findLeafRange(leaf, key, &begin, &end);
@@ -76,15 +77,7 @@ bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, cons
     if (eraseLocation != leaf->pairs.end())
     {
         // Did erase in this block
-        // Adjust an existing pointer into this leaf if necessary.
-        if (leafIter && *leafIter == eraseLocation)
-        {
-            *leafIter = leaf->erase(eraseLocation);
-            eraseLocation = *leafIter;
-        }
-        else {
-            eraseLocation = leaf->erase(eraseLocation);
-        }
+        eraseLocation = leaf->erase(eraseLocation);
 
         // If we removed the final position, pull back from the overflow block
         // and potentially split.
@@ -93,10 +86,6 @@ bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, cons
             memory ret = pullFromOverflow(leaf->overflow.node);
             leaf->insert(kv_pair(key, ret));
             leaf->setOverflow(leaf->overflow.node);
-
-            // If we had a pointer to adjust, it was just invalidated, so point to the back item
-            // again.
-            if (leafIter) *leafIter = --leaf->pairs.end();
         }
 
         return true;

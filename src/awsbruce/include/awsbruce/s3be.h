@@ -23,8 +23,8 @@ struct s3be : public libbruce::be::be
     s3be(const std::shared_ptr<Aws::S3::S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize, uint32_t cacheSize);
     ~s3be();
 
-    virtual libbruce::nodeid_t id(const libbruce::memory &block);
-    virtual libbruce::memory get(const libbruce::nodeid_t &id);
+    virtual libbruce::nodeid_t id(const libbruce::mempage &block);
+    virtual libbruce::mempage get(const libbruce::nodeid_t &id);
     virtual void put_all(libbruce::be::putblocklist_t &blocklist);
     virtual void del_all(libbruce::be::delblocklist_t &ids);
     virtual uint32_t maxBlockSize();

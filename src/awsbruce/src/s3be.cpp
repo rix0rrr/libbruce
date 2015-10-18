@@ -32,21 +32,21 @@ s3be::~s3be()
 {
 }
 
-nodeid_t s3be::id(const libbruce::memory &block)
+nodeid_t s3be::id(const libbruce::mempage &block)
 {
     nodeid_t ret;
     BOOST_STATIC_ASSERT(sizeof(ret) == SHA_DIGEST_LENGTH);
-    SHA1(block.byte_ptr(), block.size(), ret.data());
+    SHA1(block.ptr(), block.size(), ret.data());
     return ret;
 }
 
-memory s3be::get(const nodeid_t &id)
+mempage s3be::get(const nodeid_t &id)
 {
     std::cerr << "GET " << id << std::endl;
 
     // Look in the cache
     {
-        memory ret;
+        mempage ret;
         if (m_cache.get(id, &ret))
             return ret;
     }
@@ -70,7 +70,7 @@ memory s3be::get(const nodeid_t &id)
     in.push(ss);
     io::copy(response.GetResult().GetBody(), in);
 
-    memory ret(ss.str().size());
+    mempage ret(ss.str().size());
     memcpy((void*)ret.ptr(), ss.str().data(), ss.str().size());
 
     // Put in the cache

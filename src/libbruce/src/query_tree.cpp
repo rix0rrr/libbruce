@@ -4,8 +4,8 @@
 namespace libbruce {
 
 
-query_tree_unsafe::query_tree_unsafe(nodeid_t id, be::be &be, const tree_functions &fns)
-    : m_impl(new query_tree_impl(be, id, fns))
+query_tree_unsafe::query_tree_unsafe(nodeid_t id, be::be &be, mempool &mempool, const tree_functions &fns)
+    : m_impl(new query_tree_impl(be, id, mempool, fns))
 {
 }
 

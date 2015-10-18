@@ -20,12 +20,12 @@ size_t mem::blockCount() const
     return m_blocks.size();
 }
 
-nodeid_t mem::id(const memory &block)
+nodeid_t mem::id(const mempage &block)
 {
     return nodeid_t(m_ctr++);
 }
 
-memory mem::get(const nodeid_t &id)
+mempage mem::get(const nodeid_t &id)
 {
     blockmap_t::iterator i = m_blocks.find(id);
     if (i == m_blocks.end()) throw block_not_found(id);

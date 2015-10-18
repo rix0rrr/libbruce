@@ -38,7 +38,7 @@ typedef boost::shared_ptr<edit_tree_impl> mutable_tree_ptr;
  */
 struct edit_tree_unsafe
 {
-    edit_tree_unsafe(const maybe_nodeid &id, be::be &be, tree_functions fns);
+    edit_tree_unsafe(const maybe_nodeid &id, be::be &be, mempool &mempool, tree_functions fns);
 
     void insert(const memory &key, const memory &value);
     void upsert(const memory &key, const memory &value);
@@ -58,26 +58,26 @@ struct edit_tree
     typedef typename boost::shared_ptr<edit_tree<K, V> > ptr;
 
     edit_tree(const maybe_nodeid &id, be::be &be)
-        : m_unsafe(id, be, fns()) { }
+        : m_unsafe(id, be, m_mempool, fns()) { }
 
     void insert(const K &key, const V &value)
     {
-        m_unsafe.insert(traits::convert<K>::to_bytes(key), traits::convert<V>::to_bytes(value));
+        m_unsafe.insert(traits::convert<K>::to_bytes(key, m_mempool), traits::convert<V>::to_bytes(value, m_mempool));
     }
 
     void upsert(const K &key, const V &value)
     {
-        m_unsafe.upsert(traits::convert<K>::to_bytes(key), traits::convert<V>::to_bytes(value));
+        m_unsafe.upsert(traits::convert<K>::to_bytes(key, m_mempool), traits::convert<V>::to_bytes(value, m_mempool));
     }
 
     bool remove(const K &key)
     {
-        return m_unsafe.remove(traits::convert<K>::to_bytes(key));
+        return m_unsafe.remove(traits::convert<K>::to_bytes(key, m_mempool));
     }
 
     bool remove(const K &key, const V &value)
     {
-        return m_unsafe.remove(traits::convert<K>::to_bytes(key), traits::convert<V>::to_bytes(value));
+        return m_unsafe.remove(traits::convert<K>::to_bytes(key, m_mempool), traits::convert<V>::to_bytes(value, m_mempool));
     }
 
     mutation flush()
@@ -88,6 +88,7 @@ struct edit_tree
     static tree_functions fns() { return tree_functions(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size); }
 private:
     edit_tree_unsafe m_unsafe;
+    mempool m_mempool;
 };
 
 }

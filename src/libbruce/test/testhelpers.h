@@ -3,9 +3,12 @@
 #define TEST_HELPERS_H
 
 #include <libbruce/bruce.h>
+#include <libbruce/mempool.h>
 #include "nodes.h"
 
 namespace libbruce {
+
+extern mempool g_testPool;
 
 /**
  * Return the size of a 32-bit int

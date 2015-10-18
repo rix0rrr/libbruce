@@ -11,7 +11,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <libbruce/types.h>
-#include <libbruce/memory.h>
+#include <libbruce/mempage.h>
 
 namespace libbruce { namespace be {
 
@@ -28,10 +28,10 @@ struct block_not_found : public std::runtime_error {
  */
 struct putblock_t
 {
-    putblock_t(nodeid_t id, const memory &mem) : id(id), mem(mem), success(false) { }
+    putblock_t(nodeid_t id, const mempage &mem) : id(id), mem(mem), success(false) { }
 
     nodeid_t id;
-    memory mem;
+    mempage mem;
     bool success;
     std::string failureReason;
 };
@@ -60,8 +60,8 @@ class be
 public:
     virtual ~be() {}
 
-    virtual nodeid_t id(const memory &block) = 0;
-    virtual memory get(const nodeid_t &id) = 0;
+    virtual nodeid_t id(const mempage &block) = 0;
+    virtual mempage get(const nodeid_t &id) = 0;
     virtual void put_all(putblocklist_t &blocklist) = 0;
     virtual void del_all(delblocklist_t &ids) = 0;
     virtual uint32_t maxBlockSize() = 0;

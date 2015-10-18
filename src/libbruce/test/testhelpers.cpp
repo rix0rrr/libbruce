@@ -8,6 +8,8 @@
 
 namespace libbruce {
 
+mempool g_testPool;
+
 uint32_t intSize(const void *)
 {
     return sizeof(uint32_t);
@@ -32,9 +34,9 @@ int intCompare(const memory &a, const memory &b)
 
 memory intCopy(uint32_t i)
 {
-    boost::shared_array<char> x(new char[sizeof(i)]);
-    *(uint32_t*)x.get() = i;
-    return memory(x, sizeof(i));
+    memory x = g_testPool.alloc(sizeof(i));
+    *x.at<uint32_t>(0) = i;
+    return x;
 }
 
 tree_functions intToIntTree(&intCompare, &intCompare, &intSize, &intSize);
@@ -56,7 +58,7 @@ void printMem(be::mem &mem, const tree_functions &fns)
 
 nodeid_t putNode(be::mem &mem, const node_ptr &node)
 {
-    memory block = SerializeNode(node);
+    mempage block = SerializeNode(node);
     nodeid_t id = mem.id(block);
     be::putblocklist_t blocks;
     blocks.push_back(be::putblock_t(id, block));
@@ -148,7 +150,7 @@ std::ostream &operator <<(std::ostream &os, libbruce::be::mem &x)
 {
     for (libbruce::be::mem::blockmap_t::iterator it = x.blocks().begin(); it != x.blocks().end(); ++it)
     {
-        std::cout << "Block[" << it->first << "] => " << it->second << std::endl;
+        std::cout << "Block[" << it->first << "] => " << it->second.all() << std::endl;
     }
     return os;
 }

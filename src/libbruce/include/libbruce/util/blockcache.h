@@ -13,10 +13,10 @@ namespace libbruce { namespace util {
 
 struct CacheEntry
 {
-    CacheEntry(nodeid_t id, const memory &block) : id(id), block(block) { }
+    CacheEntry(nodeid_t id, const mempage &block) : id(id), block(block) { }
 
     nodeid_t id;
-    memory block;
+    mempage block;
 };
 
 typedef boost::multi_index_container<
@@ -37,8 +37,8 @@ class BlockCache
 public:
     BlockCache(size_t maxSize);
 
-    bool get(nodeid_t id, memory *mem);
-    void put(nodeid_t id, const memory &mem);
+    bool get(nodeid_t id, mempage *mem);
+    void put(nodeid_t id, const mempage &mem);
     void del(nodeid_t id);
 private:
     cache_t m_cache;

@@ -11,7 +11,7 @@ BruceVisitor::~BruceVisitor()
 
 void walk(const nodeid_t &id, BruceVisitor &visitor, be::be &blockEngine, const tree_functions &fns)
 {
-    memory mem = blockEngine.get(id);
+    mempage mem = blockEngine.get(id);
     node_ptr node = ParseNode(mem, fns);
     switch (node->nodeType())
     {

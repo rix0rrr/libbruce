@@ -193,7 +193,10 @@ void query_iterator_impl::travelToNextLeaf()
 
     if (m_rootPath.size() && current().nodeType() == TYPE_LEAF)
     {
-        m_tree->applyPendingChanges(current().minKey, current().maxKey, NULL, &current().leafIter);
+        // Be sure to save and restore the iterator
+        int index = current().leafIndex();
+        m_tree->applyPendingChanges(current().minKey, current().maxKey, NULL);
+        current().setLeafIndex(index);
     }
 }
 

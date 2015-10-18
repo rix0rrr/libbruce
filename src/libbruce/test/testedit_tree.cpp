@@ -19,7 +19,7 @@ TEST_CASE("int to int tree")
     t.insert(2, 2);
     mutation mut = t.flush();
 
-    memory page = mem.get(*mut.newRootID());
+    mempage page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
 
     REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(0)->first) == 1 );
@@ -37,7 +37,7 @@ TEST_CASE("string to int tree")
     t.insert("two", 2);
     mutation mut = t.flush();
 
-    memory page = mem.get(*mut.newRootID());
+    mempage page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, uint32_t>::fns()));
 
     REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(0)->first) == "one" );
@@ -55,7 +55,7 @@ TEST_CASE("in to string tree")
     t.insert(2, "two is two");
     mutation mut = t.flush();
 
-    memory page = mem.get(*mut.newRootID());
+    mempage page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<uint32_t, std::string>::fns()));
 
     REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(0)->first) == 1 );
@@ -73,7 +73,7 @@ TEST_CASE("binary to string tree")
     t.insert("two", binary("\x02\x00\x02", 3));
     mutation mut = t.flush();
 
-    memory page = mem.get(*mut.newRootID());
+    mempage page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, binary>::fns()));
     memory k = node->get_at(0)->first;
     REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(0)->first) == "one" );
@@ -117,7 +117,7 @@ TEST_CASE("remove branch when empty")
     mutation mut = edit.flush();
 
     // THEN
-    memory page = mem.get(*mut.newRootID());
+    mempage page = mem.get(*mut.newRootID());
     internalnode_ptr internal = boost::dynamic_pointer_cast<InternalNode>(ParseNode(page, edit_tree<int, int>::fns()));
 
     REQUIRE( internal->branchCount() == 1 );

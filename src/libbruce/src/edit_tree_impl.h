@@ -83,7 +83,7 @@ struct splitresult_t {
  */
 struct edit_tree_impl : public tree_impl
 {
-    edit_tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns);
+    edit_tree_impl(be::be &be, maybe_nodeid rootID, mempool &mempool, const tree_functions &fns);
 
     /**
      * Insert an item into the tree.

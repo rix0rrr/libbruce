@@ -16,8 +16,8 @@ class disk : public be
 public:
     disk(std::string pathPrefix, uint32_t maxBlockSize);
 
-    virtual memory get(const nodeid_t &id);
-    virtual nodeid_t id(const memory &block);
+    virtual mempage get(const nodeid_t &id);
+    virtual nodeid_t id(const mempage &block);
     virtual void put_all(putblocklist_t &blocklist);
     virtual void del_all(delblocklist_t &ids);
     virtual uint32_t maxBlockSize();

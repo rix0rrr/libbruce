@@ -3,6 +3,7 @@
 #define BRUCE_TREE_IMPL_H
 
 #include <libbruce/be/be.h>
+#include <libbruce/mempool.h>
 #include <libbruce/types.h>
 #include "nodes.h"
 
@@ -19,7 +20,7 @@ struct index_range
 
 struct tree_impl
 {
-    tree_impl(be::be &be, maybe_nodeid rootID, const tree_functions &fns);
+    tree_impl(be::be &be, maybe_nodeid rootID, mempool &mempool, const tree_functions &fns);
 
     node_ptr &root();
 
@@ -28,6 +29,7 @@ struct tree_impl
 protected:
     be::be &m_be;
     maybe_nodeid m_rootID;
+    mempool &m_mempool;
     tree_functions m_fns;
 
     std::vector<nodeid_t> m_loadedIDs;
@@ -39,7 +41,7 @@ protected:
     void findLeafRange(const leafnode_ptr &leaf, const memory &key, pairlist_t::iterator *begin, pairlist_t::iterator *end);
 
     memory pullFromOverflow(const node_ptr &node);
-    bool removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value, pairlist_t::iterator *leafIter);
+    bool removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value);
     bool removeFromOverflow(const node_ptr &node, const memory &key, const memory *value);
 };
 

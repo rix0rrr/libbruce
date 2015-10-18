@@ -19,13 +19,13 @@ public:
 
     size_t blockCount() const;
 
-    virtual memory get(const nodeid_t &id);
-    virtual nodeid_t id(const memory &block);
+    virtual mempage get(const nodeid_t &id);
+    virtual nodeid_t id(const mempage &block);
     virtual void put_all(putblocklist_t &blocklist);
     virtual void del_all(delblocklist_t &ids);
     virtual uint32_t maxBlockSize();
 
-    typedef std::map<nodeid_t, memory> blockmap_t;
+    typedef std::map<nodeid_t, mempage> blockmap_t;
     blockmap_t &blocks() { return m_blocks; }
 private:
     size_t m_ctr;
