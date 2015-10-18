@@ -38,7 +38,7 @@ TEST_CASE("string to int tree")
     mutation mut = t.flush();
 
     mempage page = mem.get(*mut.newRootID());
-    leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, uint32_t>::fns()));
+    leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, uint32_t>::fns));
 
     REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(0)->first) == "one" );
     REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(0)->second) == 1 );
@@ -56,7 +56,7 @@ TEST_CASE("in to string tree")
     mutation mut = t.flush();
 
     mempage page = mem.get(*mut.newRootID());
-    leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<uint32_t, std::string>::fns()));
+    leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<uint32_t, std::string>::fns));
 
     REQUIRE( traits::convert<uint32_t>::from_bytes(node->get_at(0)->first) == 1 );
     REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(0)->second) == "one is one" );
@@ -74,7 +74,7 @@ TEST_CASE("binary to string tree")
     mutation mut = t.flush();
 
     mempage page = mem.get(*mut.newRootID());
-    leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, binary>::fns()));
+    leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, binary>::fns));
     memslice k = node->get_at(0)->first;
     REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(0)->first) == "one" );
     REQUIRE( traits::convert<binary>::from_bytes(node->get_at(0)->second) == binary("\x01\x00\x01", 3) );
@@ -118,7 +118,7 @@ TEST_CASE("remove branch when empty")
 
     // THEN
     mempage page = mem.get(*mut.newRootID());
-    internalnode_ptr internal = boost::dynamic_pointer_cast<InternalNode>(ParseNode(page, edit_tree<int, int>::fns()));
+    internalnode_ptr internal = boost::dynamic_pointer_cast<InternalNode>(ParseNode(page, edit_tree<int, int>::fns));
 
     REQUIRE( internal->branchCount() == 1 );
 

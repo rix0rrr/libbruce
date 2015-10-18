@@ -76,9 +76,14 @@ public:
     {
         return doFinish(m_blockEngine, mut, success);
     }
+
+    static tree_functions fns;
 private:
     be::be &m_blockEngine;
 };
+
+template<typename K, typename V>
+tree_functions bruce<K, V>::fns(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size);
 
 }
 

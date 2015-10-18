@@ -38,7 +38,7 @@ struct query_tree
     typedef query_iterator<K, V> iterator;
 
     query_tree(nodeid_t id, be::be &be)
-        : m_unsafe(id, be, m_mempool, fns()) { }
+        : m_unsafe(id, be, m_mempool, fns) { }
 
     void queue_insert(const K &key, const V &value)
     {
@@ -89,12 +89,14 @@ struct query_tree
         return query_iterator<K,V>(m_unsafe.end());
     }
 
-    static tree_functions fns() { return tree_functions(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size); }
+    static tree_functions fns;
 private:
     query_tree_unsafe m_unsafe;
     mempool m_mempool;
 };
 
+template<typename K, typename V>
+tree_functions query_tree<K, V>::fns(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size);
 
 }
 

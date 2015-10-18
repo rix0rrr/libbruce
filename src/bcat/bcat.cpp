@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
     io::basic_array_sink<char> memstream((char*)mem.ptr(), mem.size());
     io::copy(file, memstream);
 
-    node_ptr node = ParseNode(mem, edit_tree<std::string, std::string>::fns());
+    node_ptr node = ParseNode(mem, edit_tree<std::string, std::string>::fns);
 
     std::cout << *node << std::endl;
 

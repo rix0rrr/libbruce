@@ -58,7 +58,7 @@ struct edit_tree
     typedef typename boost::shared_ptr<edit_tree<K, V> > ptr;
 
     edit_tree(const maybe_nodeid &id, be::be &be)
-        : m_unsafe(id, be, m_mempool, fns()) { }
+        : m_unsafe(id, be, m_mempool, fns) { }
 
     void insert(const K &key, const V &value)
     {
@@ -85,11 +85,14 @@ struct edit_tree
         return m_unsafe.flush();
     }
 
-    static tree_functions fns() { return tree_functions(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size); }
+    static tree_functions fns;
 private:
     edit_tree_unsafe m_unsafe;
     mempool m_mempool;
 };
+
+template<typename K, typename V>
+tree_functions edit_tree<K, V>::fns(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size);
 
 }
 
