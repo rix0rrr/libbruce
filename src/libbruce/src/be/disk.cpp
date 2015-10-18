@@ -1,11 +1,6 @@
 #include <libbruce/be/disk.h>
-#include <boost/iostreams/stream.hpp>
-#include <boost/iostreams/copy.hpp>
 #include <cstdio>
-
-#include <fstream>
-
-namespace io = boost::iostreams;
+#include <sys/stat.h>
 
 extern "C" {
 
@@ -54,19 +49,18 @@ disk::disk(std::string pathPrefix, uint32_t maxBlockSize)
 
 mempage disk::get(const nodeid_t &id)
 {
-    std::fstream file((m_pathPrefix + boost::lexical_cast<std::string>(id)).c_str(),
-                      std::fstream::in | std::fstream::binary | std::fstream::ate);
-    size_t size = file.tellg();
-    file.seekg(0);
+    FILE *f = std::fopen((m_pathPrefix + boost::lexical_cast<std::string>(id)).c_str(), "rb");
+    if (!f) throw std::runtime_error("Error opening file for reading");
 
-    mempage ret(size);
-    io::basic_array_sink<char> memstream((char*)ret.ptr(), ret.size());
-    io::copy(file, memstream);
+    struct stat stat_info;
+    if (fstat(fileno(f), &stat_info) != 0)
+        throw std::runtime_error("Error stat'ing file");
 
+    mempage ret(stat_info.st_size);
+    fread(ret.ptr(), stat_info.st_size, 1, f);
+    // FIXME: Check return code
     return ret;
 }
-
-typedef io::stream<io::array_source > memsourcestream;
 
 nodeid_t disk::id(const mempage &block)
 {
@@ -93,11 +87,13 @@ void disk::put_all(putblocklist_t &blocklist)
 
 void disk::put_one(putblock_t &block)
 {
-    io::basic_array_source<char> memstream((char*)block.mem.ptr(), block.mem.size());
+    // Used to use fstream here but it's too slow
+    FILE *f = std::fopen((m_pathPrefix + boost::lexical_cast<std::string>(block.id)).c_str(), "wb");
+    if (!f) throw std::runtime_error("Error opening file for writing");
+    std::fwrite(block.mem.ptr(), block.mem.size(), 1, f);
+    // FIXME: Check return code
+    fclose(f);
 
-    std::fstream file((m_pathPrefix + boost::lexical_cast<std::string>(block.id)).c_str(),
-                      std::fstream::out | std::fstream::binary | std::fstream::trunc);
-    io::copy(memstream, file);
     block.success = true;
 }
 
