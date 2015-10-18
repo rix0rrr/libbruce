@@ -75,7 +75,7 @@ TEST_CASE("binary to string tree")
 
     mempage page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, binary>::fns()));
-    memory k = node->get_at(0)->first;
+    memslice k = node->get_at(0)->first;
     REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(0)->first) == "one" );
     REQUIRE( traits::convert<binary>::from_bytes(node->get_at(0)->second) == binary("\x01\x00\x01", 3) );
     REQUIRE( traits::convert<std::string>::from_bytes(node->get_at(1)->first) == "two" );

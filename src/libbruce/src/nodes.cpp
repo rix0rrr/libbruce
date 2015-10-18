@@ -5,7 +5,7 @@
 
 namespace libbruce {
 
-memory g_emptyMemory;
+memslice g_emptyMemory;
 
 //----------------------------------------------------------------------
 
@@ -46,7 +46,7 @@ void LeafNode::calcSize()
     }
 }
 
-const memory &LeafNode::minKey() const
+const memslice &LeafNode::minKey() const
 {
     if (pairs.size()) return pairs.begin()->first;
     return g_emptyMemory;
@@ -110,7 +110,7 @@ itemcount_t OverflowNode::itemCount() const
     return next.count + valueCount();
 }
 
-const memory &OverflowNode::minKey() const
+const memslice &OverflowNode::minKey() const
 {
     if (values.size()) return values[0];
     return g_emptyMemory;
@@ -150,7 +150,7 @@ itemcount_t InternalNode::itemCount() const
     return ret;
 }
 
-const memory &InternalNode::minKey() const
+const memslice &InternalNode::minKey() const
 {
     if (branches.size()) return branches[0].minKey;
     return g_emptyMemory;
@@ -169,7 +169,7 @@ struct KeyCompare
     KeyCompare(const tree_functions &fns) : fns(fns) { }
     const tree_functions &fns;
 
-    bool operator()(const memory &key, const kv_pair &pair) const
+    bool operator()(const memslice &key, const kv_pair &pair) const
     {
         if (key.empty()) return true;
         if (pair.first.empty()) return false;
@@ -177,7 +177,7 @@ struct KeyCompare
         return fns.keyCompare(key, pair.first) < 0;
     }
 
-    bool operator()(const kv_pair &pair, const memory &key) const
+    bool operator()(const kv_pair &pair, const memslice &key) const
     {
         if (pair.first.empty()) return true;
         if (key.empty()) return false;
@@ -185,7 +185,7 @@ struct KeyCompare
         return fns.keyCompare(pair.first, key) < 0;
     }
 
-    bool operator()(const node_branch &branch, const memory &key) const
+    bool operator()(const node_branch &branch, const memslice &key) const
     {
         if (branch.minKey.empty()) return true;
         if (key.empty()) return false;
@@ -195,7 +195,7 @@ struct KeyCompare
 };
 
 
-keycount_t FindInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns)
+keycount_t FindInternalKey(const internalnode_ptr &node, const memslice &key, const tree_functions &fns)
 {
     // lower_bound: Points to first element which is >= key
     // We need the last key which is not > key
@@ -212,7 +212,7 @@ keycount_t FindInternalKey(const internalnode_ptr &node, const memory &key, cons
     return i;
 }
 
-keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memory &key, const tree_functions &fns)
+keycount_t FindShallowestInternalKey(const internalnode_ptr &node, const memslice &key, const tree_functions &fns)
 {
     keycount_t i = FindInternalKey(node, key, fns);
     keycount_t ret = i;
@@ -248,7 +248,7 @@ std::ostream &operator <<(std::ostream &os, const libbruce::Node &x)
     {
         const libbruce::OverflowNode &o = (const libbruce::OverflowNode&)x;
         os << "OVERFLOW(" << o.valueCount() << ")" << std::endl;
-        BOOST_FOREACH(const libbruce::memory &m, o.values)
+        BOOST_FOREACH(const libbruce::memslice &m, o.values)
             os << "  " << m << std::endl;
         if (!o.next.empty())
             os << "  Next " << o.next.count << " @ " << o.next.nodeID << std::endl;

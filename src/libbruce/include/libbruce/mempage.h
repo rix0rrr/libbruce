@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stdexcept>
 
-#include <libbruce/memory.h>
+#include <libbruce/memslice.h>
 
 namespace libbruce {
 
@@ -48,14 +48,14 @@ struct mempage
      *
      * Ownership will be shared if possible.
      */
-    memory slice(size_t offset, size_t size)
+    memslice slice(size_t offset, size_t size)
     {
-        return memory(ptr() + offset, size);
+        return memslice(ptr() + offset, size);
     }
 
-    memory all()
+    memslice all()
     {
-        return memory(ptr(), m_size);
+        return memslice(ptr(), m_size);
     }
 
     /**

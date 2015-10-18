@@ -14,17 +14,17 @@ extern mempool g_testPool;
  * Return the size of a 32-bit int
  */
 uint32_t intSize(const void *);
-int intCompare(const memory &, const memory &);
+int intCompare(const memslice &, const memslice &);
 
-int rngcmp(const memory &a, const memory &b);
+int rngcmp(const memslice &a, const memslice &b);
 
-memory intCopy(uint32_t i);
+memslice intCopy(uint32_t i);
 
 extern tree_functions intToIntTree;
 
-extern memory one_r;
-extern memory two_r;
-extern memory three_r;
+extern memslice one_r;
+extern memslice two_r;
+extern memslice three_r;
 
 void printMem(be::mem &mem, const tree_functions &fns);
 void putNode(be::mem &mem, nodeid_t id, const node_ptr &node);
@@ -45,7 +45,7 @@ struct put_result
 struct make_leaf
 {
     make_leaf(const tree_functions &fn);
-    make_leaf &kv(const memory &k, const memory &v);
+    make_leaf &kv(const memslice &k, const memslice &v);
     make_leaf &kv(uint32_t k, uint32_t v);
     make_leaf &overflow(const put_result &put);
     put_result put(be::mem &mem);
@@ -67,7 +67,7 @@ private:
 struct make_overflow
 {
     make_overflow();
-    make_overflow &val(const memory &value);
+    make_overflow &val(const memslice &value);
     make_overflow &val(uint32_t v);
     make_overflow &next(const put_result &put);
     put_result put(be::mem &mem);

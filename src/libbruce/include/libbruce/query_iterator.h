@@ -18,8 +18,8 @@ struct query_iterator_unsafe
     query_iterator_unsafe(const query_iterator_unsafe &rhs);
     query_iterator_unsafe &operator=(const query_iterator_unsafe &rhs);
 
-    const memory &key() const;
-    const memory &value() const;
+    const memslice &key() const;
+    const memslice &value() const;
     itemcount_t rank() const;
     bool valid() const;
 

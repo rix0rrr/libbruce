@@ -11,7 +11,7 @@ namespace libbruce {
 struct knuckle
 {
     knuckle() : index(0) {}
-    knuckle(node_ptr node, const memory &minKey, const memory &maxKey)
+    knuckle(node_ptr node, const memslice &minKey, const memslice &maxKey)
         : node(node), index(0), minKey(minKey), maxKey(maxKey)
     {
         if (nodeType() == TYPE_LEAF) leafIter = asLeaf()->pairs.begin();
@@ -30,8 +30,8 @@ struct knuckle
     node_ptr node;
     pairlist_t::iterator leafIter;
     keycount_t index;
-    memory minKey;
-    memory maxKey;
+    memslice minKey;
+    memslice maxKey;
 
     node_type_t nodeType() const;
     internalnode_ptr asInternal() const;
@@ -48,8 +48,8 @@ struct query_iterator_impl
 {
     query_iterator_impl(query_tree_impl_ptr tree, const treepath_t &rootPath);
 
-    const memory &key() const;
-    const memory &value() const;
+    const memslice &key() const;
+    const memslice &value() const;
     itemcount_t rank() const;
     bool valid() const;
 

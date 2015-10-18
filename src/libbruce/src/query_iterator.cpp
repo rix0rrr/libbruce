@@ -26,13 +26,13 @@ query_iterator_unsafe &query_iterator_unsafe::operator=(const query_iterator_uns
     return *this;
 }
 
-const memory &query_iterator_unsafe::key() const
+const memslice &query_iterator_unsafe::key() const
 {
     checkValid();
     return m_impl->key();
 }
 
-const memory &query_iterator_unsafe::value() const
+const memslice &query_iterator_unsafe::value() const
 {
     checkValid();
     return m_impl->value();

@@ -9,22 +9,22 @@ edit_tree_unsafe::edit_tree_unsafe(const maybe_nodeid &id, be::be &be, mempool &
 {
 }
 
-void edit_tree_unsafe::insert(const memory &key, const memory &value)
+void edit_tree_unsafe::insert(const memslice &key, const memslice &value)
 {
     m_tree->insert(key, value, false);
 }
 
-void edit_tree_unsafe::upsert(const memory &key, const memory &value)
+void edit_tree_unsafe::upsert(const memslice &key, const memslice &value)
 {
     m_tree->insert(key, value, true);
 }
 
-bool edit_tree_unsafe::remove(const memory &key)
+bool edit_tree_unsafe::remove(const memslice &key)
 {
     return m_tree->remove(key);
 }
 
-bool edit_tree_unsafe::remove(const memory &key, const memory &value)
+bool edit_tree_unsafe::remove(const memslice &key, const memslice &value)
 {
     return m_tree->remove(key, value);
 }

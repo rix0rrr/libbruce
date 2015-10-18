@@ -44,7 +44,7 @@ const knuckle &query_iterator_impl::leaf() const
     return m_rootPath.back();
 }
 
-const memory &query_iterator_impl::key() const
+const memslice &query_iterator_impl::key() const
 {
     switch (current().nodeType())
     {
@@ -54,7 +54,7 @@ const memory &query_iterator_impl::key() const
     }
 }
 
-const memory &query_iterator_impl::value() const
+const memslice &query_iterator_impl::value() const
 {
     switch (current().nodeType())
     {
@@ -182,8 +182,8 @@ void query_iterator_impl::travelToNextLeaf()
         {
             node_ptr next = m_tree->child(internal->branch(current().index));
 
-            const memory &minK = internal->branch(current().index).minKey.size() ? internal->branch(current().index).minKey : current().minKey;
-            const memory &maxK = current().index < internal->branchCount() - 1 ? internal->branch(current().index+1).minKey : current().maxKey;
+            const memslice &minK = internal->branch(current().index).minKey.size() ? internal->branch(current().index).minKey : current().minKey;
+            const memslice &maxK = current().index < internal->branchCount() - 1 ? internal->branch(current().index+1).minKey : current().maxKey;
 
             m_rootPath.push_back(knuckle(next, minK, maxK));
         }
@@ -202,7 +202,7 @@ void query_iterator_impl::travelToNextLeaf()
 
 void query_iterator_impl::pushOverflow(const node_ptr &overflow)
 {
-    m_rootPath.push_back(knuckle(overflow, memory(), memory()));
+    m_rootPath.push_back(knuckle(overflow, memslice(), memslice()));
 }
 
 void query_iterator_impl::popOverflows()

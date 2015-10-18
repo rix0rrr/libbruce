@@ -9,32 +9,32 @@ query_tree_unsafe::query_tree_unsafe(nodeid_t id, be::be &be, mempool &mempool, 
 {
 }
 
-void query_tree_unsafe::queue_insert(const memory &key, const memory &value)
+void query_tree_unsafe::queue_insert(const memslice &key, const memslice &value)
 {
     m_impl->queue_insert(key, value);
 }
 
-void query_tree_unsafe::queue_upsert(const memory &key, const memory &value, bool guaranteed)
+void query_tree_unsafe::queue_upsert(const memslice &key, const memslice &value, bool guaranteed)
 {
     m_impl->queue_upsert(key, value, guaranteed);
 }
 
-void query_tree_unsafe::queue_remove(const memory &key, bool guaranteed)
+void query_tree_unsafe::queue_remove(const memslice &key, bool guaranteed)
 {
     m_impl->queue_remove(key, guaranteed);
 }
 
-void query_tree_unsafe::queue_remove(const memory &key, const memory &value, bool guaranteed)
+void query_tree_unsafe::queue_remove(const memslice &key, const memslice &value, bool guaranteed)
 {
     m_impl->queue_remove(key, value, guaranteed);
 }
 
-bool query_tree_unsafe::get(const memory &key, memory *value)
+bool query_tree_unsafe::get(const memslice &key, memslice *value)
 {
     return m_impl->get(key, value);
 }
 
-query_iterator_unsafe query_tree_unsafe::find(const memory &key)
+query_iterator_unsafe query_tree_unsafe::find(const memslice &key)
 {
     return query_iterator_unsafe(m_impl->find(key));
 }

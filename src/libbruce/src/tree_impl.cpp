@@ -44,20 +44,20 @@ node_ptr tree_impl::load(nodeid_t id)
     return ParseNode(mem, m_fns);
 }
 
-void tree_impl::findLeafRange(const leafnode_ptr &leaf, const memory &key, pairlist_t::iterator *begin, pairlist_t::iterator *end)
+void tree_impl::findLeafRange(const leafnode_ptr &leaf, const memslice &key, pairlist_t::iterator *begin, pairlist_t::iterator *end)
 {
     *begin = leaf->pairs.lower_bound(key);
     *end = leaf->pairs.upper_bound(key);
 }
 
-int tree_impl::safeCompare(const memory &a, const memory &b)
+int tree_impl::safeCompare(const memslice &a, const memslice &b)
 {
     if (a.empty()) return -1;
     if (b.empty()) return 1;
     return m_fns.keyCompare(a, b);
 }
 
-bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value)
+bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memslice &key, const memslice *value)
 {
     pairlist_t::iterator begin, end;
     findLeafRange(leaf, key, &begin, &end);
@@ -83,7 +83,7 @@ bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, cons
         // and potentially split.
         if (eraseLocation == leaf->pairs.end() && !leaf->overflow.empty())
         {
-            memory ret = pullFromOverflow(leaf->overflow.node);
+            memslice ret = pullFromOverflow(leaf->overflow.node);
             leaf->insert(kv_pair(key, ret));
             leaf->setOverflow(leaf->overflow.node);
         }
@@ -105,7 +105,7 @@ bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memory &key, cons
     return false;
 }
 
-bool tree_impl::removeFromOverflow(const node_ptr &node, const memory &key, const memory *value)
+bool tree_impl::removeFromOverflow(const node_ptr &node, const memslice &key, const memslice *value)
 {
     overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
 
@@ -130,7 +130,7 @@ bool tree_impl::removeFromOverflow(const node_ptr &node, const memory &key, cons
     // If this block is now empty, pull a value from the next one
     if (!overflow->itemCount() && !overflow->next.empty())
     {
-        memory value = pullFromOverflow(overflowNode(overflow->next));
+        memslice value = pullFromOverflow(overflowNode(overflow->next));
         overflow->append(value);
     }
 
@@ -138,18 +138,18 @@ bool tree_impl::removeFromOverflow(const node_ptr &node, const memory &key, cons
 }
 
 
-memory tree_impl::pullFromOverflow(const node_ptr &node)
+memslice tree_impl::pullFromOverflow(const node_ptr &node)
 {
     overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
 
     if (overflow->next.empty())
     {
-        memory ret = overflow->values.back();
+        memslice ret = overflow->values.back();
         overflow->erase(overflow->valueCount() - 1);
         return ret;
     }
 
-    memory ret = pullFromOverflow(overflowNode(overflow->next));
+    memslice ret = pullFromOverflow(overflowNode(overflow->next));
     overflow->setNext(overflow->next.node);
     return ret;
 }

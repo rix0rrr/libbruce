@@ -35,7 +35,7 @@ struct NodeParser
             uint32_t size = fns.keySize(m_input.at<const char>(m_offset));
 
             // Push back
-            items.push_back(kv_pair(m_input.slice(m_offset, size), memory()));
+            items.push_back(kv_pair(m_input.slice(m_offset, size), memslice()));
 
             m_offset += size;
         }
@@ -101,7 +101,7 @@ struct NodeParser
         internalnode_ptr ret = boost::make_shared<InternalNode>(keyCount());
 
         // Read N-1 keys, starting at 1
-        ret->branches.push_back(node_branch(memory(), nodeid_t(), 0));
+        ret->branches.push_back(node_branch(memslice(), nodeid_t(), 0));
         for (keycount_t i = 1; i < keyCount(); i++)
         {
             validateOffset();

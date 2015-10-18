@@ -7,7 +7,7 @@ add_library(bruce
     src/be/mem.cpp
     src/be/disk.cpp
     src/mutation.cpp
-    src/memory.cpp
+    src/memslice.cpp
     src/mempool.cpp
     src/serializing.cpp
     src/tree_impl.cpp

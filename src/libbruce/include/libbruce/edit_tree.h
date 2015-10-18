@@ -40,10 +40,10 @@ struct edit_tree_unsafe
 {
     edit_tree_unsafe(const maybe_nodeid &id, be::be &be, mempool &mempool, tree_functions fns);
 
-    void insert(const memory &key, const memory &value);
-    void upsert(const memory &key, const memory &value);
-    bool remove(const memory &key);
-    bool remove(const memory &key, const memory &value);
+    void insert(const memslice &key, const memslice &value);
+    void upsert(const memslice &key, const memslice &value);
+    bool remove(const memslice &key);
+    bool remove(const memslice &key, const memslice &value);
     mutation flush();
 private:
     mutable_tree_ptr m_tree;

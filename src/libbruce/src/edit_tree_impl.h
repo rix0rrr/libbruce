@@ -65,12 +65,12 @@ namespace libbruce {
 
 struct splitresult_t {
     splitresult_t(node_ptr left) : didSplit(false), left(left) { assert(left); }
-    splitresult_t(node_ptr left, const memory& splitKey, node_ptr right)
+    splitresult_t(node_ptr left, const memslice& splitKey, node_ptr right)
         : didSplit(true), left(left), splitKey(splitKey), right(right) { assert(left); assert(right); }
 
     bool didSplit;
     node_ptr left;
-    memory splitKey;
+    memslice splitKey;
     node_ptr right;
 };
 
@@ -93,13 +93,13 @@ struct edit_tree_impl : public tree_impl
      * the memory slice is shared, the shared_ptr will make sure the memory is
      * not released prematurely.
      */
-    void insert(const memory &key, const memory &value, bool upsert);
+    void insert(const memslice &key, const memslice &value, bool upsert);
 
     // Remove any element with the given key
-    bool remove(const memory &key);
+    bool remove(const memslice &key);
 
     // Remove only the element with the given key and value
-    bool remove(const memory &key, const memory &value);
+    bool remove(const memslice &key, const memslice &value);
 
     /**
      * Flush changes to the block engine (this only writes new blocks).
@@ -112,9 +112,9 @@ private:
     bool m_frozen;
     be::putblocklist_t m_putBlocks;
 
-    splitresult_t insertRec(const node_ptr &node, const memory &key, const memory &value, bool upsert);
-    splitresult_t removeRec(const node_ptr &node, const memory &key, const memory *value);
-    void validateKVSize(const memory &key, const memory &value);
+    splitresult_t insertRec(const node_ptr &node, const memslice &key, const memslice &value, bool upsert);
+    splitresult_t removeRec(const node_ptr &node, const memslice &key, const memslice *value);
+    void validateKVSize(const memslice &key, const memslice &value);
     void checkNotFrozen();
 
     nodeid_t collectBlocksToPutRec(node_ptr &node);

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <boost/optional.hpp>
 
-#include <libbruce/memory.h>
+#include <libbruce/memslice.h>
 
 // Standard types
 
@@ -58,7 +58,7 @@ typedef boost::optional<nodeid_t> maybe_nodeid;
 namespace fn {
 
 typedef uint32_t sizeinator(const void *);
-typedef int comparinator(const memory &, const memory &);
+typedef int comparinator(const memslice &, const memslice &);
 
 }
 

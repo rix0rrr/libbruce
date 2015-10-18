@@ -10,37 +10,37 @@ query_tree_impl::query_tree_impl(be::be &be, nodeid_t rootID, mempool &mempool, 
 {
 }
 
-void query_tree_impl::queue_insert(const memory &key, const memory &value)
+void query_tree_impl::queue_insert(const memslice &key, const memslice &value)
 {
     m_edits[key].push_back(pending_edit(INSERT, key, value, true));
 }
 
-void query_tree_impl::queue_upsert(const memory &key, const memory &value, bool guaranteed)
+void query_tree_impl::queue_upsert(const memslice &key, const memslice &value, bool guaranteed)
 {
     m_edits[key].push_back(pending_edit(UPSERT, key, value, guaranteed));
 }
 
-void query_tree_impl::queue_remove(const memory &key, bool guaranteed)
+void query_tree_impl::queue_remove(const memslice &key, bool guaranteed)
 {
-    m_edits[key].push_back(pending_edit(REMOVE_KEY, key, memory(), guaranteed));
+    m_edits[key].push_back(pending_edit(REMOVE_KEY, key, memslice(), guaranteed));
 }
 
-void query_tree_impl::queue_remove(const memory &key, const memory &value, bool guaranteed)
+void query_tree_impl::queue_remove(const memslice &key, const memslice &value, bool guaranteed)
 {
     m_edits[key].push_back(pending_edit(REMOVE_KV, key, value, guaranteed));
 }
 
-bool query_tree_impl::get(const memory &key, memory *value)
+bool query_tree_impl::get(const memslice &key, memslice *value)
 {
     query_iterator_unsafe it = find(key);
     if (it) *value = it.value();
     return it;
 }
 
-query_iterator_impl_ptr query_tree_impl::find(const memory &key)
+query_iterator_impl_ptr query_tree_impl::find(const memslice &key)
 {
     treepath_t rootPath;
-    rootPath.push_back(knuckle(root(), memory(), memory()));
+    rootPath.push_back(knuckle(root(), memslice(), memslice()));
 
     query_iterator_impl_ptr it;
     findRec(rootPath, &key, &it);
@@ -50,7 +50,7 @@ query_iterator_impl_ptr query_tree_impl::find(const memory &key)
 query_iterator_impl_ptr query_tree_impl::seek(itemcount_t n)
 {
     treepath_t rootPath;
-    rootPath.push_back(knuckle(root(), memory(), memory()));
+    rootPath.push_back(knuckle(root(), memslice(), memslice()));
 
     query_iterator_impl_ptr it;
     seekRec(rootPath, n, &it);
@@ -62,13 +62,13 @@ void query_tree_impl::pushChildKnuckle(treepath_t &rootPath)
     knuckle &top = rootPath.back();
     internalnode_ptr internal = boost::static_pointer_cast<InternalNode>(top.node);
 
-    const memory &minK = internal->branch(top.index).minKey.size() ? internal->branch(top.index).minKey : top.minKey;
-    const memory &maxK = top.index < internal->branchCount() - 1 ? internal->branch(top.index+1).minKey : top.maxKey;
+    const memslice &minK = internal->branch(top.index).minKey.size() ? internal->branch(top.index).minKey : top.minKey;
+    const memslice &maxK = top.index < internal->branchCount() - 1 ? internal->branch(top.index+1).minKey : top.maxKey;
 
     rootPath.push_back(knuckle(child(internal->branch(top.index)), minK, maxK));
 }
 
-void query_tree_impl::findRec(treepath_t &rootPath, const memory *key, query_iterator_impl_ptr *iter_ptr)
+void query_tree_impl::findRec(treepath_t &rootPath, const memslice *key, query_iterator_impl_ptr *iter_ptr)
 {
     knuckle &top = rootPath.back();
     node_ptr node = rootPath.back().node;
@@ -133,7 +133,7 @@ NODE_CASE_LEAF
 
     if (!leaf->overflow.empty())
     {
-        rootPath.push_back(knuckle(overflowNode(leaf->overflow), memory(), memory()));
+        rootPath.push_back(knuckle(overflowNode(leaf->overflow), memslice(), memslice()));
         seekRec(rootPath, n, iter_ptr);
     }
 
@@ -149,7 +149,7 @@ NODE_CASE_OVERFLOW
     n -= overflow->valueCount();
 
     if (!overflow->next.empty())
-        rootPath.push_back(knuckle(overflowNode(overflow->next), memory(), memory()));
+        rootPath.push_back(knuckle(overflowNode(overflow->next), memslice(), memslice()));
         seekRec(rootPath, n, iter_ptr);
 
 NODE_CASE_INT
@@ -160,8 +160,8 @@ NODE_CASE_INT
         // Look for pending changes to apply here
 
         // Find bounds
-        const memory &minK = top.index == 0 ? top.minKey : internal->branch(top.index).minKey;
-        const memory &maxK = top.index < internal->branchCount() - 1 ? internal->branch(top.index + 1).minKey : top.maxKey;
+        const memslice &minK = top.index == 0 ? top.minKey : internal->branch(top.index).minKey;
+        const memslice &maxK = top.index < internal->branchCount() - 1 ? internal->branch(top.index + 1).minKey : top.maxKey;
 
         // Find edits
         int delta = pendingRankDelta(node, minK, maxK);
@@ -190,7 +190,7 @@ itemcount_t query_tree_impl::rank(treepath_t &rootPath)
         node_ptr node = it->node;
 
     NODE_CASE_LEAF
-        const memory &maxK = it->leafIter != leaf->pairs.end() ? it->leafIter->first : it->maxKey;
+        const memslice &maxK = it->leafIter != leaf->pairs.end() ? it->leafIter->first : it->maxKey;
 
         // This will invalidate the iterator we have into the leaf,
         // so get the index before and readjust afterwards.
@@ -204,8 +204,8 @@ itemcount_t query_tree_impl::rank(treepath_t &rootPath)
     NODE_CASE_OVERFLOW
         ret += it->index;
     NODE_CASE_INT
-        const memory &minK = it->minKey;
-        const memory &maxK = it->index < internal->branchCount() - 1 ? internal->branch(it->index + 1).minKey : it->maxKey;
+        const memslice &minK = it->minKey;
+        const memslice &maxK = it->index < internal->branchCount() - 1 ? internal->branch(it->index + 1).minKey : it->maxKey;
 
         int delta = pendingRankDelta(node, minK, maxK);
 
@@ -222,7 +222,7 @@ itemcount_t query_tree_impl::rank(treepath_t &rootPath)
     return ret;
 }
 
-int query_tree_impl::pendingRankDelta(const node_ptr &node, const memory &minKey, const memory &maxKey)
+int query_tree_impl::pendingRankDelta(const node_ptr &node, const memslice &minKey, const memslice &maxKey)
 {
     // Doesn't STRICTLY speaking need a node_ptr argument, but it makes the tree traversal a bit
     // faster to not have to start at the root.
@@ -263,13 +263,13 @@ int query_tree_impl::pendingRankDelta(const node_ptr &node, const memory &minKey
 query_iterator_impl_ptr query_tree_impl::begin()
 {
     treepath_t rootPath;
-    rootPath.push_back(knuckle(root(), memory(), memory()));
+    rootPath.push_back(knuckle(root(), memslice(), memslice()));
     query_iterator_impl_ptr it;
     findRec(rootPath, NULL, &it);
     return it;
 }
 
-void query_tree_impl::applyPendingChanges(const memory &minKey, const memory &maxKey, int *delta)
+void query_tree_impl::applyPendingChanges(const memslice &minKey, const memslice &maxKey, int *delta)
 {
     editmap_t::iterator start = minKey.empty() ? m_edits.begin() : m_edits.lower_bound(minKey);
     editmap_t::iterator end   = maxKey.empty() ? m_edits.end() : m_edits.lower_bound(maxKey);

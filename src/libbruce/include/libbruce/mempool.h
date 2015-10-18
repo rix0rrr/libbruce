@@ -27,7 +27,7 @@ struct mempool : private boost::noncopyable
     /**
      * Allocate a memslice of the given size
      */
-    memory alloc(size_t size);
+    memslice alloc(size_t size);
 private:
     std::list<mempage> m_pages;
     mempage m_allocPage;

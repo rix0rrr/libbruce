@@ -15,14 +15,14 @@ uint32_t intSize(const void *)
     return sizeof(uint32_t);
 }
 
-int rngcmp(const memory &a, const memory &b)
+int rngcmp(const memslice &a, const memslice &b)
 {
     int ret = memcmp(a.ptr(), b.ptr(), std::min(a.size(), b.size()));
     if (ret != 0) return ret;
     return a.size() - b.size();
 }
 
-int intCompare(const memory &a, const memory &b)
+int intCompare(const memslice &a, const memslice &b)
 {
     uint32_t aa = *a.at<uint32_t>(0);
     uint32_t bb = *b.at<uint32_t>(0);
@@ -32,9 +32,9 @@ int intCompare(const memory &a, const memory &b)
     return 0;
 }
 
-memory intCopy(uint32_t i)
+memslice intCopy(uint32_t i)
 {
-    memory x = g_testPool.alloc(sizeof(i));
+    memslice x = g_testPool.alloc(sizeof(i));
     *x.at<uint32_t>(0) = i;
     return x;
 }
@@ -44,9 +44,9 @@ tree_functions intToIntTree(&intCompare, &intCompare, &intSize, &intSize);
 uint32_t one = 1;
 uint32_t two = 2;
 uint32_t three = 3;
-memory one_r(&one, sizeof(one));
-memory two_r(&two, sizeof(two));
-memory three_r(&three, sizeof(three));
+memslice one_r(&one, sizeof(one));
+memslice two_r(&two, sizeof(two));
+memslice three_r(&three, sizeof(three));
 
 void printMem(be::mem &mem, const tree_functions &fns)
 {
@@ -73,7 +73,7 @@ make_leaf::make_leaf(const tree_functions &fns)
 {
 }
 
-make_leaf &make_leaf::kv(const memory &k, const memory &v)
+make_leaf &make_leaf::kv(const memslice &k, const memslice &v)
 {
     leaf->insert(kv_pair(k, v));
     return *this;
@@ -121,7 +121,7 @@ make_overflow::make_overflow()
 {
 }
 
-make_overflow &make_overflow::val(const memory &value)
+make_overflow &make_overflow::val(const memslice &value)
 {
     overflow->append(value);
     return *this;

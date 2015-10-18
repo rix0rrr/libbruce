@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BRUCE_MEMORY_H
-#define BRUCE_MEMORY_H
+#ifndef BRUCE_MEMSLICE_H
+#define BRUCE_MEMSLICE_H
 
 #include <boost/shared_array.hpp>
 #include <iostream>
@@ -18,14 +18,14 @@ namespace libbruce {
  *
  * It's movable since it needs to be relocatable a lot inside nodes.
  */
-struct memory
+struct memslice
 {
-    memory()
+    memslice()
         : m_ptr(NULL), m_size(0)
     {
     }
 
-    memory(void *ptr, size_t size)
+    memslice(void *ptr, size_t size)
         : m_ptr((uint8_t*)ptr), m_size(size)
     {
     }
@@ -57,13 +57,13 @@ struct memory
         return (const T*)(m_ptr + offset);
     }
 
-    bool operator==(const memory &other) const;
+    bool operator==(const memslice &other) const;
 private:
     uint8_t *m_ptr;
     size_t m_size;
 };
 
-std::ostream &operator <<(std::ostream &os, const libbruce::memory &m);
+std::ostream &operator <<(std::ostream &os, const libbruce::memslice &m);
 
 }
 

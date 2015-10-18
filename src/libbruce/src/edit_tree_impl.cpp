@@ -28,7 +28,7 @@ edit_tree_impl::edit_tree_impl(be::be &be, maybe_nodeid rootID, mempool &mempool
 {
 }
 
-void edit_tree_impl::insert(const memory &key, const memory &value, bool upsert)
+void edit_tree_impl::insert(const memslice &key, const memslice &value, bool upsert)
 {
     checkNotFrozen();
     validateKVSize(key, value);
@@ -44,20 +44,20 @@ void edit_tree_impl::insert(const memory &key, const memory &value, bool upsert)
     {
         // Replace root with a new internal node
         internalnode_ptr newRoot = boost::make_shared<InternalNode>();
-        newRoot->insert(0, node_branch(memory(), rootSplit.left, rootSplit.left->itemCount()));
+        newRoot->insert(0, node_branch(memslice(), rootSplit.left, rootSplit.left->itemCount()));
         newRoot->insert(1, node_branch(rootSplit.splitKey, rootSplit.right, rootSplit.right->itemCount()));
         m_root = newRoot;
     }
 }
 
-void edit_tree_impl::validateKVSize(const memory &key, const memory &value)
+void edit_tree_impl::validateKVSize(const memslice &key, const memslice &value)
 {
     uint32_t maxSize = m_be.maxBlockSize();
     if (key.size() + value.size() > maxSize)
         throw std::runtime_error("Key/value too large to insert, max size: " + to_string(maxSize));
 }
 
-splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memory &key, const memory &value, bool upsert)
+splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memslice &key, const memslice &value, bool upsert)
 {
 NODE_CASE_LEAF
     pairlist_t::iterator it = leaf->pairs.find(key);
@@ -204,7 +204,7 @@ void edit_tree_impl::checkNotFrozen()
         throw std::runtime_error("Can't mutate tree anymore; already flushed");
 }
 
-bool edit_tree_impl::remove(const memory &key)
+bool edit_tree_impl::remove(const memslice &key)
 {
     checkNotFrozen();
 
@@ -213,7 +213,7 @@ bool edit_tree_impl::remove(const memory &key)
     return removeRec(r, key, NULL).left->itemCount() != count;
 }
 
-bool edit_tree_impl::remove(const memory &key, const memory &value)
+bool edit_tree_impl::remove(const memslice &key, const memslice &value)
 {
     checkNotFrozen();
 
@@ -222,7 +222,7 @@ bool edit_tree_impl::remove(const memory &key, const memory &value)
     return removeRec(r, key, &value).left->itemCount() != count;
 }
 
-splitresult_t edit_tree_impl::removeRec(const node_ptr &node, const memory &key, const memory *value)
+splitresult_t edit_tree_impl::removeRec(const node_ptr &node, const memslice &key, const memslice *value)
 {
     // We're supposed to be joining nodes together if they're below half-max,
     // but I'm skipping out on that right now.

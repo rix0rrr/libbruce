@@ -16,13 +16,13 @@ struct query_tree_unsafe
 {
     query_tree_unsafe(nodeid_t id, be::be &be, mempool &mempool, const tree_functions &fns);
 
-    void queue_insert(const memory &key, const memory &value);
-    void queue_upsert(const memory &key, const memory &value, bool guaranteed);
-    void queue_remove(const memory &key, bool guaranteed);
-    void queue_remove(const memory &key, const memory &value, bool guaranteed);
+    void queue_insert(const memslice &key, const memslice &value);
+    void queue_upsert(const memslice &key, const memslice &value, bool guaranteed);
+    void queue_remove(const memslice &key, bool guaranteed);
+    void queue_remove(const memslice &key, const memslice &value, bool guaranteed);
 
-    bool get(const memory &key, memory *value);
-    query_iterator_unsafe find(const memory &key);
+    bool get(const memslice &key, memslice *value);
+    query_iterator_unsafe find(const memslice &key);
     query_iterator_unsafe seek(itemcount_t n);
     query_iterator_unsafe begin();
     query_iterator_unsafe end();
@@ -62,7 +62,7 @@ struct query_tree
 
     maybe_v get(const K &key)
     {
-        memory value;
+        memslice value;
         if (m_unsafe.get(traits::convert<K>::to_bytes(key, m_mempool), &value))
             return traits::convert<V>::from_bytes(value);
         else

@@ -37,12 +37,12 @@ protected:
 
     node_ptr load(nodeid_t id);
 
-    int safeCompare(const memory &a, const memory &b);
-    void findLeafRange(const leafnode_ptr &leaf, const memory &key, pairlist_t::iterator *begin, pairlist_t::iterator *end);
+    int safeCompare(const memslice &a, const memslice &b);
+    void findLeafRange(const leafnode_ptr &leaf, const memslice &key, pairlist_t::iterator *begin, pairlist_t::iterator *end);
 
-    memory pullFromOverflow(const node_ptr &node);
-    bool removeFromLeaf(const leafnode_ptr &leaf, const memory &key, const memory *value);
-    bool removeFromOverflow(const node_ptr &node, const memory &key, const memory *value);
+    memslice pullFromOverflow(const node_ptr &node);
+    bool removeFromLeaf(const leafnode_ptr &leaf, const memslice &key, const memslice *value);
+    bool removeFromOverflow(const node_ptr &node, const memslice &key, const memslice *value);
 };
 
 }

@@ -95,7 +95,7 @@ TEST_CASE("split is kosher")
     internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
 
     REQUIRE( rootNode->branchCount() == 2 );
-    memory splitKey = rootNode->branch(1).minKey;
+    memslice splitKey = rootNode->branch(1).minKey;
 
     mempage leftPage = mem.get(rootNode->branch(0).nodeID);
     mempage rightPage = mem.get(rootNode->branch(1).nodeID);
@@ -142,7 +142,7 @@ TEST_CASE("inserting then deleting from an internal node")
     SECTION("deleting from the left")
     {
         uint32_t x = 40;
-        bool success = tree.remove(memory(&x, sizeof(x)));
+        bool success = tree.remove(memslice(&x, sizeof(x)));
         REQUIRE(success);
 
         mutation mut = tree.flush();
@@ -155,7 +155,7 @@ TEST_CASE("inserting then deleting from an internal node")
     SECTION("deleting from the right")
     {
         uint32_t x = 80;
-        bool success = tree.remove(memory(&x, sizeof(x)));
+        bool success = tree.remove(memslice(&x, sizeof(x)));
         REQUIRE(success);
         mutation mut = tree.flush();
 

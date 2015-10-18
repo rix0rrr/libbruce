@@ -18,7 +18,7 @@ void mempool::retain(const mempage &page)
     m_pages.push_back(page);
 }
 
-memory mempool::alloc(size_t size)
+memslice mempool::alloc(size_t size)
 {
     if (MAX_SHARED_ALLOC_SIZE < size)
     {
