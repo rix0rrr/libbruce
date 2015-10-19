@@ -40,9 +40,9 @@ protected:
     int safeCompare(const memslice &a, const memslice &b);
     void findLeafRange(const leafnode_ptr &leaf, const memslice &key, pairlist_t::iterator *begin, pairlist_t::iterator *end);
 
-    memslice pullFromOverflow(const node_ptr &node);
+    memslice pullFromOverflow(overflow_t &overflow_rec);
     bool removeFromLeaf(const leafnode_ptr &leaf, const memslice &key, const memslice *value);
-    bool removeFromOverflow(const node_ptr &node, const memslice &key, const memslice *value);
+    bool removeFromOverflow(overflow_t &overflow_rec, const memslice &key, const memslice *value);
 };
 
 }

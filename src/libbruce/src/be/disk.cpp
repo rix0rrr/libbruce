@@ -52,7 +52,7 @@ disk::disk(std::string pathPrefix, uint32_t maxBlockSize)
 
 mempage disk::get(const nodeid_t &id)
 {
-    int f = open((m_pathPrefix + boost::lexical_cast<std::string>(block.id)).c_str(), O_RDONLY);
+    int f = open((m_pathPrefix + boost::lexical_cast<std::string>(id)).c_str(), O_RDONLY);
     if (f == -1) throw std::runtime_error("Error opening file for reading");
 
     struct stat stat_info;

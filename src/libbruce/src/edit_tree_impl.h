@@ -64,14 +64,25 @@
 namespace libbruce {
 
 struct splitresult_t {
-    splitresult_t(node_ptr left) : didSplit(false), left(left) { assert(left); }
-    splitresult_t(node_ptr left, const memslice& splitKey, node_ptr right)
-        : didSplit(true), left(left), splitKey(splitKey), right(right) { assert(left); assert(right); }
+    splitresult_t(node_ptr left)
+    {
+        assert(left);
+        branches.push_back(node_branch(memslice(), left));
+    }
 
-    bool didSplit;
-    node_ptr left;
-    memslice splitKey;
-    node_ptr right;
+    splitresult_t(node_ptr left, const memslice& splitKey, node_ptr right)
+    {
+        assert(left);
+        assert(right);
+        branches.push_back(node_branch(memslice(), left));
+        branches.push_back(node_branch(splitKey, right));
+    }
+
+    node_branch &left() { return *branches.begin(); }
+    const node_branch &left() const{ return *branches.begin(); }
+
+    bool didSplit() const { return branches.size() > 1; }
+    branchlist_t branches;
 };
 
 // FIXME: Reject duplicate inserts?

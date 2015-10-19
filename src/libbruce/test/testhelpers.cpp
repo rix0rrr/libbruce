@@ -144,6 +144,22 @@ put_result make_overflow::put(be::mem &mem)
     return put_result(overflow, putNode(mem, overflow));
 }
 
+leafnode_ptr loadLeaf(be::mem &mem, const nodeid_t &id)
+{
+    mempage page = mem.get(id);
+    leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
+    if (!node) throw std::runtime_error("Requested block was not a leaf");
+    return node;
+}
+
+internalnode_ptr loadInternal(be::mem &mem, const nodeid_t &id)
+{
+    mempage page = mem.get(id);
+    internalnode_ptr node = boost::dynamic_pointer_cast<InternalNode>(ParseNode(page, intToIntTree));
+    if (!node) throw std::runtime_error("Requested block was not an internal node");
+    return node;
+}
+
 }
 
 std::ostream &operator <<(std::ostream &os, libbruce::be::mem &x)

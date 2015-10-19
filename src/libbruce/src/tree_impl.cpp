@@ -83,9 +83,8 @@ bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memslice &key, co
         // and potentially split.
         if (eraseLocation == leaf->pairs.end() && !leaf->overflow.empty())
         {
-            memslice ret = pullFromOverflow(leaf->overflow.node);
+            memslice ret = pullFromOverflow(leaf->overflow);
             leaf->insert(kv_pair(key, ret));
-            leaf->setOverflow(leaf->overflow.node);
         }
 
         return true;
@@ -97,17 +96,15 @@ bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memslice &key, co
     if (!leaf->overflow.empty() && key == leaf->pairs.rbegin()->first)
     {
         // Did not erase from this leaf but key matches overflow key, recurse
-        bool erased = removeFromOverflow(overflowNode(leaf->overflow), key, value);
-        leaf->setOverflow(leaf->overflow.node);
-        return erased;
+        return removeFromOverflow(leaf->overflow, key, value);
     }
 
     return false;
 }
 
-bool tree_impl::removeFromOverflow(const node_ptr &node, const memslice &key, const memslice *value)
+bool tree_impl::removeFromOverflow(overflow_t &overflow_rec, const memslice &key, const memslice *value)
 {
-    overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
+    overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(overflowNode(overflow_rec));
 
     // Try to remove from this block
     bool erased = false;
@@ -123,37 +120,38 @@ bool tree_impl::removeFromOverflow(const node_ptr &node, const memslice &key, co
     // Try to remove from the next block
     if (!erased && !overflow->next.empty())
     {
-        erased = removeFromOverflow(overflowNode(overflow->next), key, value);
-        overflow->setNext(overflow->next.node);
+        erased = removeFromOverflow(overflow->next, key, value);
     }
 
     // If this block is now empty, pull a value from the next one
     if (!overflow->itemCount() && !overflow->next.empty())
     {
-        memslice value = pullFromOverflow(overflowNode(overflow->next));
+        memslice value = pullFromOverflow(overflow->next);
         overflow->append(value);
     }
+
+    overflow_rec.count = overflow->values.size() + overflow->next.count;
 
     return erased;
 }
 
 
-memslice tree_impl::pullFromOverflow(const node_ptr &node)
+memslice tree_impl::pullFromOverflow(overflow_t &overflow_rec)
 {
-    overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(node);
+    overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(overflowNode(overflow_rec));
 
     if (overflow->next.empty())
     {
         memslice ret = overflow->values.back();
         overflow->erase(overflow->valueCount() - 1);
+        overflow_rec.count = overflow->values.size();
         return ret;
     }
 
-    memslice ret = pullFromOverflow(overflowNode(overflow->next));
-    overflow->setNext(overflow->next.node);
+    memslice ret = pullFromOverflow(overflow->next);
+    overflow_rec.count = overflow->values.size() + overflow->next.count;
     return ret;
 }
-
 
 }
 

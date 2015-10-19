@@ -168,3 +168,92 @@ TEST_CASE("upserts")
         REQUIRE( query.seek(2).key() == 3 );
     }
 }
+
+
+TEST_CASE("inserting after overflow node")
+{
+    be::mem mem(1024);
+
+    // GIVEN
+    put_result root = make_leaf(intToIntTree)
+           .kv(1, 1)
+           .kv(3, 3)
+           .overflow(make_overflow()
+                .val(4)
+                .val(5)
+                .put(mem))
+           .put(mem);
+    edit_tree<int, int> edit(root.nodeID, mem);
+
+    // WHEN
+    edit.insert(4, 4);
+    mutation mut = edit.flush();
+
+    // THEN
+    leafnode_ptr node = loadLeaf(mem, *mut.newRootID());
+    REQUIRE( node->pairs.size() == 5);
+}
+
+TEST_CASE("inserting after overflow node too big to pull in")
+{
+    be::mem mem(100);
+
+    // GIVEN
+    put_result root = make_leaf(intToIntTree)
+           .kv(1, 1)
+           .kv(2, 2)
+           .kv(3, 3)
+           .overflow(make_overflow()
+                .val(4)
+                .val(5)
+                .val(6)
+                .val(7)
+                .val(8)
+                .val(9)
+                .val(10)
+                .val(11)
+                .put(mem))
+           .put(mem);
+    edit_tree<int, int> edit(root.nodeID, mem);
+
+    // WHEN
+    edit.insert(4, 4);
+    mutation mut = edit.flush();
+
+    // THEN
+    internalnode_ptr internal = loadInternal(mem, *mut.newRootID());
+    leafnode_ptr left = loadLeaf(mem, internal->branches[0].nodeID);
+    leafnode_ptr right = loadLeaf(mem, internal->branches[1].nodeID);
+
+    REQUIRE(left->pairs.size() == 3);
+    REQUIRE(!left->overflow.empty());
+    REQUIRE(right->pairs.size() == 1);
+}
+
+TEST_CASE("root has to split because its too large")
+{
+    be::mem mem(60);
+
+    // GIVEN
+    put_result root = make_leaf(intToIntTree)
+           .kv(1, 1)
+           .kv(3, 3)
+           .overflow(make_overflow()
+                .val(4)
+                .val(5)
+                .val(6)
+                .val(7)
+                .val(8)
+                .put(mem))
+           .put(mem);
+    edit_tree<int, int> edit(root.nodeID, mem);
+
+    // WHEN
+    edit.insert(4, 4);
+    mutation mut = edit.flush();
+
+    // THEN
+    internalnode_ptr internal = loadInternal(mem, *mut.newRootID());
+    internalnode_ptr int1 = loadInternal(mem, internal->branches[0].nodeID);
+    internalnode_ptr int2 = loadInternal(mem, internal->branches[1].nodeID);
+}

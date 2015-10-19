@@ -25,21 +25,7 @@ class Node;
 typedef boost::shared_ptr<Node> node_ptr;
 
 typedef std::pair<memslice, memslice> kv_pair;
-
-struct node_branch {
-    node_branch(const memslice &minKey, nodeid_t nodeID, itemcount_t itemCount)
-        : minKey(minKey), nodeID(nodeID), itemCount(itemCount) { }
-    node_branch(const memslice &minKey, const node_ptr &child, itemcount_t itemCount)
-        : minKey(minKey), nodeID(), itemCount(itemCount), child(child) { }
-
-    void inc() { itemCount++; }
-
-    memslice minKey;
-    nodeid_t nodeID;
-    itemcount_t itemCount;
-
-    node_ptr child; // Only valid while mutating the tree
-};
+struct node_branch;
 
 struct KeyOrder
 {
@@ -69,7 +55,7 @@ struct overflow_t
     nodeid_t nodeID;
     node_ptr node; // Only valid while mutating the tree
 
-    bool empty() const { return !(node || count); }
+    bool empty() const { return !count; }
 };
 
 
@@ -189,6 +175,22 @@ struct InternalNode : public Node
 typedef boost::shared_ptr<LeafNode> leafnode_ptr;
 typedef boost::shared_ptr<OverflowNode> overflownode_ptr;
 typedef boost::shared_ptr<InternalNode> internalnode_ptr;
+
+struct node_branch {
+    node_branch(const memslice &minKey, nodeid_t nodeID, itemcount_t itemCount)
+        : minKey(minKey), nodeID(nodeID), itemCount(itemCount) { }
+    node_branch(const memslice &minKey, const node_ptr &child)
+        : minKey(minKey), nodeID(), itemCount(child->itemCount()), child(child) { }
+
+    void inc() { itemCount++; }
+
+    memslice minKey;
+    nodeid_t nodeID;
+    itemcount_t itemCount;
+
+    node_ptr child; // Only valid while mutating the tree
+};
+
 
 /**
  * Return the index where the subtree for a particular key will be located

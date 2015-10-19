@@ -118,14 +118,12 @@ int putKeyValue(stringbruce &b, Params &params)
         edit->insert(it->first, it->second);
 
     mutation mut = edit->flush();
-    /*
     b.finish(mut, true);
     if (!mut.success())
     {
         fprintf(stderr, "Error!\n");
         return 1;
     }
-    */
 
     params.metrics << "put," << 1 + params.otherKVs.size() << "," << t.elapsed() << std::endl;
 
@@ -183,13 +181,13 @@ int main(int argc, char* argv[])
     ClientConfiguration config;
     config.region = Aws::Region::EU_WEST_1;
     config.scheme = Scheme::HTTPS;
-    config.connectTimeoutMs = 30000;
-    config.requestTimeoutMs = 30000;
+    config.connectTimeoutMs = 5000;
+    config.requestTimeoutMs = 5000;
 
     auto clientFactory = Aws::MakeShared<HttpClientFactory>(NULL);
     auto s3 = Aws::MakeShared<S3Client>(NULL, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(NULL), config, clientFactory);
-    //s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB, 100 * MB);
-    be::disk be("temp/", 1 * MB);
+    s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB, 100 * MB);
+    //be::disk be("temp/", 1 * MB);
     stringbruce b(be);
 
     int exit;

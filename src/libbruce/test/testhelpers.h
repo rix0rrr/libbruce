@@ -29,6 +29,9 @@ extern memslice three_r;
 void printMem(be::mem &mem, const tree_functions &fns);
 void putNode(be::mem &mem, nodeid_t id, const node_ptr &node);
 
+leafnode_ptr loadLeaf(be::mem &mem, const nodeid_t &id);
+internalnode_ptr loadInternal(be::mem &mem, const nodeid_t &id);
+
 //----------------------------------------------------------------------
 // BUILDERS
 //

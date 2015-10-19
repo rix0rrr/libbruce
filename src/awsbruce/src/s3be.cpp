@@ -9,8 +9,6 @@
 #include <openssl/sha.h>
 #include <sstream>
 
-#include <fstream>
-
 #undef to_string
 
 using namespace libbruce;
@@ -42,7 +40,7 @@ nodeid_t s3be::id(const libbruce::mempage &block)
 
 mempage s3be::get(const nodeid_t &id)
 {
-    std::cerr << "GET " << id << std::endl;
+    //std::cerr << "GET " << id << std::endl;
 
     // Look in the cache
     {
@@ -104,7 +102,7 @@ void s3be::put_all(putblocklist_t &blocklist)
 
 PutObjectOutcomeCallable s3be::put_one(libbruce::be::putblock_t &block)
 {
-    std::cerr << "PUT " << block.id << std::endl;
+    //std::cerr << "PUT " << block.id << std::endl;
     io::basic_array_source<char> memstream((char*)block.mem.ptr(), block.mem.size());
 
     std::shared_ptr<std::stringstream> ss = std::make_shared<std::stringstream>();
@@ -149,7 +147,7 @@ void s3be::del_all(delblocklist_t &ids)
 
 DeleteObjectOutcomeCallable s3be::del_one(libbruce::be::delblock_t &block)
 {
-    std::cerr << "DEL " << block.id << std::endl;
+    //std::cerr << "DEL " << block.id << std::endl;
 
     DeleteObjectRequest request;
     request.SetBucket(m_bucket);
