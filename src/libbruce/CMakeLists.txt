@@ -22,7 +22,7 @@ add_library(bruce
     src/query_iterator_impl.cpp
     src/nodes.cpp
     src/types.cpp
-    src/sha1-fast-64.s
+    src/sha1-fast-64.S
     src/util/blockcache.cpp)
 
 target_include_directories(bruce PUBLIC

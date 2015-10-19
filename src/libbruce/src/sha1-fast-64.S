@@ -24,8 +24,8 @@
 
 
 /* void sha1_compress(uint32_t state[5], const uint8_t block[64]) */
-.globl _sha1_compress
-_sha1_compress:
+.globl sha1_compress
+sha1_compress:
 	/* 
 	 * Storage usage:
 	 *   Bytes  Location  Description
