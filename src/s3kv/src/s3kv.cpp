@@ -24,7 +24,8 @@ namespace io = boost::iostreams;
 
 typedef bruce<std::string, std::string> stringbruce;
 
-const int MB = 1024 * 1024;
+const int KB = 1024;
+const int MB = 1024 * KB;
 
 #define S3_BUCKET "huijbers-test"
 #define S3_PREFIX "bruce/"
@@ -186,7 +187,7 @@ int main(int argc, char* argv[])
 
     auto clientFactory = Aws::MakeShared<HttpClientFactory>(NULL);
     auto s3 = Aws::MakeShared<S3Client>(NULL, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(NULL), config, clientFactory);
-    s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB, 100 * MB);
+    s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB, 300 * KB, 100 * MB);
     //be::disk be("temp/", 1 * MB);
     stringbruce b(be);
 

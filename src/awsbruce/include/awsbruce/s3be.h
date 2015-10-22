@@ -20,7 +20,7 @@ namespace awsbruce {
  */
 struct s3be : public libbruce::be::be
 {
-    s3be(const std::shared_ptr<Aws::S3::S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize, uint32_t cacheSize);
+    s3be(const std::shared_ptr<Aws::S3::S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize, uint32_t editQueueSize, uint32_t cacheSize);
     ~s3be();
 
     virtual libbruce::nodeid_t id(const libbruce::mempage &block);
@@ -28,6 +28,7 @@ struct s3be : public libbruce::be::be
     virtual void put_all(libbruce::be::putblocklist_t &blocklist);
     virtual void del_all(libbruce::be::delblocklist_t &ids);
     virtual uint32_t maxBlockSize();
+    virtual uint32_t editQueueSize();
 private:
     std::shared_ptr<Aws::S3::S3Client> m_s3;
     std::string m_bucket;
@@ -35,6 +36,7 @@ private:
     libbruce::util::BlockCache m_cache;
 
     uint32_t m_blockSize;
+    uint32_t m_editQueueSize;
 
     Aws::S3::Model::PutObjectOutcomeCallable put_one(libbruce::be::putblock_t &block);
     Aws::S3::Model::DeleteObjectOutcomeCallable del_one(libbruce::be::delblock_t &block);

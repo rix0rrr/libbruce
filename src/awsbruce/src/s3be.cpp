@@ -20,9 +20,8 @@ namespace io = boost::iostreams;
 
 namespace awsbruce {
 
-s3be::s3be(const std::shared_ptr<S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize, uint32_t cacheSize)
-    : m_s3(s3), m_bucket(bucket), m_prefix(prefix), m_blockSize(blockSize),
-    m_cache(cacheSize)
+s3be::s3be(const std::shared_ptr<S3Client> &s3, const std::string &bucket, const std::string &prefix, uint32_t blockSize, uint32_t editQueueSize, uint32_t cacheSize)
+    : m_s3(s3), m_bucket(bucket), m_prefix(prefix), m_blockSize(blockSize), m_editQueueSize(editQueueSize), m_cache(cacheSize)
 {
 }
 
@@ -159,6 +158,11 @@ DeleteObjectOutcomeCallable s3be::del_one(libbruce::be::delblock_t &block)
 uint32_t s3be::maxBlockSize()
 {
     return m_blockSize;
+}
+
+uint32_t s3be::editQueueSize()
+{
+    return m_editQueueSize;
 }
 
 }

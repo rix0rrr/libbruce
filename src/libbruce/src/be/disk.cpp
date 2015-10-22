@@ -41,8 +41,8 @@ void sha1_hash(const uint8_t *message, uint32_t len, uint32_t hash[5])
 
 namespace libbruce { namespace be {
 
-disk::disk(std::string pathPrefix, uint32_t maxBlockSize)
-    : m_pathPrefix(pathPrefix), m_maxBlockSize(maxBlockSize)
+disk::disk(std::string pathPrefix, uint32_t maxBlockSize, uint32_t editQueueSize)
+    : m_pathPrefix(pathPrefix), m_maxBlockSize(maxBlockSize), m_editQueueSize(editQueueSize)
 {
 }
 
@@ -115,6 +115,11 @@ void disk::del_one(delblock_t &block)
 uint32_t disk::maxBlockSize()
 {
     return m_maxBlockSize;
+}
+
+uint32_t disk::editQueueSize()
+{
+    return m_editQueueSize;
 }
 
 }}

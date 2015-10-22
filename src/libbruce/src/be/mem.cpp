@@ -6,8 +6,8 @@
 
 namespace libbruce { namespace be {
 
-mem::mem(uint32_t maxBlockSize)
-    : m_ctr(0), m_maxBlockSize(maxBlockSize)
+mem::mem(uint32_t maxBlockSize, uint32_t editQueueSize)
+    : m_ctr(0), m_maxBlockSize(maxBlockSize), m_editQueueSize(editQueueSize)
 {
 }
 
@@ -60,6 +60,11 @@ void mem::del_all(delblocklist_t &ids)
 uint32_t mem::maxBlockSize()
 {
     return m_maxBlockSize;
+}
+
+uint32_t mem::editQueueSize()
+{
+    return m_editQueueSize;
 }
 
 }}

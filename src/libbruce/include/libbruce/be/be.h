@@ -65,6 +65,7 @@ public:
     virtual void put_all(putblocklist_t &blocklist) = 0;
     virtual void del_all(delblocklist_t &ids) = 0;
     virtual uint32_t maxBlockSize() = 0;
+    virtual uint32_t editQueueSize() = 0;
 };
 
 }}
