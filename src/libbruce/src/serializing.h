@@ -43,9 +43,13 @@
  * -------------
  *   [ uint16 ]           flags
  *   [ uint32 ]           N of node pointers
+ *   [ uint32 ]           M of queued edits
  *   [ N-1 x ... bytes ]  keys s.t. max_key(leaf(i)) < key(i) <= min_key(leaf(i+1))
  *   [ N x hash160 ]      node identifiers
  *   [ N x uint32 ]       item counts per node
+ *   [ M x uint8 ]        types of queued edits
+ *   [ M x ... bytes ]    keys of queued edits
+ *   [ M x ... bytes ]    values of queued edits
  *
  * The structure ought to be read as follows:
  *
@@ -125,10 +129,13 @@ private:
  */
 struct InternalNodeSize : public NodeSize
 {
-    InternalNodeSize(const internalnode_ptr &node, uint32_t blockSize);
+    InternalNodeSize(const internalnode_ptr &node, uint32_t blockSize, uint32_t maxEditQueueSize);
 
     keycount_t splitIndex() const { return m_splitIndex; }
+    bool shouldApplyEditQueue() const;
 private:
+    uint32_t m_maxEditQueueSize;
+    uint32_t m_editQueueSize;
     keycount_t m_splitIndex;
 };
 

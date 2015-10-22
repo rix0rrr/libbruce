@@ -35,7 +35,7 @@ void StatsCollector::visitInternal(const nodeid_t &id, const internalnode_ptr &n
     m_ids.push_back(id);
     m_maxDepth = std::max(depth, m_maxDepth);
 
-    InternalNodeSize s(node, 0);
+    InternalNodeSize s(node, 0, 0);
     m_internalSizes.push_back(s.size());
 }
 

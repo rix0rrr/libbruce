@@ -14,18 +14,22 @@
 
 namespace libbruce {
 
+//----------------------------------------------------------------------
+//  General types
+//
+
+class Node;
+typedef boost::shared_ptr<Node> node_ptr;
+
 enum node_type_t {
     TYPE_LEAF,
     TYPE_INTERNAL,
     TYPE_OVERFLOW
 };
 
-class Node;
-
-typedef boost::shared_ptr<Node> node_ptr;
-
-typedef std::pair<memslice, memslice> kv_pair;
-struct node_branch;
+//----------------------------------------------------------------------
+//  Internal types for Leaf nodes
+//
 
 struct KeyOrder
 {
@@ -41,11 +45,58 @@ struct KeyOrder
     }
 };
 
+typedef std::pair<memslice, memslice> kv_pair;
+
+// Flat multimap gives the best performance
 typedef boost::container::flat_multimap<memslice, memslice, KeyOrder> pairlist_t;
 
-typedef std::vector<memslice> valuelist_t;
+//----------------------------------------------------------------------
+//  Internal types for Internal nodes
+//
 
+enum edit_t {
+    INSERT, REMOVE_KEY, REMOVE_KV, UPSERT
+};
+
+struct pending_edit
+{
+    pending_edit(edit_t edit, const memslice &key, const memslice &value, bool guaranteed)
+        : edit(edit), key(key), value(value), guaranteed(guaranteed) { }
+
+    edit_t edit;
+    memslice key;
+    memslice value;
+    bool guaranteed;
+
+    int delta() const
+    {
+        return edit == UPSERT ? 0 :
+               edit == INSERT ? 1 :
+               -1;
+    }
+};
+
+typedef std::vector<pending_edit> editlist_t;
+
+struct node_branch {
+    node_branch(const memslice &minKey, nodeid_t nodeID, itemcount_t itemCount);
+    node_branch(const memslice &minKey, const node_ptr &child);
+
+    void inc() { itemCount++; }
+
+    memslice minKey;
+    nodeid_t nodeID;
+    itemcount_t itemCount;
+
+    node_ptr child; // Only valid while mutating the tree
+};
 typedef std::vector<node_branch> branchlist_t;
+
+//----------------------------------------------------------------------
+//  Internal types for Overflow nodes
+//
+
+typedef std::vector<memslice> valuelist_t;
 
 struct overflow_t
 {
@@ -57,6 +108,7 @@ struct overflow_t
 
     bool empty() const { return !count; }
 };
+
 
 
 /**
@@ -170,26 +222,12 @@ struct InternalNode : public Node
     void setBranch(size_t i, const node_ptr &node);
 
     branchlist_t branches;
+    editlist_t editQueue;
 };
 
 typedef boost::shared_ptr<LeafNode> leafnode_ptr;
 typedef boost::shared_ptr<OverflowNode> overflownode_ptr;
 typedef boost::shared_ptr<InternalNode> internalnode_ptr;
-
-struct node_branch {
-    node_branch(const memslice &minKey, nodeid_t nodeID, itemcount_t itemCount)
-        : minKey(minKey), nodeID(nodeID), itemCount(itemCount) { }
-    node_branch(const memslice &minKey, const node_ptr &child)
-        : minKey(minKey), nodeID(), itemCount(child->itemCount()), child(child) { }
-
-    void inc() { itemCount++; }
-
-    memslice minKey;
-    nodeid_t nodeID;
-    itemcount_t itemCount;
-
-    node_ptr child; // Only valid while mutating the tree
-};
 
 
 /**

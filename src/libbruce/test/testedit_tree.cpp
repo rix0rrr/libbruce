@@ -232,7 +232,7 @@ TEST_CASE("inserting after overflow node too big to pull in")
 
 TEST_CASE("root has to split because its too large")
 {
-    be::mem mem(60);
+    be::mem mem(64);
 
     // GIVEN
     put_result root = make_leaf(intToIntTree)

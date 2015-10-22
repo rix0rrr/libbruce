@@ -104,6 +104,12 @@ struct NodeParser
     {
         internalnode_ptr ret = boost::make_shared<InternalNode>(keyCount());
 
+        keycount_t editCount = *m_input.at<keycount_t>(m_offset);
+        m_offset += sizeof(keycount_t);
+
+        //------------------------------------------------
+        //  Read branches
+
         // Read N-1 keys, starting at 1
         ret->branches.push_back(node_branch(memslice(), nodeid_t(), 0));
         for (keycount_t i = 1; i < keyCount(); i++)
@@ -134,6 +140,45 @@ struct NodeParser
             uint32_t size = sizeof(itemcount_t);
 
             ret->branches[i].itemCount = *m_input.at<itemcount_t>(m_offset);
+
+            m_offset += size;
+        }
+
+        //------------------------------------------------
+        //  Read pending edits
+        std::vector<edit_t> editTypes;
+        std::vector<memslice> editKeys;
+        editTypes.reserve(editCount);
+        editKeys.reserve(editCount);
+
+        // Edit types
+        for (keycount_t i = 0; i < editCount; i++)
+        {
+            VALIDATE_OFFSET;
+            editTypes.push_back((edit_t)*m_input.at<uint8_t>(m_offset));
+            m_offset += sizeof(uint8_t);
+        }
+
+        // Keys
+        for (keycount_t i = 0; i < editCount; i++)
+        {
+            VALIDATE_OFFSET;
+
+            uint32_t size = fns.keySize(m_input.at<const char>(m_offset));
+            editKeys.push_back(m_input.slice(m_offset, size));
+
+            m_offset += size;
+        }
+
+        // Values
+        for (keycount_t i = 0; i < editCount; i++)
+        {
+            VALIDATE_OFFSET;
+
+            uint32_t size = fns.valueSize(m_input.at<const char>(m_offset));
+            memslice value = m_input.slice(m_offset, size);
+
+            ret->editQueue.push_back(pending_edit(editTypes[i], editKeys[i], value, false));
 
             m_offset += size;
         }
@@ -271,9 +316,11 @@ OverflowNodeSize::OverflowNodeSize(const overflownode_ptr &node, uint32_t blockS
     }
 }
 
-InternalNodeSize::InternalNodeSize(const internalnode_ptr &node, uint32_t blockSize)
-    : NodeSize(blockSize)
+InternalNodeSize::InternalNodeSize(const internalnode_ptr &node, uint32_t blockSize, uint32_t maxEditQueueSize)
+    : NodeSize(blockSize), m_maxEditQueueSize(maxEditQueueSize), m_editQueueSize(0)
 {
+    m_size += sizeof(keycount_t); // Size of edit queue
+
     uint32_t splitSize = m_size;
     bool first = true;
 
@@ -285,6 +332,14 @@ InternalNodeSize::InternalNodeSize(const internalnode_ptr &node, uint32_t blockS
         m_size += sizeof(nodeid_t) + sizeof(itemcount_t);
         first = false;
     }
+
+    for (editlist_t::const_iterator it = node->editQueue.begin(); it != node->editQueue.end(); ++it)
+    {
+        m_editQueueSize += sizeof(uint8_t); // 1 byte for the edit type
+        m_editQueueSize += it->key.size() + it->value.size();
+    }
+
+    m_size += m_editQueueSize;
 
     if (shouldSplit())
     {
@@ -300,6 +355,11 @@ InternalNodeSize::InternalNodeSize(const internalnode_ptr &node, uint32_t blockS
                 return;
         }
     }
+}
+
+bool InternalNodeSize::shouldApplyEditQueue() const
+{
+    return m_editQueueSize > m_maxEditQueueSize;
 }
 
 //----------------------------------------------------------------------
@@ -377,7 +437,7 @@ mempage SerializeOverflowNode(const overflownode_ptr &node)
 
 mempage SerializeInternalNode(const internalnode_ptr &node)
 {
-    InternalNodeSize size(node, 0);
+    InternalNodeSize size(node, 0, 0);
     mempage mem(size.size());
 
     uint32_t offset = 0;
@@ -388,6 +448,10 @@ mempage SerializeInternalNode(const internalnode_ptr &node)
 
     // Count
     *mem.at<keycount_t>(offset) = node->branchCount();
+    offset += sizeof(keycount_t);
+
+    // Edit queue count
+    *mem.at<keycount_t>(offset) = node->editQueue.size();
     offset += sizeof(keycount_t);
 
     // Keys (except the 1st one)
@@ -414,6 +478,27 @@ mempage SerializeInternalNode(const internalnode_ptr &node)
     {
         *mem.at<itemcount_t>(offset) = it->itemCount;
         offset += sizeof(itemcount_t);
+    }
+
+    // Edit types
+    for (editlist_t::const_iterator it = node->editQueue.begin(); it != node->editQueue.end(); ++it)
+    {
+        *mem.at<uint8_t>(offset) = it->edit;
+        offset += sizeof(uint8_t);
+    }
+
+    // Edit keys
+    for (editlist_t::const_iterator it = node->editQueue.begin(); it != node->editQueue.end(); ++it)
+    {
+        memcpy(mem.at<char>(offset), it->key.ptr(), it->key.size());
+        offset += it->key.size();
+    }
+
+    // Edit values
+    for (editlist_t::const_iterator it = node->editQueue.begin(); it != node->editQueue.end(); ++it)
+    {
+        memcpy(mem.at<char>(offset), it->value.ptr(), it->value.size());
+        offset += it->value.size();
     }
 
     return mem;

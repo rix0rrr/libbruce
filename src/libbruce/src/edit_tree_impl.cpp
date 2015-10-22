@@ -190,7 +190,7 @@ splitresult_t edit_tree_impl::maybeSplitLeaf(const leafnode_ptr &leaf)
 
 splitresult_t edit_tree_impl::maybeSplitInternal(const internalnode_ptr &internal)
 {
-    InternalNodeSize size(internal, m_be.maxBlockSize());
+    InternalNodeSize size(internal, m_be.maxBlockSize(), m_be.editQueueSize());
 
     // Maybe split this node
     if (!size.shouldSplit())

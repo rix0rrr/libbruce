@@ -16,28 +16,6 @@
 
 namespace libbruce {
 
-enum edit_t {
-    INSERT, REMOVE_KEY, REMOVE_KV, UPSERT
-};
-
-struct pending_edit
-{
-    pending_edit(edit_t edit, const memslice &key, const memslice &value, bool guaranteed)
-        : edit(edit), key(key), value(value), guaranteed(guaranteed) { }
-
-    edit_t edit;
-    memslice key;
-    memslice value;
-    bool guaranteed;
-
-    int delta() const
-    {
-        return edit == UPSERT ? 0 :
-               edit == INSERT ? 1 :
-               -1;
-    }
-};
-
 struct callback_memcmp
 {
     callback_memcmp(const tree_functions &fns) : fns(fns) { }
@@ -71,7 +49,6 @@ struct query_tree_impl : public tree_impl, public boost::enable_shared_from_this
     void applyPendingChanges(const memslice &minKey, const memslice &maxKey, int *delta);
     itemcount_t rank(treepath_t &rootPath);
 private:
-    typedef std::vector<pending_edit> editlist_t;
     typedef std::map<memslice, editlist_t, callback_memcmp> editmap_t;
 
     editmap_t m_edits;

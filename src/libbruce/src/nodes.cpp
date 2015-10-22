@@ -7,6 +7,16 @@ namespace libbruce {
 
 memslice g_emptyMemory;
 
+node_branch::node_branch(const memslice &minKey, nodeid_t nodeID, itemcount_t itemCount)
+    : minKey(minKey), nodeID(nodeID), itemCount(itemCount)
+{
+}
+
+node_branch::node_branch(const memslice &minKey, const node_ptr &child)
+    : minKey(minKey), nodeID(), itemCount(child->itemCount()), child(child)
+{
+}
+
 //----------------------------------------------------------------------
 
 Node::Node(node_type_t nodeType)
