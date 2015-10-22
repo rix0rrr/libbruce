@@ -8,3 +8,4 @@ target_link_libraries(s3kv
         awsbruce)
 
 set_property(TARGET s3kv PROPERTY CXX_STANDARD 11)
+set_target_properties(s3kv PROPERTIES CXX_EXTENSIONS OFF)

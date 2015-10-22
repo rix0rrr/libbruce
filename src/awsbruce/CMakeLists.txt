@@ -19,6 +19,7 @@ target_link_libraries(awsbruce
 
 # We need C++11 because of the AWS cpp SDK
 set_property(TARGET awsbruce PROPERTY CXX_STANDARD 11)
+set_target_properties(awsbruce PROPERTIES CXX_EXTENSIONS OFF)
 
 install(TARGETS awsbruce
     ARCHIVE DESTINATION lib
