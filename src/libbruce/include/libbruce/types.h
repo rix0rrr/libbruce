@@ -73,6 +73,20 @@ struct tree_functions
     fn::sizeinator *valueSize;
 };
 
+struct KeyOrder
+{
+    KeyOrder(const tree_functions &fns) : fns(fns) { }
+    tree_functions fns;
+
+    bool operator()(const memslice &a, const memslice &b) const
+    {
+        if (a.empty()) return true;
+        if (b.empty()) return false;
+
+        return fns.keyCompare(a, b) < 0;
+    }
+};
+
 /**
  * A type tagged alias for std::string which is serialized in a binary-safe way
  */

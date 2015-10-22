@@ -2,7 +2,9 @@
 #include <libbruce/bruce.h>
 
 #include "testhelpers.h"
-#include "nodes.h"
+#include "leaf_node.h"
+#include "internal_node.h"
+#include "overflow_node.h"
 
 #include <stdio.h>
 

@@ -5,6 +5,9 @@
 #include <boost/lexical_cast.hpp>
 
 #include "nodes.h"
+#include "leaf_node.h"
+#include "internal_node.h"
+#include "overflow_node.h"
 #include "serializing.h"
 #include "helpers.h"
 
@@ -110,6 +113,8 @@ NODE_CASE_OVERFLOW
     return splitresult_t(overflow);
 
 NODE_CASE_INT
+    internal->editQueue.push_back(pending_edit(INSERT, key, value, true));
+
     keycount_t i = FindInternalKey(internal, key, m_fns);
     splitresult_t childSplit = insertRec(child(internal->branch(i)), key, value, upsert);
     updateBranch(internal, i, childSplit);

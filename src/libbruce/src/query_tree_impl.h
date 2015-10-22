@@ -40,7 +40,6 @@ struct query_tree_impl : public tree_impl, public boost::enable_shared_from_this
     void queue_remove(const memslice &key, bool guaranteed);
     void queue_remove(const memslice &key, const memslice &value, bool guaranteed);
 
-
     bool get(const memslice &key, memslice *value);
     query_iterator_impl_ptr find(const memslice &key);
     query_iterator_impl_ptr seek(itemcount_t n);

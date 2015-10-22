@@ -21,6 +21,9 @@ add_library(bruce
     src/query_iterator.cpp
     src/query_iterator_impl.cpp
     src/nodes.cpp
+    src/leaf_node.cpp
+    src/internal_node.cpp
+    src/overflow_node.cpp
     src/types.cpp
     src/sha1-fast-64.S
     src/util/blockcache.cpp)

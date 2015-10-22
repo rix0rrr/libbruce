@@ -5,6 +5,8 @@
 #include <libbruce/be/be.h>
 #include <libbruce/mempool.h>
 #include <libbruce/types.h>
+#include "internal_node.h"
+#include "leaf_node.h"
 #include "nodes.h"
 
 namespace libbruce {
@@ -26,6 +28,8 @@ struct tree_impl
 
     const node_ptr &child(node_branch &branch);
     const node_ptr &overflowNode(overflow_t &leaf);
+
+    void apply(const pending_edit &edit);
 protected:
     be::be &m_be;
     maybe_nodeid m_rootID;

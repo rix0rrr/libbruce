@@ -1,6 +1,9 @@
 #include "tree_impl.h"
 
 #include "serializing.h"
+#include "leaf_node.h"
+#include "internal_node.h"
+#include "overflow_node.h"
 
 namespace libbruce {
 
@@ -21,6 +24,10 @@ node_ptr &tree_impl::root()
     }
 
     return m_root;
+}
+
+void tree_impl::apply(const pending_edit &edit)
+{
 }
 
 const node_ptr &tree_impl::child(node_branch &branch)

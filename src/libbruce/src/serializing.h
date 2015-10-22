@@ -70,6 +70,9 @@
 #include <libbruce/types.h>
 
 #include "nodes.h"
+#include "leaf_node.h"
+#include "internal_node.h"
+#include "overflow_node.h"
 
 namespace libbruce {
 
