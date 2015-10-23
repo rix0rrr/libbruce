@@ -25,7 +25,7 @@ struct memslice
     {
     }
 
-    memslice(void *ptr, size_t size)
+    memslice(const void *ptr, size_t size)
         : m_ptr((uint8_t*)ptr), m_size(size)
     {
     }

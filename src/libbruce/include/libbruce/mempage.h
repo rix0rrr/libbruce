@@ -48,12 +48,12 @@ struct mempage
      *
      * Ownership will be shared if possible.
      */
-    memslice slice(size_t offset, size_t size)
+    memslice slice(size_t offset, size_t size) const
     {
         return memslice(ptr() + offset, size);
     }
 
-    memslice all()
+    memslice all() const
     {
         return memslice(ptr(), m_size);
     }

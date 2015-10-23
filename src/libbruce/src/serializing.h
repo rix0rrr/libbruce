@@ -79,7 +79,7 @@ namespace libbruce {
 // Sizes of types inside the block
 typedef uint16_t flags_t;
 
-node_ptr ParseNode(mempage &input, const tree_functions &fns);
+node_ptr ParseNode(const mempage &input, const tree_functions &fns);
 
 mempage SerializeNode(const node_ptr &node);
 

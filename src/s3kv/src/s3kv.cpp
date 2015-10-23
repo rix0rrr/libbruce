@@ -192,12 +192,20 @@ int main(int argc, char* argv[])
     stringbruce b(be);
 
     int exit;
-    if (params.hasKey && params.hasValue)
-        exit = putKeyValue(b, params);
-    else if (params.hasKey)
-        exit = queryKey(b, params);
-    else
-        exit = fullScan(b, params);
+    try
+    {
+        if (params.hasKey && params.hasValue)
+            exit = putKeyValue(b, params);
+        else if (params.hasKey)
+            exit = queryKey(b, params);
+        else
+            exit = fullScan(b, params);
+    }
+    catch (std::runtime_error &e)
+    {
+        std::cerr << e.what();
+        exit = 1;
+    }
 
     Aws::Utils::Logging::ShutdownAWSLogging();
 

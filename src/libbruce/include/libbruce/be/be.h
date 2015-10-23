@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <map>
 #include <stdexcept>
 
 #include <boost/range.hpp>
@@ -52,6 +53,10 @@ struct delblock_t
 
 typedef std::vector<delblock_t> delblocklist_t;
 
+typedef std::vector<mempage> mempagelist_t;
+typedef std::vector<nodeid_t> blockidlist_t;
+typedef std::map<nodeid_t, mempage> getblockresult_t;
+
 /**
  * Base block engine class
  */
@@ -62,6 +67,7 @@ public:
 
     virtual nodeid_t id(const mempage &block) = 0;
     virtual mempage get(const nodeid_t &id) = 0;
+    virtual getblockresult_t get_all(const blockidlist_t &ids) = 0;
     virtual void put_all(putblocklist_t &blocklist) = 0;
     virtual void del_all(delblocklist_t &ids) = 0;
     virtual uint32_t maxBlockSize() = 0;

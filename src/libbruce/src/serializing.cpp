@@ -28,7 +28,7 @@ namespace libbruce {
 
 struct NodeParser
 {
-    NodeParser(mempage &input, const tree_functions &fns)
+    NodeParser(const mempage &input, const tree_functions &fns)
         : m_input(input), fns(fns), m_offset(sizeof(flags_t) + sizeof(keycount_t)) { }
 
     leafnode_ptr parseLeafNode()
@@ -209,13 +209,13 @@ private:
     }
 
     size_t m_offset;
-    mempage &m_input;
+    const mempage &m_input;
     const tree_functions &fns;
 };
 
 //----------------------------------------------------------------------
 
-node_ptr ParseNode(mempage &input, const tree_functions &fns)
+node_ptr ParseNode(const mempage &input, const tree_functions &fns)
 {
     NodeParser parser(input, fns);
 

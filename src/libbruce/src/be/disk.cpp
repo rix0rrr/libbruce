@@ -61,6 +61,14 @@ mempage disk::get(const nodeid_t &id)
     return ret;
 }
 
+getblockresult_t disk::get_all(const blockidlist_t &ids)
+{
+    getblockresult_t ret;
+    for (blockidlist_t::const_iterator it = ids.begin(); it != ids.end(); ++it)
+        ret[*it] = get(*it);
+    return ret;
+}
+
 nodeid_t disk::id(const mempage &block)
 {
     uint32_t hash[5];

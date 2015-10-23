@@ -12,6 +12,10 @@ tree_impl::tree_impl(be::be &be, maybe_nodeid rootID, mempool &mempool, const tr
 {
 }
 
+//----------------------------------------------------------------------
+//  Loading
+//
+
 node_ptr &tree_impl::root()
 {
     if (!m_root)
@@ -24,10 +28,6 @@ node_ptr &tree_impl::root()
     }
 
     return m_root;
-}
-
-void tree_impl::apply(const pending_edit &edit)
-{
 }
 
 const node_ptr &tree_impl::child(node_branch &branch)
@@ -46,28 +46,107 @@ const node_ptr &tree_impl::overflowNode(overflow_t &overflow)
 node_ptr tree_impl::load(nodeid_t id)
 {
     m_loadedIDs.push_back(id);
-    mempage mem = m_be.get(id);
+    return deserialize(m_be.get(id));
+}
+
+node_ptr tree_impl::deserialize(const mempage &mem)
+{
     m_mempool.retain(mem);
     return ParseNode(mem, m_fns);
 }
 
-void tree_impl::findLeafRange(const leafnode_ptr &leaf, const memslice &key, pairlist_t::iterator *begin, pairlist_t::iterator *end)
+//----------------------------------------------------------------------
+//  Editing
+//
+
+void tree_impl::apply(const node_ptr &node, const pending_edit &edit, Depth depth)
 {
-    *begin = leaf->pairs.lower_bound(key);
-    *end = leaf->pairs.upper_bound(key);
+NODE_CASE_LEAF
+    switch (edit.edit)
+    {
+        case INSERT:
+            leafInsert(leaf, edit.key, edit.value, false, NULL);
+            break;
+        case UPSERT:
+            leafInsert(leaf, edit.key, edit.value, true, NULL);
+            break;
+        case REMOVE_KEY:
+            leafRemove(leaf, edit.key, NULL, NULL);
+            break;
+        case REMOVE_KV:
+            leafRemove(leaf, edit.key, &edit.value, NULL);
+            break;
+    }
+
+NODE_CASE_OVERFLOW
+    // Shouldn't ever be called, editing the overflow node is taken
+    // care of by the LAEF case.
+    assert(false);
+
+NODE_CASE_INT
+    if (depth == DEEP)
+    {
+        keycount_t i = FindInternalKey(internal, edit.key, m_fns);
+        apply(internal->branches[i].child, edit, depth);
+    }
+    else
+    {
+        // Add in sorted location, but at the end of the same keys
+        editlist_t::iterator it = std::upper_bound(internal->editQueue.begin(),
+                                                internal->editQueue.end(),
+                                                edit.key,
+                                                EditOrder(m_fns));
+        internal->editQueue.insert(it, edit);
+    }
+
+NODE_CASE_END
 }
 
-int tree_impl::safeCompare(const memslice &a, const memslice &b)
+void tree_impl::leafInsert(const leafnode_ptr &leaf, const memslice &key, const memslice &value, bool upsert, uint32_t *delta)
 {
-    if (a.empty()) return -1;
-    if (b.empty()) return 1;
-    return m_fns.keyCompare(a, b);
+    pairlist_t::iterator it = leaf->pairs.find(key);
+    if (upsert && it != leaf->pairs.end())
+    {
+        // Update
+        leaf->update_value(it, value);
+    }
+    else
+    {
+        // Insert
+
+        // If we found PAST the final key and there is an overflow block, we need to pull the entire
+        // overflow block in and insert it after that.
+        if (it == leaf->pairs.end() && !leaf->overflow.empty())
+        {
+            memslice o_key = leaf->pairs.rbegin()->first;
+            while (!leaf->overflow.empty())
+            {
+                memslice o_value = overflowPull(leaf->overflow);
+                leaf->insert(kv_pair(o_key, o_value));
+            }
+            leaf->insert(kv_pair(key, value));
+            if (delta) (*delta)++;
+        }
+        // If we found the final key, insert into the overflow block
+        else if (it == (--leaf->pairs.end()) && !leaf->overflow.empty())
+        {
+            // There is an overflow block already. Insert in there.
+            overflowInsert(leaf->overflow, value, delta);
+        }
+        else
+        {
+            leaf->insert(kv_pair(key, value));
+            if (delta) (*delta)++;
+        }
+    }
 }
 
-bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memslice &key, const memslice *value)
+void tree_impl::leafRemove(const leafnode_ptr &leaf, const memslice &key, const memslice *value, uint32_t *delta)
 {
+    if (leaf->pairs.empty()) return;
+
     pairlist_t::iterator begin, end;
-    findLeafRange(leaf, key, &begin, &end);
+    leaf->findRange(key, &begin, &end);
 
     pairlist_t::iterator eraseLocation = leaf->pairs.end();
 
@@ -86,30 +165,32 @@ bool tree_impl::removeFromLeaf(const leafnode_ptr &leaf, const memslice &key, co
         // Did erase in this block
         eraseLocation = leaf->erase(eraseLocation);
 
-        // If we removed the final position, pull back from the overflow block
-        // and potentially split.
+        // If we removed the final position, pull back from the overflow block.
         if (eraseLocation == leaf->pairs.end() && !leaf->overflow.empty())
         {
-            memslice ret = pullFromOverflow(leaf->overflow);
+            memslice ret = overflowPull(leaf->overflow);
             leaf->insert(kv_pair(key, ret));
         }
 
-        return true;
+        if (delta) (*delta)--;
     }
-
-    if (leaf->pairs.empty()) return false;
-
     // If we did not erase here, but the key matches the last key, search in the overflow block
-    if (!leaf->overflow.empty() && key == leaf->pairs.rbegin()->first)
+    else if (!leaf->overflow.empty() && key == leaf->pairs.rbegin()->first)
     {
         // Did not erase from this leaf but key matches overflow key, recurse
-        return removeFromOverflow(leaf->overflow, key, value);
+        return overflowRemove(leaf->overflow, value, delta);
     }
-
-    return false;
 }
 
-bool tree_impl::removeFromOverflow(overflow_t &overflow_rec, const memslice &key, const memslice *value)
+void tree_impl::overflowInsert(overflow_t &overflow_rec, const memslice &value, uint32_t *delta)
+{
+    overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(overflowNode(overflow_rec));
+    overflow->append(value);
+    if (delta) (*delta)++;
+    overflow_rec.count = overflow->itemCount();
+}
+
+void tree_impl::overflowRemove(overflow_t &overflow_rec, const memslice *value, uint32_t *delta)
 {
     overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(overflowNode(overflow_rec));
 
@@ -127,23 +208,22 @@ bool tree_impl::removeFromOverflow(overflow_t &overflow_rec, const memslice &key
     // Try to remove from the next block
     if (!erased && !overflow->next.empty())
     {
-        erased = removeFromOverflow(overflow->next, key, value);
+        overflowRemove(overflow->next, value, delta);
     }
 
     // If this block is now empty, pull a value from the next one
     if (!overflow->itemCount() && !overflow->next.empty())
     {
-        memslice value = pullFromOverflow(overflow->next);
+        memslice value = overflowPull(overflow->next);
         overflow->append(value);
     }
 
     overflow_rec.count = overflow->values.size() + overflow->next.count;
 
-    return erased;
+    if (erased && delta) (*delta)--;
 }
 
-
-memslice tree_impl::pullFromOverflow(overflow_t &overflow_rec)
+memslice tree_impl::overflowPull(overflow_t &overflow_rec)
 {
     overflownode_ptr overflow = boost::static_pointer_cast<OverflowNode>(overflowNode(overflow_rec));
 
@@ -155,16 +235,9 @@ memslice tree_impl::pullFromOverflow(overflow_t &overflow_rec)
         return ret;
     }
 
-    memslice ret = pullFromOverflow(overflow->next);
+    memslice ret = overflowPull(overflow->next);
     overflow_rec.count = overflow->values.size() + overflow->next.count;
     return ret;
 }
 
 }
-
-std::ostream &operator <<(std::ostream &os, const libbruce::index_range &r)
-{
-    os << "[" << r.start << ".." << r.end << ")";
-    return os;
-}
-

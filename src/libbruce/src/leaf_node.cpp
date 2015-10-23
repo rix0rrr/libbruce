@@ -65,6 +65,12 @@ pairlist_t::iterator LeafNode::get_at(int n)
     return it;
 }
 
+void LeafNode::findRange(const memslice &key, pairlist_t::iterator *begin, pairlist_t::iterator *end)
+{
+    *begin = pairs.lower_bound(key);
+    *end = pairs.upper_bound(key);
+}
+
 void LeafNode::print(std::ostream &os) const
 {
     os << "LEAF(" << pairCount() << ")" << std::endl;

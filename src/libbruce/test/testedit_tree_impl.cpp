@@ -142,9 +142,7 @@ TEST_CASE("inserting then deleting from an internal node")
     SECTION("deleting from the left")
     {
         uint32_t x = 40;
-        bool success = tree.remove(memslice(&x, sizeof(x)));
-        REQUIRE(success);
-
+        tree.remove(memslice(&x, sizeof(x)));
         mutation mut = tree.flush();
 
         mempage rootPage = mem.get(*mut.newRootID());
@@ -155,8 +153,7 @@ TEST_CASE("inserting then deleting from an internal node")
     SECTION("deleting from the right")
     {
         uint32_t x = 80;
-        bool success = tree.remove(memslice(&x, sizeof(x)));
-        REQUIRE(success);
+        tree.remove(memslice(&x, sizeof(x)));
         mutation mut = tree.flush();
 
         mempage rootPage = mem.get(*mut.newRootID());
@@ -174,7 +171,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
 
     SECTION("deleting a low key & value")
     {
-        REQUIRE( tree.remove(two_r, intCopy(40)) );
+        tree.remove(two_r, intCopy(40));
         mutation mut = tree.flush();
 
         mempage rootPage = mem.get(*mut.newRootID());
@@ -184,7 +181,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
 
     SECTION("deleting a high key & value")
     {
-        REQUIRE( tree.remove(two_r, intCopy(80)) );
+        tree.remove(two_r, intCopy(80));
         mutation mut = tree.flush();
 
         mempage rootPage = mem.get(*mut.newRootID());
@@ -194,7 +191,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
 
     SECTION("deleting a nonexistent value")
     {
-        REQUIRE( !tree.remove(two_r, intCopy(130)) );
+        tree.remove(two_r, intCopy(130));
         mutation mut = tree.flush();
 
         mempage rootPage = mem.get(*mut.newRootID());

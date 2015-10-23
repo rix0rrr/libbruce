@@ -25,6 +25,7 @@ struct s3be : public libbruce::be::be
 
     virtual libbruce::nodeid_t id(const libbruce::mempage &block);
     virtual libbruce::mempage get(const libbruce::nodeid_t &id);
+    virtual libbruce::be::getblockresult_t get_all(const libbruce::be::blockidlist_t &ids);
     virtual void put_all(libbruce::be::putblocklist_t &blocklist);
     virtual void del_all(libbruce::be::delblocklist_t &ids);
     virtual uint32_t maxBlockSize();
@@ -38,8 +39,11 @@ private:
     uint32_t m_blockSize;
     uint32_t m_editQueueSize;
 
+    Aws::S3::Model::GetObjectOutcomeCallable get_one(const libbruce::nodeid_t &id);
     Aws::S3::Model::PutObjectOutcomeCallable put_one(libbruce::be::putblock_t &block);
     Aws::S3::Model::DeleteObjectOutcomeCallable del_one(libbruce::be::delblock_t &block);
+
+    libbruce::mempage readGetOutcome(const libbruce::nodeid_t &id, Aws::S3::Model::GetObjectOutcome &outcome);
 };
 
 }

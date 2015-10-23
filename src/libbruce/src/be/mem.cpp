@@ -32,6 +32,14 @@ mempage mem::get(const nodeid_t &id)
     return i->second;
 }
 
+getblockresult_t mem::get_all(const blockidlist_t &ids)
+{
+    getblockresult_t ret;
+    for (blockidlist_t::const_iterator it = ids.begin(); it != ids.end(); ++it)
+        ret[*it] = get(*it);
+    return ret;
+}
+
 void mem::put_all(putblocklist_t &blocklist)
 {
     for (putblocklist_t::iterator it = blocklist.begin(); it != blocklist.end(); ++it)

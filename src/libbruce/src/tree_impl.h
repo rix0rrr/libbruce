@@ -11,13 +11,8 @@
 
 namespace libbruce {
 
-struct index_range
-{
-    index_range(keycount_t start, keycount_t end)
-        : start(start), end(end) { }
-
-    keycount_t start;
-    keycount_t end;
+enum Depth {
+    SHALLOW, DEEP
 };
 
 struct tree_impl
@@ -29,7 +24,7 @@ struct tree_impl
     const node_ptr &child(node_branch &branch);
     const node_ptr &overflowNode(overflow_t &leaf);
 
-    void apply(const pending_edit &edit);
+    void apply(const node_ptr &node, const pending_edit &edit, Depth depth);
 protected:
     be::be &m_be;
     maybe_nodeid m_rootID;
@@ -40,18 +35,18 @@ protected:
     node_ptr m_root;
 
     node_ptr load(nodeid_t id);
+    node_ptr deserialize(const mempage &page);
 
-    int safeCompare(const memslice &a, const memslice &b);
-    void findLeafRange(const leafnode_ptr &leaf, const memslice &key, pairlist_t::iterator *begin, pairlist_t::iterator *end);
+    void applyLeaf(const leafnode_ptr &leaf, const pending_edit &edit, int *delta);
 
-    memslice pullFromOverflow(overflow_t &overflow_rec);
-    bool removeFromLeaf(const leafnode_ptr &leaf, const memslice &key, const memslice *value);
-    bool removeFromOverflow(overflow_t &overflow_rec, const memslice &key, const memslice *value);
+    void leafInsert(const leafnode_ptr &node, const memslice &key, const memslice &value, bool upsert, uint32_t *delta);
+    void leafRemove(const leafnode_ptr &leaf, const memslice &key, const memslice *value, uint32_t *delta);
+    void overflowInsert(overflow_t &overflow_rec, const memslice &value, uint32_t *delta);
+    void overflowRemove(overflow_t &overflow_rec, const memslice *value, uint32_t *delta);
+    memslice overflowPull(overflow_t &overflow_rec);
 };
 
 }
-
-std::ostream &operator <<(std::ostream &os, const libbruce::index_range &r);
 
 #define NODE_CASE_LEAF \
     if (node->nodeType() == TYPE_LEAF) \

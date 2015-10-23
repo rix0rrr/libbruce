@@ -17,6 +17,7 @@ public:
     disk(std::string pathPrefix, uint32_t maxBlockSize, uint32_t editQueueSize=0);
 
     virtual mempage get(const nodeid_t &id);
+    virtual getblockresult_t get_all(const blockidlist_t &ids);
     virtual nodeid_t id(const mempage &block);
     virtual void put_all(putblocklist_t &blocklist);
     virtual void del_all(delblocklist_t &ids);

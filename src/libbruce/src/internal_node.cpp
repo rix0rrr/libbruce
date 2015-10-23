@@ -55,6 +55,8 @@ void InternalNode::print(std::ostream &os) const
         os << "  " << b.minKey << " -> " << b.nodeID << " (" << b.itemCount << (b.child ? "*" : "") << ")" << std::endl;
 }
 
+//----------------------------------------------------------------------
+
 struct BranchCompare
 {
     BranchCompare(const tree_functions &fns) : fns(fns) { }

@@ -180,23 +180,13 @@ void query_iterator_impl::travelToNextLeaf()
 
         if (current().index < internal->branchCount())
         {
-            node_ptr next = m_tree->child(internal->branch(current().index));
+            fork next = m_tree->travelDown(m_rootPath.back(), current().index);
+            m_rootPath.push_back(next);
 
-            const memslice &minK = internal->branch(current().index).minKey.size() ? internal->branch(current().index).minKey : current().minKey;
-            const memslice &maxK = current().index < internal->branchCount() - 1 ? internal->branch(current().index+1).minKey : current().maxKey;
-
-            m_rootPath.push_back(fork(next, minK, maxK));
+            m_tree->applyPendingEdits(internal, m_rootPath.back(), internal->branches[current().index], SHALLOW);
         }
         else
             popCurrentNode();
-    }
-
-    if (m_rootPath.size() && current().nodeType() == TYPE_LEAF)
-    {
-        // Be sure to save and restore the iterator
-        int index = current().leafIndex();
-        m_tree->applyPendingChanges(current().minKey, current().maxKey, NULL);
-        current().setLeafIndex(index);
     }
 }
 

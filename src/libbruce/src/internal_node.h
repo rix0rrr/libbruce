@@ -6,6 +6,21 @@
 
 namespace libbruce {
 
+struct EditOrder : public KeyOrder
+{
+    EditOrder(const tree_functions &fns) : KeyOrder(fns) { }
+
+    bool operator()(const memslice &a, const pending_edit &b) const
+    {
+        return KeyOrder::operator()(a, b.key);
+    }
+
+    bool operator()(const pending_edit &a, const memslice &b) const
+    {
+        return KeyOrder::operator()(a.key, b);
+    }
+};
+
 typedef std::vector<pending_edit> editlist_t;
 
 struct node_branch {

@@ -15,17 +15,6 @@ namespace libbruce {
 
 //----------------------------------------------------------------------
 
-void chop(const overflownode_ptr &overflow, keycount_t i)
-{
-    overflow->next.node = boost::make_shared<OverflowNode>(
-            overflow->at(i),
-            overflow->values.end());
-    overflow->next.count = overflow->next.node->itemCount();
-    overflow->values.erase(overflow->at(i), overflow->values.end());
-}
-
-//----------------------------------------------------------------------
-
 edit_tree_impl::edit_tree_impl(be::be &be, maybe_nodeid rootID, mempool &mempool, const tree_functions &fns)
     : tree_impl(be, rootID, mempool, fns), m_frozen(false)
 {
@@ -36,8 +25,48 @@ void edit_tree_impl::insert(const memslice &key, const memslice &value, bool ups
     checkNotFrozen();
     validateKVSize(key, value);
 
-    const node_ptr &r = root();
-    splitresult_t rootSplit = insertRec(r, key, value, upsert);
+    if (upsert)
+        apply(root(), pending_edit(UPSERT, key, value, false), SHALLOW);
+    else
+        apply(root(), pending_edit(INSERT, key, value, true), SHALLOW);
+}
+
+void edit_tree_impl::remove(const memslice &key)
+{
+    checkNotFrozen();
+    apply(root(), pending_edit(REMOVE_KEY, key, memslice(), false), SHALLOW);
+}
+
+void edit_tree_impl::remove(const memslice &key, const memslice &value)
+{
+    checkNotFrozen();
+    apply(root(), pending_edit(REMOVE_KV, key, value, false), SHALLOW);
+}
+
+void edit_tree_impl::checkNotFrozen()
+{
+    if (m_frozen)
+        throw std::runtime_error("Can't mutate tree anymore; already flushed");
+}
+
+void edit_tree_impl::validateKVSize(const memslice &key, const memslice &value)
+{
+    uint32_t maxSize = m_be.maxBlockSize();
+    if (key.size() + value.size() > maxSize)
+        throw std::runtime_error("Key/value too large to insert, max size: " + to_string(maxSize));
+}
+
+mutation edit_tree_impl::flush()
+{
+    m_frozen = true;
+
+    // Root not loaded == no changes
+    if (!m_root)
+        return mutation(m_rootID);
+
+    // FIXME: Check if we actually did any changes. Otherwise we have nothing to write.
+
+    splitresult_t rootSplit = flushAndSplitRec(root());
 
     // Try splitting the new root node a max number of times.
     // The block size may be too small to contain the split key + node
@@ -57,92 +86,46 @@ void edit_tree_impl::insert(const memslice &key, const memslice &value, bool ups
         throw std::runtime_error("Block size is too small for these keys");
 
     m_root = rootSplit.left().child;
+
+    m_rootID = collectBlocksRec(root());
+
+    m_be.put_all(m_putBlocks);
+
+    return collectMutation();
 }
 
-void edit_tree_impl::validateKVSize(const memslice &key, const memslice &value)
-{
-    uint32_t maxSize = m_be.maxBlockSize();
-    if (key.size() + value.size() > maxSize)
-        throw std::runtime_error("Key/value too large to insert, max size: " + to_string(maxSize));
-}
-
-splitresult_t edit_tree_impl::insertRec(const node_ptr &node, const memslice &key, const memslice &value, bool upsert)
+splitresult_t edit_tree_impl::flushAndSplitRec(node_ptr &node)
 {
 NODE_CASE_LEAF
-    pairlist_t::iterator it = leaf->pairs.find(key);
+    // Make sure that we recurse into the overflow nodes
+    // (This will never produce a split)
+    if (!leaf->overflow.empty() && leaf->overflow.node)
+        flushAndSplitRec(leaf->overflow.node);
 
-    if (upsert && it != leaf->pairs.end())
-    {
-        // Update
-        leaf->update_value(it, value);
-    }
-    else
-    {
-        // Insert
-
-        // If we found PAST the final key and there is an overflow block, we need to pull the entire
-        // overflow block in and insert it after that.
-        if (it == leaf->pairs.end() && !leaf->overflow.empty())
-        {
-            memslice o_key = leaf->pairs.rbegin()->first;
-            while (!leaf->overflow.empty())
-            {
-                memslice o_value = pullFromOverflow(leaf->overflow);
-                leaf->insert(kv_pair(o_key, o_value));
-            }
-            leaf->insert(kv_pair(key, value));
-        }
-        // If we found the final key, insert into the overflow block
-        else if (it == (--leaf->pairs.end()) && !leaf->overflow.empty())
-        {
-            // There is an overflow block already. Insert in there.
-            splitresult_t split = insertRec(overflowNode(leaf->overflow), key, value, upsert);
-            leaf->overflow.count = split.left().itemCount;
-        }
-        else
-        {
-            leaf->insert(kv_pair(key, value));
-        }
-    }
-
+    // Finally split this node if necessary
     return maybeSplitLeaf(leaf);
+
 NODE_CASE_OVERFLOW
-    // Add at the end of the overflow block chain
-    overflow->append(value);
+    // Make sure that the overflow blocks are not too big
     pushDownOverflowNodeSize(overflow);
     return splitresult_t(overflow);
 
 NODE_CASE_INT
-    internal->editQueue.push_back(pending_edit(INSERT, key, value, true));
+    maybeApplyEdits(internal);
 
-    keycount_t i = FindInternalKey(internal, key, m_fns);
-    splitresult_t childSplit = insertRec(child(internal->branch(i)), key, value, upsert);
-    updateBranch(internal, i, childSplit);
+    // Then flush children
+    for (branchlist_t::iterator it = internal->branches.begin(); it != internal->branches.end(); ++it)
+    {
+        if (it->child)
+        {
+            int i = it - internal->branches.begin();
+            updateBranch(internal, i, flushAndSplitRec(it->child));
+        }
+    }
+
+    // Then check for splitting
     return maybeSplitInternal(internal);
-
 NODE_CASE_END
-}
-
-void edit_tree_impl::pushDownOverflowNodeSize(const overflownode_ptr &overflow)
-{
-    OverflowNodeSize size(overflow, m_be.maxBlockSize());
-    if (!size.shouldSplit())
-        return;
-
-    // Move values exceeding size to the next block
-    if (overflow->next.empty())
-        overflow->next.node = boost::make_shared<OverflowNode>();
-
-    overflownode_ptr next = boost::static_pointer_cast<OverflowNode>(overflow->next.node);
-
-    // Push everything exceeding the size to the next block
-    for (unsigned i = size.splitIndex(); i < overflow->values.size(); i++)
-        next->values.push_back(overflow->values[i]);
-    overflow->values.erase(overflow->at(size.splitIndex()), overflow->values.end());
-
-    pushDownOverflowNodeSize(next);
-
-    overflow->next.count = next->itemCount();
 }
 
 splitresult_t edit_tree_impl::maybeSplitLeaf(const leafnode_ptr &leaf)
@@ -193,6 +176,79 @@ splitresult_t edit_tree_impl::maybeSplitLeaf(const leafnode_ptr &leaf)
         return splitresult_t(left);
 }
 
+void edit_tree_impl::pushDownOverflowNodeSize(const overflownode_ptr &overflow)
+{
+    OverflowNodeSize size(overflow, m_be.maxBlockSize());
+    if (!size.shouldSplit())
+        return;
+
+    // Move values exceeding size to the next block
+    if (overflow->next.empty())
+        overflow->next.node = boost::make_shared<OverflowNode>();
+
+    overflownode_ptr next = boost::static_pointer_cast<OverflowNode>(overflow->next.node);
+
+    // Push everything exceeding the size to the next block
+    for (unsigned i = size.splitIndex(); i < overflow->values.size(); i++)
+        next->values.push_back(overflow->values[i]);
+    overflow->values.erase(overflow->at(size.splitIndex()), overflow->values.end());
+
+    pushDownOverflowNodeSize(next);
+    overflow->next.count = next->itemCount();
+}
+
+/**
+ * If the queued up edits have exceeded the maximum allowed block size, apply them to the blocks below.
+ */
+void edit_tree_impl::maybeApplyEdits(const internalnode_ptr &internal)
+{
+    InternalNodeSize size(internal, m_be.maxBlockSize(), m_be.editQueueSize());
+    if (!size.shouldApplyEditQueue())
+        return;
+
+    loadBlocksToEdit(internal);
+
+    // Now apply edits to leaves below and clear
+    for (editlist_t::const_iterator it = internal->editQueue.begin(); it != internal->editQueue.end(); ++it)
+    {
+        keycount_t i = FindInternalKey(internal, it->key, m_fns);
+        apply(internal->branches[i].child, *it, SHALLOW);
+    }
+    internal->editQueue.clear();
+}
+
+void edit_tree_impl::loadBlocksToEdit(const internalnode_ptr &internal)
+{
+    be::blockidlist_t ids = findBlocksToFetch(internal);
+
+    be::getblockresult_t pages = m_be.get_all(ids);
+
+    // Deserialize blocks and assign to branches
+    for (branchlist_t::iterator it = internal->branches.begin(); it != internal->branches.end(); ++it)
+    {
+        be::getblockresult_t::const_iterator found = pages.find(it->nodeID);
+        if (found != pages.end())
+        {
+            m_loadedIDs.push_back(found->first);
+            it->child = deserialize(found->second);
+        }
+    }
+}
+
+be::blockidlist_t edit_tree_impl::findBlocksToFetch(const internalnode_ptr &internal)
+{
+    std::set<nodeid_t> ids;
+
+    for (editlist_t::const_iterator it = internal->editQueue.begin(); it != internal->editQueue.end(); ++it)
+    {
+        keycount_t i = FindInternalKey(internal, it->key, m_fns);
+        // Only if not loaded yet
+        if (!internal->branches[i].child) ids.insert(internal->branches[i].nodeID);
+    }
+
+    return be::blockidlist_t(ids.begin(), ids.end());
+}
+
 splitresult_t edit_tree_impl::maybeSplitInternal(const internalnode_ptr &internal)
 {
     InternalNodeSize size(internal, m_be.maxBlockSize(), m_be.editQueueSize());
@@ -233,70 +289,30 @@ void edit_tree_impl::updateBranch(const internalnode_ptr &internal, keycount_t i
     }
 }
 
-void edit_tree_impl::checkNotFrozen()
+nodeid_t edit_tree_impl::collectBlocksRec(node_ptr &node)
 {
-    if (m_frozen)
-        throw std::runtime_error("Can't mutate tree anymore; already flushed");
-}
-
-bool edit_tree_impl::remove(const memslice &key)
-{
-    checkNotFrozen();
-
-    node_ptr r = root();
-    itemcount_t count = r->itemCount();
-    return removeRec(r, key, NULL).left().itemCount != count;
-}
-
-bool edit_tree_impl::remove(const memslice &key, const memslice &value)
-{
-    checkNotFrozen();
-
-    node_ptr r = root();
-    itemcount_t count = r->itemCount();
-    return removeRec(r, key, &value).left().itemCount != count;
-}
-
-splitresult_t edit_tree_impl::removeRec(const node_ptr &node, const memslice &key, const memslice *value)
-{
-    // We're supposed to be joining nodes together if they're below half-max,
-    // but I'm skipping out on that right now.
-    //
-    // However, when shifting values from an overflow node, we may need to split
-    // our leaf.
 NODE_CASE_LEAF
-    removeFromLeaf(leaf, key, value);
-    return maybeSplitLeaf(leaf);
+    if (!leaf->overflow.empty() && leaf->overflow.node)
+        leaf->overflow.nodeID = collectBlocksRec(leaf->overflow.node);
 
 NODE_CASE_OVERFLOW
-    // Won't be called over here
-    assert(false);
-    return splitresult_t(overflow);
+    if (!overflow->next.empty() && overflow->next.node)
+        overflow->next.nodeID = collectBlocksRec(overflow->next.node);
 
 NODE_CASE_INT
-    keycount_t i = FindInternalKey(internal, key, m_fns);
-    splitresult_t split = removeRec(child(internal->branch(i)), key, value);
-    updateBranch(internal, i, split);
-    return maybeSplitInternal(internal);
+    for (branchlist_t::iterator it = internal->branches.begin(); it != internal->branches.end(); ++it)
+    {
+        if (it->child)
+            it->nodeID = collectBlocksRec(it->child);
+    }
 
 NODE_CASE_END
-}
 
-mutation edit_tree_impl::flush()
-{
-    m_frozen = true;
-
-    // Root not loaded == no changes
-    if (!m_root)
-        return mutation(m_rootID);
-
-    // FIXME: Check if we actually did any changes. Otherwise we have nothing to write.
-
-    // Replace rootID
-    m_rootID = collectBlocksToPutRec(root());
-    m_be.put_all(m_putBlocks);
-
-    return collectMutation();
+    // Serialize this node, request an ID for it, and store it to put later
+    mempage serialized = SerializeNode(node);
+    nodeid_t id = m_be.id(serialized);
+    m_putBlocks.push_back(be::putblock_t(id, serialized));
+    return id;
 }
 
 mutation edit_tree_impl::collectMutation()
@@ -318,32 +334,6 @@ mutation edit_tree_impl::collectMutation()
         ret.addObsolete(*it);
 
     return ret;
-}
-
-nodeid_t edit_tree_impl::collectBlocksToPutRec(node_ptr &node)
-{
-NODE_CASE_LEAF
-    if (!leaf->overflow.empty())
-        leaf->overflow.nodeID = collectBlocksToPutRec(leaf->overflow.node);
-
-NODE_CASE_OVERFLOW
-    if (!overflow->next.empty())
-        overflow->next.nodeID = collectBlocksToPutRec(overflow->next.node);
-
-NODE_CASE_INT
-    for (branchlist_t::iterator it = internal->branches.begin(); it != internal->branches.end(); ++it)
-    {
-        if (it->child)
-            it->nodeID = collectBlocksToPutRec(it->child);
-    }
-
-NODE_CASE_END
-
-    // Serialize this node, request an ID for it, and store it to put later
-    mempage serialized = SerializeNode(node);
-    nodeid_t id = m_be.id(serialized);
-    m_putBlocks.push_back(be::putblock_t(id, serialized));
-    return id;
 }
 
 

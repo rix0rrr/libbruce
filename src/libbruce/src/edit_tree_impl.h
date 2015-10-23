@@ -107,10 +107,10 @@ struct edit_tree_impl : public tree_impl
     void insert(const memslice &key, const memslice &value, bool upsert);
 
     // Remove any element with the given key
-    bool remove(const memslice &key);
+    void remove(const memslice &key);
 
     // Remove only the element with the given key and value
-    bool remove(const memslice &key, const memslice &value);
+    void remove(const memslice &key, const memslice &value);
 
     /**
      * Flush changes to the block engine (this only writes new blocks).
@@ -123,18 +123,22 @@ private:
     bool m_frozen;
     be::putblocklist_t m_putBlocks;
 
-    splitresult_t insertRec(const node_ptr &node, const memslice &key, const memslice &value, bool upsert);
-    splitresult_t removeRec(const node_ptr &node, const memslice &key, const memslice *value);
-    void validateKVSize(const memslice &key, const memslice &value);
     void checkNotFrozen();
+    void validateKVSize(const memslice &key, const memslice &value);
 
-    nodeid_t collectBlocksToPutRec(node_ptr &node);
+    splitresult_t flushAndSplitRec(node_ptr &node);
+    nodeid_t collectBlocksRec(node_ptr &node);
+
     mutation collectMutation();
 
     void pushDownOverflowNodeSize(const overflownode_ptr &overflow);
     splitresult_t maybeSplitLeaf(const leafnode_ptr &leaf);
+    void maybeApplyEdits(const internalnode_ptr &internal);
     splitresult_t maybeSplitInternal(const internalnode_ptr &internal);
+
     void updateBranch(const internalnode_ptr &internal, keycount_t i, const splitresult_t &split);
+    be::blockidlist_t findBlocksToFetch(const internalnode_ptr &internal);
+    void loadBlocksToEdit(const internalnode_ptr &internal);
 };
 
 }

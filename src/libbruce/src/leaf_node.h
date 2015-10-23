@@ -56,6 +56,8 @@ struct LeafNode : public Node
     size_t elementsSize() const { return m_elementsSize; }
 
     void print(std::ostream &os) const;
+    void findRange(const memslice &key, pairlist_t::iterator *begin, pairlist_t::iterator *end);
+
 private:
     size_t m_elementsSize;
     void calcSize();

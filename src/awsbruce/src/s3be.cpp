@@ -53,6 +53,44 @@ mempage s3be::get(const nodeid_t &id)
     request.SetKey(m_prefix + boost::lexical_cast<std::string>(id));
 
     GetObjectOutcome response = m_s3->GetObject(request);
+    return readGetOutcome(id, response);
+}
+
+getblockresult_t s3be::get_all(const blockidlist_t &ids)
+{
+    getblockresult_t ret;
+
+    std::vector<nodeid_t> queried_ids;
+    std::vector<GetObjectOutcomeCallable> ops;
+    queried_ids.reserve(ids.size());
+    ops.reserve(ids.size());
+
+    // Look in the cache, query only if not found in the cache
+    for (int i = 0; i < ids.size(); i++)
+    {
+        mempage cached;
+        if (m_cache.get(ids[i], &cached))
+            ret[ids[i]] = cached;
+        else
+        {
+            queried_ids.push_back(ids[i]);
+            ops.push_back(get_one(ids[i]));
+        }
+
+    }
+
+    // Collect results
+    for (int i = 0; i < queried_ids.size(); i++)
+    {
+        GetObjectOutcome response = ops[i].get();
+        ret[queried_ids[i]] = readGetOutcome(queried_ids[i], response);
+    }
+
+    return ret;
+}
+
+mempage s3be::readGetOutcome(const nodeid_t &id, GetObjectOutcome &response)
+{
     if (!response.IsSuccess())
         throw be_error((std::string("Error fetching ") +
                        boost::lexical_cast<std::string>(id) +
@@ -73,6 +111,15 @@ mempage s3be::get(const nodeid_t &id)
     // Put in the cache
     m_cache.put(id, ret);
     return ret;
+}
+
+Aws::S3::Model::GetObjectOutcomeCallable s3be::get_one(const libbruce::nodeid_t &id)
+{
+    GetObjectRequest request;
+    request.SetBucket(m_bucket);
+    request.SetKey(m_prefix + boost::lexical_cast<std::string>(id));
+
+    return m_s3->GetObjectCallable(request);
 }
 
 void s3be::put_all(putblocklist_t &blocklist)

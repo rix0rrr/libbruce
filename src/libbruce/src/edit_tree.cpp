@@ -19,14 +19,14 @@ void edit_tree_unsafe::upsert(const memslice &key, const memslice &value)
     m_tree->insert(key, value, true);
 }
 
-bool edit_tree_unsafe::remove(const memslice &key)
+void edit_tree_unsafe::remove(const memslice &key)
 {
-    return m_tree->remove(key);
+    m_tree->remove(key);
 }
 
-bool edit_tree_unsafe::remove(const memslice &key, const memslice &value)
+void edit_tree_unsafe::remove(const memslice &key, const memslice &value)
 {
-    return m_tree->remove(key, value);
+    m_tree->remove(key, value);
 }
 
 mutation edit_tree_unsafe::flush()
