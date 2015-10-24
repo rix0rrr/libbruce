@@ -4,19 +4,19 @@
 namespace libbruce {
 
 LeafNode::LeafNode(const tree_functions &fns)
-    : Node(TYPE_LEAF), pairs(KeyOrder(fns)), m_elementsSize(0)
+    : Node(TYPE_LEAF), m_order(fns), m_elementsSize(0)
 {
 }
 
 LeafNode::LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end, const tree_functions &fns)
-    : Node(TYPE_LEAF), pairs(begin, end, KeyOrder(fns)), m_elementsSize(0)
+    : Node(TYPE_LEAF), m_order(fns), pairs(begin, end), m_elementsSize(0)
 {
     calcSize();
 }
 
 LeafNode::LeafNode(std::vector<kv_pair>::const_iterator begin, std::vector<kv_pair>::const_iterator end, const tree_functions &fns)
     // Do a guaranteed ordered map construction (faster than individual inserts)
-    : Node(TYPE_LEAF), pairs(boost::container::ordered_range_t(), begin, end, KeyOrder(fns)), m_elementsSize(0)
+    : Node(TYPE_LEAF), m_order(fns), pairs(begin, end), m_elementsSize(0)
 {
     calcSize();
 }
@@ -67,8 +67,8 @@ pairlist_t::iterator LeafNode::get_at(int n)
 
 void LeafNode::findRange(const memslice &key, pairlist_t::iterator *begin, pairlist_t::iterator *end)
 {
-    *begin = pairs.lower_bound(key);
-    *end = pairs.upper_bound(key);
+    *begin = std::lower_bound(pairs.begin(), pairs.end(), key, m_order);
+    *end = std::upper_bound(pairs.begin(), pairs.end(), key, m_order);
 }
 
 void LeafNode::print(std::ostream &os) const

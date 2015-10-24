@@ -104,7 +104,7 @@ NODE_CASE_END
 
 void tree_impl::leafInsert(const leafnode_ptr &leaf, const memslice &key, const memslice &value, bool upsert, uint32_t *delta)
 {
-    pairlist_t::iterator it = leaf->pairs.find(key);
+    pairlist_t::iterator it = leaf->find(key);
     if (upsert && it != leaf->pairs.end())
     {
         // Update
