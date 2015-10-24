@@ -91,10 +91,11 @@ NODE_CASE_OVERFLOW
 
 NODE_CASE_INT
     top.index = key ? FindInternalKey(internal, *key, m_fns) : 0;
-    rootPath.push_back(travelDown(rootPath.back(), top.index));
+    fork branch = travelDown(rootPath.back(), top.index);
 
-    applyPendingEdits(internal, rootPath.back(), internal->branches[top.index], SHALLOW);
+    applyPendingEdits(internal, branch, internal->branches[top.index], SHALLOW);
 
+    rootPath.push_back(branch);
     findRec(rootPath, key, iter_ptr);
 
 NODE_CASE_END
@@ -148,8 +149,8 @@ NODE_CASE_INT
         if (n < internal->branch(top.index).itemCount + delta)
         {
             // Found where to descend
+            applyPendingEdits(internal, potential, internal->branches[top.index], SHALLOW);
             rootPath.push_back(potential);
-            applyPendingEdits(internal, rootPath.back(), internal->branches[top.index], SHALLOW);
             seekRec(rootPath, n, iter_ptr);
             return;
         }
