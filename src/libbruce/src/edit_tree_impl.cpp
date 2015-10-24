@@ -114,13 +114,15 @@ NODE_CASE_INT
     maybeApplyEdits(internal);
 
     // Then flush children
-    for (branchlist_t::iterator it = internal->branches.begin(); it != internal->branches.end(); ++it)
+    for (branchlist_t::iterator it = internal->branches.begin(); it != internal->branches.end(); )
     {
         if (it->child)
         {
             int i = it - internal->branches.begin();
-            updateBranch(internal, i, flushAndSplitRec(it->child));
+            it = updateBranch(internal, it, flushAndSplitRec(it->child));
         }
+        else
+            ++it;
     }
 
     // Then check for splitting
@@ -269,24 +271,26 @@ splitresult_t edit_tree_impl::maybeSplitInternal(const internalnode_ptr &interna
     return split;
 }
 
-void edit_tree_impl::updateBranch(const internalnode_ptr &internal, keycount_t i, const splitresult_t &split)
+branchlist_t::iterator edit_tree_impl::updateBranch(const internalnode_ptr &internal, branchlist_t::iterator it, const splitresult_t &split)
 {
     // For the first one, update but don't change the minKey
-    internal->branches[i].child = split.left().child;
-    internal->branches[i].itemCount = split.left().itemCount;
+    it->child = split.left().child;
+    it->itemCount = split.left().itemCount;
 
     if (!split.didSplit())
     {
         // Child didn't split, so maybe it got reduced and is now empty
-        if (!internal->branches[i].itemCount)
-            internal->erase(i);
+        if (!it->itemCount)
+            return internal->branches.erase(it);
     }
-    else
-    {
-        // Insert the rest
-        for (int j = 1; j < split.branches.size(); j++)
-            internal->insert(i + 1 + j, split.branches[j]);
-    }
+
+    // Insert the rest (saving the iterator)
+    // We are guaranteed that the inserted branches don't need to be split anymore, so we can
+    // just skip those on the return iterator.
+    ++it;
+    int index = it - internal->branches.begin();
+    internal->branches.insert(it, ++split.branches.begin(), split.branches.end());
+    return internal->branches.begin() + index + split.branches.size() - 1;
 }
 
 nodeid_t edit_tree_impl::collectBlocksRec(node_ptr &node)

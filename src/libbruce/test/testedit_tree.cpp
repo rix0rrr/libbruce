@@ -257,3 +257,63 @@ TEST_CASE("root has to split because its too large")
     internalnode_ptr int1 = loadInternal(mem, internal->branches[0].nodeID);
     internalnode_ptr int2 = loadInternal(mem, internal->branches[1].nodeID);
 }
+
+TEST_CASE("tree with a flushable edit queue")
+{
+    be::mem mem(1024, 256);
+
+    // GIVEN
+    put_result root = make_internal()
+        .brn(make_leaf(intToIntTree)
+           .kv(1, 1)
+           .put(mem)) // 0
+        .brn(make_leaf(intToIntTree)
+           .kv(3, 3)
+           .put(mem)) // 1
+        .put(mem); // 2
+
+    REQUIRE( mem.blockCount() == 3 );
+
+    // WHEN
+    SECTION("not enough changes to flush only flushes top block")
+    {
+        edit_tree<int, int> edit(root.nodeID, mem);
+        for (int i = 0; i < 25; i++)
+            edit.insert(i, i);
+
+        mutation mut = edit.flush();
+        REQUIRE( mem.blockCount() == 4 );
+    }
+
+    SECTION("large amount of changes causes a flush to all blocks")
+    {
+        edit_tree<int, int> edit(root.nodeID, mem);
+        for (int i = 0; i < 33; i++)
+            edit.insert(i, i);
+
+        mutation mut = edit.flush();
+        REQUIRE( mem.blockCount() == 6 );
+    }
+}
+
+TEST_CASE("flushing edit queue causes a leaf node to split")
+{
+    be::mem mem(256, 256);
+
+    // GIVEN
+    put_result root = make_internal()
+        .brn(make_leaf(intToIntTree)
+           .kv(1, 1)
+           .put(mem)) // 0
+        .brn(make_leaf(intToIntTree)
+           .kv(40, 40)
+           .put(mem)) // 1
+        .put(mem); // 2
+
+    edit_tree<int, int> edit(root.nodeID, mem);
+    for (int i = 0; i < 33; i++)
+        edit.insert(i, i);
+
+    mutation mut = edit.flush();
+    REQUIRE( mem.blockCount() == 6 ); // 3 + 1 new root + 2 new leaves
+}

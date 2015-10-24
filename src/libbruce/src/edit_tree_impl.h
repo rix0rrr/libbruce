@@ -136,7 +136,7 @@ private:
     void maybeApplyEdits(const internalnode_ptr &internal);
     splitresult_t maybeSplitInternal(const internalnode_ptr &internal);
 
-    void updateBranch(const internalnode_ptr &internal, keycount_t i, const splitresult_t &split);
+    branchlist_t::iterator updateBranch(const internalnode_ptr &internal, branchlist_t::iterator i, const splitresult_t &split);
     be::blockidlist_t findBlocksToFetch(const internalnode_ptr &internal);
     void loadBlocksToEdit(const internalnode_ptr &internal);
 };
