@@ -60,7 +60,7 @@ struct NodeParser
             m_offset += size;
         }
 
-        leafnode_ptr ret = boost::make_shared<LeafNode>(items.begin(), items.end(), fns);
+        leafnode_ptr ret = boost::make_shared<LeafNode>(&items, fns);
 
         VALIDATE_OFFSET;
         ret->overflow.count = *m_input.at<itemcount_t>(m_offset);

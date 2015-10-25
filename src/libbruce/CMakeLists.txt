@@ -6,27 +6,28 @@ enable_language(ASM)
 #set(can_use_assembler TRUE)
 
 add_library(bruce 
-    src/bruce.cpp
-    src/be/mem.cpp
     src/be/disk.cpp
-    src/mutation.cpp
-    src/memslice.cpp
-    src/mempool.cpp
-    src/serializing.cpp
-    src/tree_impl.cpp
+    src/be/mem.cpp
+    src/bruce.cpp
     src/edit_tree.cpp
     src/edit_tree_impl.cpp
-    src/query_tree.cpp
-    src/query_tree_impl.cpp
+    src/internal_node.cpp
+    src/leaf_node.cpp
+    src/mempool.cpp
+    src/memslice.cpp
+    src/mutation.cpp
+    src/nodes.cpp
+    src/overflow_node.cpp
     src/query_iterator.cpp
     src/query_iterator_impl.cpp
-    src/nodes.cpp
-    src/leaf_node.cpp
-    src/internal_node.cpp
-    src/overflow_node.cpp
-    src/types.cpp
+    src/query_tree.cpp
+    src/query_tree_impl.cpp
+    src/serializing.cpp
     src/sha1-fast-64.S
-    src/util/blockcache.cpp)
+    src/tree_impl.cpp
+    src/types.cpp
+    src/util/blockcache.cpp
+    )
 
 target_include_directories(bruce PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -44,15 +45,17 @@ target_link_libraries(bruce boost)
 #----------------------------------------------------------------------
 
 add_executable(testbruce
-    test/testserializing.cpp
+    test/testbruce.cpp
     test/testedit_tree.cpp
     test/testedit_tree_impl.cpp
     test/testhelpers.cpp
+    test/testleaf_node.cpp
     test/testnodes.cpp
-    test/testquery_tree.cpp
     test/testquery_iterator.cpp
+    test/testquery_tree.cpp
+    test/testserializing.cpp
     test/testtypes.cpp
-    test/testbruce.cpp)
+    )
 
 target_include_directories(testbruce
     PRIVATE src  # Testing private headers

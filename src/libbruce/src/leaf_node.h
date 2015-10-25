@@ -13,7 +13,12 @@ namespace libbruce {
 typedef std::pair<memslice, memslice> kv_pair;
 
 // Flat sorted vector
-typedef boost::container::vector<kv_pair> pairlist_t;
+//
+// We used to use a map but this performs much better, especially because everything is already
+// stored in sorted order, so keeping the vector minimizes copies and allocations. Using a plain
+// vector instead of a boost::container::flat_multimap gives us optimization opportunities (by doing
+// a merge join) while applying many changes at once.
+typedef std::vector<kv_pair> pairlist_t;
 
 struct PairOrder : public KeyOrder
 {
@@ -29,7 +34,7 @@ struct PairOrder : public KeyOrder
 struct LeafNode : public Node
 {
     LeafNode(const tree_functions &fns);
-    LeafNode(std::vector<kv_pair>::const_iterator begin, std::vector<kv_pair>::const_iterator end, const tree_functions &fns);
+    LeafNode(std::vector<kv_pair> *v, const tree_functions &fns);
     LeafNode(pairlist_t::const_iterator begin, pairlist_t::const_iterator end, const tree_functions &fns);
 
     keycount_t pairCount() const { return pairs.size(); }
@@ -38,7 +43,7 @@ struct LeafNode : public Node
 
     void insert(const kv_pair &item)
     {
-        pairlist_t::iterator it = std::upper_bound(pairs.begin(), pairs.end(), item.first, m_order);
+        pairlist_t::iterator it = std::upper_bound(pairs.begin(), pairs.end(), item.first, m_before);
         pairs.insert(it, item);
         m_elementsSize += item.first.size() + item.second.size();
     }
@@ -58,10 +63,12 @@ struct LeafNode : public Node
 
     pairlist_t::iterator find(const memslice &key)
     {
-        pairlist_t::iterator it = std::lower_bound(pairs.begin(), pairs.end(), key, m_order);
+        pairlist_t::iterator it = std::lower_bound(pairs.begin(), pairs.end(), key, m_before);
         if (it != pairs.end() && key == it->first) return it;
         return pairs.end();
     }
+
+    void applyAll(const editlist_t::iterator &begin, const editlist_t::iterator &end);
 
     // Return a value by index (slow, only for testing!)
     pairlist_t::const_iterator get_at(int n) const;
@@ -78,7 +85,7 @@ struct LeafNode : public Node
     void findRange(const memslice &key, pairlist_t::iterator *begin, pairlist_t::iterator *end);
 
 private:
-    PairOrder m_order;
+    PairOrder m_before;
     size_t m_elementsSize;
     void calcSize();
 };

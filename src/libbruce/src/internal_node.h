@@ -21,8 +21,6 @@ struct EditOrder : public KeyOrder
     }
 };
 
-typedef std::vector<pending_edit> editlist_t;
-
 struct node_branch {
     node_branch(const memslice &minKey, nodeid_t nodeID, itemcount_t itemCount);
     node_branch(const memslice &minKey, const node_ptr &child);

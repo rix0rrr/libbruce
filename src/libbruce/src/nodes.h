@@ -49,6 +49,8 @@ struct pending_edit
     int delta() const;
 };
 
+typedef std::vector<pending_edit> editlist_t;
+
 struct overflow_t
 {
     overflow_t() : count(0), nodeID() { }
