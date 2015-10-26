@@ -53,6 +53,8 @@ void InternalNode::print(std::ostream &os) const
     os << "INTERNAL(" << branchCount() << ")" << std::endl;
     BOOST_FOREACH(const libbruce::node_branch &b, branches)
         os << "  " << b.minKey << " -> " << b.nodeID << " (" << b.itemCount << (b.child ? "*" : "") << ")" << std::endl;
+    BOOST_FOREACH(const libbruce::pending_edit &e, editQueue)
+        os << "  " << e << std::endl;
 }
 
 //----------------------------------------------------------------------

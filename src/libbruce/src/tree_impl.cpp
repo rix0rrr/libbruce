@@ -240,4 +240,27 @@ memslice tree_impl::overflowPull(overflow_t &overflow_rec)
     return ret;
 }
 
+void tree_impl::applyEditsToBranch(const internalnode_ptr &internal, const keycount_t &i)
+{
+    editlist_t::iterator editBegin = internal->editQueue.begin();
+    editlist_t::iterator editEnd = internal->editQueue.end();
+
+    if (i > 0) editBegin = std::lower_bound(internal->editQueue.begin(), internal->editQueue.end(), internal->branches[i].minKey, EditOrder(m_fns));
+    if (i < internal->branches.size() - 1) editEnd = std::lower_bound(internal->editQueue.begin(), internal->editQueue.end(), internal->branches[i+1].minKey, EditOrder(m_fns));
+
+    if (editBegin == editEnd) return; // Nothing to apply
+
+    assert(internal->branches[i].child);
+
+    if (internal->branches[i].child->nodeType() == TYPE_LEAF)
+        boost::static_pointer_cast<LeafNode>(internal->branches[i].child)->applyAll(editBegin, editEnd);
+    else
+    {
+        for (editlist_t::const_iterator it = editBegin; it != editEnd; ++it)
+        {
+            apply(internal->branches[i].child, *it, SHALLOW);
+        }
+    }
+}
+
 }

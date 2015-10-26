@@ -44,6 +44,7 @@ protected:
     void overflowInsert(overflow_t &overflow_rec, const memslice &value, uint32_t *delta);
     void overflowRemove(overflow_t &overflow_rec, const memslice *value, uint32_t *delta);
     memslice overflowPull(overflow_t &overflow_rec);
+    void applyEditsToBranch(const internalnode_ptr &internal, const keycount_t &i);
 };
 
 }

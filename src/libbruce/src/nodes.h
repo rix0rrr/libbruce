@@ -82,6 +82,7 @@ private:
 };
 
 std::ostream &operator <<(std::ostream &os, const libbruce::Node &x);
+std::ostream &operator <<(std::ostream &os, const libbruce::pending_edit &e);
 
 extern memslice g_emptyMemory;
 

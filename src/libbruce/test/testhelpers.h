@@ -61,6 +61,8 @@ struct make_internal
 {
     make_internal();
     make_internal &brn(const put_result &put);
+    make_internal &edit(const pending_edit &edit);
+
     put_result put(be::mem &mem);
 
 private:

@@ -136,6 +136,7 @@ struct InternalNodeSize : public NodeSize
 
     keycount_t splitIndex() const { return m_splitIndex; }
     bool shouldApplyEditQueue() const;
+    uint32_t editQueueSize() const { return m_editQueueSize; }
 private:
     uint32_t m_maxEditQueueSize;
     uint32_t m_editQueueSize;

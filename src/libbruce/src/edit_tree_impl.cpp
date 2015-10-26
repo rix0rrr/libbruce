@@ -211,11 +211,11 @@ void edit_tree_impl::maybeApplyEdits(const internalnode_ptr &internal)
     loadBlocksToEdit(internal);
 
     // Now apply edits to leaves below and clear
-    for (editlist_t::const_iterator it = internal->editQueue.begin(); it != internal->editQueue.end(); ++it)
+    for (keycount_t i = 0; i < internal->branchCount(); i++)
     {
-        keycount_t i = FindInternalKey(internal, it->key, m_fns);
-        apply(internal->branches[i].child, *it, SHALLOW);
+        applyEditsToBranch(internal, i);
     }
+
     internal->editQueue.clear();
 }
 
@@ -262,6 +262,11 @@ splitresult_t edit_tree_impl::maybeSplitInternal(const internalnode_ptr &interna
     keycount_t j = size.splitIndex();
     internalnode_ptr left = boost::make_shared<InternalNode>(internal->branches.begin(), internal->branches.begin() + j);
     internalnode_ptr right = boost::make_shared<InternalNode>(internal->branches.begin() + j, internal->branches.end());
+
+    // Divide the edits over the new internals
+    editlist_t::iterator editSplit = std::lower_bound(internal->editQueue.begin(), internal->editQueue.end(), right->minKey(), EditOrder(m_fns));
+    left->editQueue.insert(left->editQueue.end(), internal->editQueue.begin(), editSplit);
+    right->editQueue.insert(right->editQueue.end(), editSplit, internal->editQueue.end());
 
     // Might be that the right node is too big, so split it again, then adjust
     // the keys and prepend the left branch.

@@ -33,11 +33,13 @@ struct NodeParser
 
     leafnode_ptr parseLeafNode()
     {
+        keycount_t count = keyCount();
+
         std::vector<kv_pair> items;
-        items.reserve(keyCount());
+        items.reserve(count);
 
         // Read N keys
-        for (keycount_t i = 0; i < keyCount(); i++)
+        for (keycount_t i = 0; i < count; i++)
         {
             VALIDATE_OFFSET;
             uint32_t size = fns.keySize(m_input.at<const char>(m_offset));
@@ -49,7 +51,7 @@ struct NodeParser
         }
 
         // Read N values
-        for (keycount_t i = 0; i < keyCount(); i++)
+        for (keycount_t i = 0; i < count; i++)
         {
             VALIDATE_OFFSET;
             uint32_t size = fns.valueSize(m_input.at<const char>(m_offset));
@@ -177,14 +179,19 @@ struct NodeParser
         // Values
         for (keycount_t i = 0; i < editCount; i++)
         {
-            VALIDATE_OFFSET;
+            memslice value;
 
-            uint32_t size = fns.valueSize(m_input.at<const char>(m_offset));
-            memslice value = m_input.slice(m_offset, size);
+            if (editTypes[i] != REMOVE_KV) // Doesn't have a value
+            {
+                VALIDATE_OFFSET;
+
+                uint32_t size = fns.valueSize(m_input.at<const char>(m_offset));
+                value = m_input.slice(m_offset, size);
+            }
 
             ret->editQueue.push_back(pending_edit(editTypes[i], editKeys[i], value, false));
 
-            m_offset += size;
+            m_offset += value.size();
         }
 
         validateAtEnd();
@@ -323,18 +330,16 @@ OverflowNodeSize::OverflowNodeSize(const overflownode_ptr &node, uint32_t blockS
 InternalNodeSize::InternalNodeSize(const internalnode_ptr &node, uint32_t blockSize, uint32_t maxEditQueueSize)
     : NodeSize(blockSize), m_maxEditQueueSize(maxEditQueueSize), m_editQueueSize(0)
 {
-    m_size += sizeof(keycount_t); // Size of edit queue
+    m_blockSize = blockSize - maxEditQueueSize; // The "block size" excludes the queue area
 
-    uint32_t splitSize = m_size;
-    bool first = true;
+    m_size += sizeof(keycount_t); // Size of edit queue
 
     for (branchlist_t::const_iterator it = node->branches.begin(); it != node->branches.end(); ++it)
     {
         // We never store the first key
-        if (!first)
+        if (it != node->branches.begin())
             m_size += it->minKey.size();
         m_size += sizeof(nodeid_t) + sizeof(itemcount_t);
-        first = false;
     }
 
     for (editlist_t::const_iterator it = node->editQueue.begin(); it != node->editQueue.end(); ++it)
@@ -343,17 +348,15 @@ InternalNodeSize::InternalNodeSize(const internalnode_ptr &node, uint32_t blockS
         m_editQueueSize += it->key.size() + it->value.size();
     }
 
-    m_size += m_editQueueSize;
-
     if (shouldSplit())
     {
+        uint32_t splitSize = m_size;
         uint32_t pieceSize = std::ceil(m_size / 2.0);
 
         for (m_splitIndex = 1; m_splitIndex < node->branchCount(); m_splitIndex++)
         {
             if (m_splitIndex != 1) splitSize += node->branch(m_splitIndex-1).minKey.size();
             splitSize += sizeof(nodeid_t) + sizeof(itemcount_t);
-            first = false;
 
             if (splitSize > pieceSize)
                 return;
@@ -442,7 +445,7 @@ mempage SerializeOverflowNode(const overflownode_ptr &node)
 mempage SerializeInternalNode(const internalnode_ptr &node)
 {
     InternalNodeSize size(node, 0, 0);
-    mempage mem(size.size());
+    mempage mem(size.size() + size.editQueueSize());
 
     uint32_t offset = 0;
 
@@ -501,9 +504,14 @@ mempage SerializeInternalNode(const internalnode_ptr &node)
     // Edit values
     for (editlist_t::const_iterator it = node->editQueue.begin(); it != node->editQueue.end(); ++it)
     {
-        memcpy(mem.at<char>(offset), it->value.ptr(), it->value.size());
-        offset += it->value.size();
+        if (it->edit != REMOVE_KEY) // Doesn't have a value
+        {
+            memcpy(mem.at<char>(offset), it->value.ptr(), it->value.size());
+            offset += it->value.size();
+        }
     }
+
+    assert(offset == mem.size());
 
     return mem;
 }

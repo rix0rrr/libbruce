@@ -109,6 +109,12 @@ make_internal &make_internal::brn(const put_result &put)
     return *this;
 }
 
+make_internal &make_internal::edit(const pending_edit &edit)
+{
+    internal->editQueue.push_back(edit);
+    return *this;
+}
+
 put_result make_internal::put(be::mem &mem)
 {
     return put_result(internal, putNode(mem, internal));

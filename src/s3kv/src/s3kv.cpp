@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
     auto clientFactory = Aws::MakeShared<HttpClientFactory>(NULL);
     auto s3 = Aws::MakeShared<S3Client>(NULL, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(NULL), config, clientFactory);
 #ifdef PERFTEST
-    be::disk be("temp/", 1 * MB);
+    be::disk be("temp/", 1 * MB, 300 * KB);
 #else
     s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB, 300 * KB, 100 * MB);
 #endif

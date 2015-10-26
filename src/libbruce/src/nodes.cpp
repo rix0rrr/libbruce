@@ -32,4 +32,21 @@ std::ostream &operator <<(std::ostream &os, const libbruce::Node &x)
     return os;
 }
 
+std::ostream &operator <<(std::ostream &os, const libbruce::pending_edit &e)
+{
+    switch (e.edit)
+    {
+        case INSERT: os << "INSERT"; break;
+        case UPSERT: os << "UPSERT"; break;
+        case REMOVE_KEY: os << "REMOVE"; break;
+        case REMOVE_KV: os << "REMOVE"; break;
+    }
+
+    os << " " << e.key;
+    if (e.value.size()) os << ", " << e.value;
+    os << " (" << (e.guaranteed ? "guaranteed" : "speculative") << ")";
+
+    return os;
+}
+
 }
