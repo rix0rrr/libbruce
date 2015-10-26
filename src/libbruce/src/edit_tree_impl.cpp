@@ -1,6 +1,7 @@
 #include "edit_tree_impl.h"
 
 #include <cassert>
+#include <set>
 
 #include <boost/lexical_cast.hpp>
 
