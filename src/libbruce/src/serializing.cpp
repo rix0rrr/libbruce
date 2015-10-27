@@ -181,7 +181,7 @@ struct NodeParser
         {
             memslice value;
 
-            if (editTypes[i] != REMOVE_KV) // Doesn't have a value
+            if (editTypes[i] != REMOVE_KEY) // Doesn't have a value
             {
                 VALIDATE_OFFSET;
 

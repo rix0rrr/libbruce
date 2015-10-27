@@ -41,11 +41,13 @@ install(TARGETS bruce
 install(DIRECTORY include/ DESTINATION include)
 export(TARGETS bruce FILE LibBruceConfig.cmake)
 target_link_libraries(bruce boost)
+target_compile_options(bruce PRIVATE -march=native)
 
 #----------------------------------------------------------------------
 
 add_executable(testbruce
     test/testbruce.cpp
+    test/testedit_queue.cpp
     test/testedit_tree.cpp
     test/testedit_tree_impl.cpp
     test/testhelpers.cpp
