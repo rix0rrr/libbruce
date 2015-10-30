@@ -28,9 +28,6 @@
 
 namespace libbruce {
 
-class edit_tree_impl;
-typedef boost::shared_ptr<edit_tree_impl> mutable_tree_ptr;
-
 /**
  * Type-unsafe tree
  *
@@ -41,12 +38,12 @@ struct edit_tree_unsafe
     edit_tree_unsafe(const maybe_nodeid &id, be::be &be, mempool &mempool, tree_functions fns);
 
     void insert(const memslice &key, const memslice &value);
-    void upsert(const memslice &key, const memslice &value);
-    void remove(const memslice &key);
-    void remove(const memslice &key, const memslice &value);
+    void upsert(const memslice &key, const memslice &value, bool guaranteed);
+    void remove(const memslice &key, bool guaranteed);
+    void remove(const memslice &key, const memslice &value, bool guaranteed);
     mutation flush();
 private:
-    mutable_tree_ptr m_tree;
+    tree_impl_ptr m_tree;
 };
 
 /**
@@ -65,19 +62,19 @@ struct edit_tree
         m_unsafe.insert(traits::convert<K>::to_bytes(key, m_mempool), traits::convert<V>::to_bytes(value, m_mempool));
     }
 
-    void upsert(const K &key, const V &value)
+    void upsert(const K &key, const V &value, bool guaranteed)
     {
-        m_unsafe.upsert(traits::convert<K>::to_bytes(key, m_mempool), traits::convert<V>::to_bytes(value, m_mempool));
+        m_unsafe.upsert(traits::convert<K>::to_bytes(key, m_mempool), traits::convert<V>::to_bytes(value, m_mempool), guaranteed);
     }
 
-    void remove(const K &key)
+    void remove(const K &key, bool guaranteed)
     {
-        m_unsafe.remove(traits::convert<K>::to_bytes(key, m_mempool));
+        m_unsafe.remove(traits::convert<K>::to_bytes(key, m_mempool), guaranteed);
     }
 
-    void remove(const K &key, const V &value)
+    void remove(const K &key, const V &value, bool guaranteed)
     {
-        m_unsafe.remove(traits::convert<K>::to_bytes(key, m_mempool), traits::convert<V>::to_bytes(value, m_mempool));
+        m_unsafe.remove(traits::convert<K>::to_bytes(key, m_mempool), traits::convert<V>::to_bytes(value, m_mempool), guaranteed);
     }
 
     mutation flush()

@@ -24,7 +24,30 @@ Block engines.
 
     query_tree
 
-## Implementing new stored types
+### Guaranteed modifications
+
+To ensure fast seek behavior, bruce keeps a list of counts for every branch of
+internal tree nodes.
+
+These counts need to be updated when changes are pushed down into those internal
+nodes, and we want to do this quickly and cheaply. There's a problem though: we
+can only know whether a particular change (such as a remove or upsert) would
+affect the item count in the tree when the change arrives at the leaf, because
+that's where the actual values are stored. Only then can we know whether the
+remove would actually remove a value, or the upsert would update an existing
+value instead of adding one.
+
+To avoid having to go to a leaf node for every change, a consumer can promise
+that the change is 'guaranteed'. The client promises that the key already exists
+in the tree when making the change, so bruce can do the rank calculations
+optimistically and won't need to go to the leaves to apply the change.
+
+> Important: if you make a false guarantee, this will affect the `seek()` and
+> `rank()` operations of the tree, NOT `find()` operations. If you do not care
+> about rank operations, you can always guarantee all changes for maximum
+> performance.
+
+### Implementing new stored types
 
 TODO
 
@@ -66,6 +89,10 @@ Data in the serialized pages is stored in column order (i.e., first all keys are
 stored, then all values are stored) for maximum compression potential. Depending
 on the data, a compression ratio of 0.1 can be expected. Block sizes are
 specific pre-compression, so adjust block sizes accordingly.
+
+## Code layout
+
+Explain double-indirect classes.
 
 ## Build Instructions
 

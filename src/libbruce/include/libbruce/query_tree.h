@@ -9,9 +9,6 @@
 
 namespace libbruce {
 
-class query_tree_impl;
-typedef boost::shared_ptr<query_tree_impl> query_tree_impl_ptr;
-
 struct query_tree_unsafe
 {
     query_tree_unsafe(nodeid_t id, be::be &be, mempool &mempool, const tree_functions &fns);
@@ -27,7 +24,7 @@ struct query_tree_unsafe
     query_iterator_unsafe begin();
     query_iterator_unsafe end();
 private:
-    query_tree_impl_ptr m_impl;
+    tree_impl_ptr m_impl;
 };
 
 template<typename K, typename V>

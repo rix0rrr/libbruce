@@ -1,5 +1,5 @@
 #include "query_iterator_impl.h"
-#include "query_tree_impl.h"
+#include "tree_impl.h"
 
 #include "helpers.h"
 
@@ -30,7 +30,7 @@ overflownode_ptr fork::asOverflow() const
     return boost::static_pointer_cast<OverflowNode>(node);
 }
 
-query_iterator_impl::query_iterator_impl(query_tree_impl_ptr tree, const std::vector<fork> &rootPath)
+query_iterator_impl::query_iterator_impl(tree_impl_ptr tree, const std::vector<fork> &rootPath)
     : m_tree(tree), m_rootPath(rootPath)
 {
 }

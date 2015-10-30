@@ -49,7 +49,7 @@ typedef std::vector<fork> treepath_t;
 
 struct query_iterator_impl
 {
-    query_iterator_impl(query_tree_impl_ptr tree, const treepath_t &rootPath);
+    query_iterator_impl(tree_impl_ptr tree, const treepath_t &rootPath);
 
     const memslice &key() const;
     const memslice &value() const;
@@ -62,7 +62,7 @@ struct query_iterator_impl
     bool operator==(const query_iterator_impl &other) const;
     bool operator!=(const query_iterator_impl &other) const { return !(*this == other); }
 private:
-    query_tree_impl_ptr m_tree;
+    tree_impl_ptr m_tree;
     mutable treepath_t m_rootPath;
 
     const fork &leaf() const;

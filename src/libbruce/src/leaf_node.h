@@ -7,10 +7,9 @@
 #include <algorithm>
 #include <boost/container/container_fwd.hpp>
 #include <boost/container/flat_map.hpp>
+#include "priv_types.h"
 
 namespace libbruce {
-
-typedef std::pair<memslice, memslice> kv_pair;
 
 // Flat sorted vector
 //
@@ -19,14 +18,6 @@ typedef std::pair<memslice, memslice> kv_pair;
 // vector instead of a boost::container::flat_multimap gives us optimization opportunities (by doing
 // a merge join) while applying many changes at once.
 typedef std::vector<kv_pair> pairlist_t;
-
-struct PairOrder : public KeyOrder
-{
-    PairOrder(const tree_functions &fns) : KeyOrder(fns) { }
-
-    bool operator()(const memslice &a, const kv_pair &b) const { return KeyOrder::operator()(a, b.first); }
-    bool operator()(const kv_pair &a, const memslice &b) const { return KeyOrder::operator()(a.first, b); }
-};
 
 /**
  * Leaf node type

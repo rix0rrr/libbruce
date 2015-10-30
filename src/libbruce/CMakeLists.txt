@@ -10,7 +10,6 @@ add_library(bruce
     src/be/mem.cpp
     src/bruce.cpp
     src/edit_tree.cpp
-    src/edit_tree_impl.cpp
     src/internal_node.cpp
     src/leaf_node.cpp
     src/mempool.cpp
@@ -21,7 +20,6 @@ add_library(bruce
     src/query_iterator.cpp
     src/query_iterator_impl.cpp
     src/query_tree.cpp
-    src/query_tree_impl.cpp
     src/serializing.cpp
     src/sha1-fast-64.S
     src/tree_impl.cpp
@@ -48,8 +46,7 @@ target_compile_options(bruce PRIVATE -march=native)
 add_executable(testbruce
     test/testbruce.cpp
     test/testedit_queue.cpp
-    test/testedit_tree.cpp
-    test/testedit_tree_impl.cpp
+    test/testediting.cpp
     test/testhelpers.cpp
     test/testleaf_node.cpp
     test/testnodes.cpp

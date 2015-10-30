@@ -3,37 +3,9 @@
 #define INTERNALNODE_H
 
 #include "nodes.h"
+#include "priv_types.h"
 
 namespace libbruce {
-
-struct EditOrder : public KeyOrder
-{
-    EditOrder(const tree_functions &fns) : KeyOrder(fns) { }
-
-    bool operator()(const memslice &a, const pending_edit &b) const
-    {
-        return KeyOrder::operator()(a, b.key);
-    }
-
-    bool operator()(const pending_edit &a, const memslice &b) const
-    {
-        return KeyOrder::operator()(a.key, b);
-    }
-};
-
-struct node_branch {
-    node_branch(const memslice &minKey, nodeid_t nodeID, itemcount_t itemCount);
-    node_branch(const memslice &minKey, const node_ptr &child);
-
-    void inc() { itemCount++; }
-
-    memslice minKey;
-    nodeid_t nodeID;
-    itemcount_t itemCount;
-
-    node_ptr child; // Only valid while mutating the tree
-};
-typedef std::vector<node_branch> branchlist_t;
 
 /**
  * Internal node type

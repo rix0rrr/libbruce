@@ -1,7 +1,7 @@
 #include <catch/catch.hpp>
 #include <libbruce/bruce.h>
 
-#include "query_tree_impl.h"
+#include "tree_impl.h"
 #include "testhelpers.h"
 
 #include <stdio.h>

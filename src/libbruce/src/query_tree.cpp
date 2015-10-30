@@ -1,32 +1,32 @@
 #include <libbruce/query_tree.h>
-#include "query_tree_impl.h"
+#include "tree_impl.h"
 
 namespace libbruce {
 
 
 query_tree_unsafe::query_tree_unsafe(nodeid_t id, be::be &be, mempool &mempool, const tree_functions &fns)
-    : m_impl(new query_tree_impl(be, id, mempool, fns))
+    : m_impl(new tree_impl(be, id, mempool, fns))
 {
 }
 
 void query_tree_unsafe::queue_insert(const memslice &key, const memslice &value)
 {
-    m_impl->queue_insert(key, value);
+    m_impl->insert(key, value);
 }
 
 void query_tree_unsafe::queue_upsert(const memslice &key, const memslice &value, bool guaranteed)
 {
-    m_impl->queue_upsert(key, value, guaranteed);
+    m_impl->upsert(key, value, guaranteed);
 }
 
 void query_tree_unsafe::queue_remove(const memslice &key, bool guaranteed)
 {
-    m_impl->queue_remove(key, guaranteed);
+    m_impl->remove(key, guaranteed);
 }
 
 void query_tree_unsafe::queue_remove(const memslice &key, const memslice &value, bool guaranteed)
 {
-    m_impl->queue_remove(key, value, guaranteed);
+    m_impl->remove(key, value, guaranteed);
 }
 
 bool query_tree_unsafe::get(const memslice &key, memslice *value)

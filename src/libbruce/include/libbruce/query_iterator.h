@@ -8,13 +8,10 @@
 
 namespace libbruce {
 
-class query_iterator_impl;
-typedef boost::shared_ptr<query_iterator_impl> query_iterator_impl_ptr;
-
 struct query_iterator_unsafe
 {
     query_iterator_unsafe();
-    query_iterator_unsafe(query_iterator_impl_ptr impl);
+    query_iterator_unsafe(const query_iterator_impl_ptr &impl);
     query_iterator_unsafe(const query_iterator_unsafe &rhs);
     query_iterator_unsafe &operator=(const query_iterator_unsafe &rhs);
 
