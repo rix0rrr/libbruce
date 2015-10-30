@@ -44,14 +44,14 @@ target_compile_options(bruce PRIVATE -march=native)
 #----------------------------------------------------------------------
 
 add_executable(testbruce
+    test/test_editing.cpp
+    test/test_iterator.cpp
+    test/test_querying.cpp
+    test/test_queueing.cpp
     test/testbruce.cpp
-    test/testedit_queue.cpp
-    test/testediting.cpp
     test/testhelpers.cpp
     test/testleaf_node.cpp
     test/testnodes.cpp
-    test/testquery_iterator.cpp
-    test/testquery_tree.cpp
     test/testserializing.cpp
     test/testtypes.cpp
     )
