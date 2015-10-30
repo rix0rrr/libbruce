@@ -483,3 +483,106 @@ TEST_CASE("root has to split because its too large")
     internalnode_ptr int1 = loadInternal(mem, internal->branches[0].nodeID);
     internalnode_ptr int2 = loadInternal(mem, internal->branches[1].nodeID);
 }
+
+TEST_CASE("seeking after moving guaranteed changes into a subnode")
+{
+    // This should just update the itemcount when pushing down,
+    // and not update the leaf node.
+    be::mem mem(512, 20);
+
+    // GIVEN
+    put_result root = make_internal()
+        .brn(make_internal()
+             .brn(make_leaf(intToIntTree)
+                  .kv(10, 10)
+                  .put(mem))
+             .brn(make_leaf(intToIntTree)
+                  .kv(20, 20)
+                  .put(mem))
+             .put(mem))
+        .brn(make_leaf(intToIntTree)
+           .kv(30, 30)
+           .put(mem))
+        .put(mem);
+
+    // WHEN
+    tree<int, int> edit(root.nodeID, mem);
+    edit.insert(15, 15);
+    edit.insert(31, 31);
+    edit.insert(32, 32);
+    mutation mut = edit.write();
+    finish_mutation(mem, mut, true);
+
+    // THEN: seek works
+    tree<int, int> query(*mut.newRootID(), mem);
+    REQUIRE( query.seek(2).value() == 20 );
+
+    // THEN: leaf unchanged
+    leafnode_ptr leaf = loadLeaf(mem, nodeid_t((size_t)0));
+    REQUIRE( leaf->pairs.size() == 1 );
+}
+
+TEST_CASE("keeping unpushed unguaranteed changes in the top node")
+{
+    // The top node is a great place to keep unguaranteed changes until
+    // at least a single push needs to happen...
+    be::mem mem(512, 20);
+
+    // GIVEN
+    put_result root = make_internal()
+        .brn(make_internal()
+             .brn(make_leaf(intToIntTree)
+                  .kv(10, 10)
+                  .put(mem))
+             .brn(make_leaf(intToIntTree)
+                  .kv(20, 20)
+                  .put(mem))
+             .put(mem))
+        .brn(make_leaf(intToIntTree)
+           .kv(30, 30)
+           .put(mem))
+        .put(mem);
+
+    // WHEN
+    tree<int, int> edit(root.nodeID, mem);
+    edit.remove(20, false);
+    mutation mut = edit.write();
+
+    // THEN
+    internalnode_ptr int1 = loadInternal(mem, *mut.newRootID());
+    REQUIRE( int1->editQueue.size() == 1 );
+}
+
+TEST_CASE("seeking after moving unguaranteed changes into a subnode")
+{
+    // This should push all the way to the bottom WHEN pushing, because
+    // that's the only way to update the counts properly.
+    be::mem mem(512, 20);
+
+    // GIVEN
+    put_result root = make_internal()
+        .brn(make_internal()
+             .brn(make_leaf(intToIntTree)
+                  .kv(10, 10)
+                  .put(mem))
+             .brn(make_leaf(intToIntTree)
+                  .kv(20, 20)
+                  .put(mem))
+             .put(mem))
+        .brn(make_leaf(intToIntTree)
+           .kv(30, 30)
+           .put(mem))
+        .put(mem);
+
+    // WHEN
+    tree<int, int> edit(root.nodeID, mem);
+    edit.remove(20, false);
+    edit.insert(31, 31);
+    edit.insert(32, 32);
+    mutation mut = edit.write();
+    finish_mutation(mem, mut, true);
+
+    // THEN
+    tree<int, int> query(*mut.newRootID(), mem);
+    REQUIRE( query.seek(1).value() == 30 );
+}

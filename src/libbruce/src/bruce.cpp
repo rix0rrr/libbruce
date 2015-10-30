@@ -4,7 +4,7 @@
 
 namespace libbruce {
 
-bool doFinish(be::be &blockEngine, mutation &mut, bool success)
+bool finish_mutation(be::be &blockEngine, mutation &mut, bool success)
 {
     mutation::nodes &ns = mut.deleteList(success);
     be::delblocklist_t dels;

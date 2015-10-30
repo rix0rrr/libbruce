@@ -283,13 +283,16 @@ void tree_impl::applyEditsToBranch(const internalnode_ptr &internal, const keyco
 
     assert(internal->branches[i].child);
 
+    // This is a little nasty; we shouldn't be doing type analysis in the parent node, BUT this way
+    // we can do optimized change application.
     if (internal->branches[i].child->nodeType() == TYPE_LEAF)
         boost::static_pointer_cast<LeafNode>(internal->branches[i].child)->applyAll(editBegin, editEnd);
     else
     {
         for (editlist_t::const_iterator it = editBegin; it != editEnd; ++it)
         {
-            apply(internal->branches[i].child, *it, SHALLOW);
+            // Unguaranteed changes need to be pushed all the way down when applied the first time
+            apply(internal->branches[i].child, *it, it->guaranteed ? SHALLOW : DEEP);
         }
     }
 }

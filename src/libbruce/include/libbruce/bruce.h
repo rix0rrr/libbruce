@@ -14,7 +14,7 @@
 
 namespace libbruce {
 
-bool doFinish(be::be &blockEngine, mutation &mut, bool success);
+bool finish_mutation(be::be &blockEngine, mutation &mut, bool success);
 
 template<typename K, typename V>
 class bruce
@@ -72,7 +72,7 @@ public:
      */
     bool finish(mutation &mut, bool success)
     {
-        return doFinish(m_blockEngine, mut, success);
+        return finish_mutation(m_blockEngine, mut, success);
     }
 
     static tree_functions fns;

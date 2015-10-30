@@ -33,6 +33,11 @@ itemcount_t InternalNode::itemCount() const
     {
         ret += it->itemCount;
     }
+    for (editlist_t::const_iterator it = editQueue.begin(); it != editQueue.end(); ++it)
+    {
+        if (it->guaranteed)
+            ret += it->delta();
+    }
     return ret;
 }
 
