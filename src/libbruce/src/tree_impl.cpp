@@ -596,27 +596,27 @@ mutation tree_impl::collectMutation()
 
 bool tree_impl::get(const memslice &key, memslice *value)
 {
-    query_iterator_unsafe it = find(key);
+    tree_iterator_unsafe it = find(key);
     if (it) *value = it.value();
     return it;
 }
 
-query_iterator_impl_ptr tree_impl::find(const memslice &key)
+tree_iterator_impl_ptr tree_impl::find(const memslice &key)
 {
     treepath_t rootPath;
     rootPath.push_back(fork(root(), memslice(), memslice()));
 
-    query_iterator_impl_ptr it;
+    tree_iterator_impl_ptr it;
     findRec(rootPath, &key, &it);
     return it;
 }
 
-query_iterator_impl_ptr tree_impl::seek(itemcount_t n)
+tree_iterator_impl_ptr tree_impl::seek(itemcount_t n)
 {
     treepath_t rootPath;
     rootPath.push_back(fork(root(), memslice(), memslice()));
 
-    query_iterator_impl_ptr it;
+    tree_iterator_impl_ptr it;
     seekRec(rootPath, n, &it);
     return it;
 }
@@ -632,7 +632,7 @@ fork tree_impl::travelDown(const fork &top, keycount_t i)
     return fork(node, minK, maxK);
 }
 
-void tree_impl::findRec(treepath_t &rootPath, const memslice *key, query_iterator_impl_ptr *iter_ptr)
+void tree_impl::findRec(treepath_t &rootPath, const memslice *key, tree_iterator_impl_ptr *iter_ptr)
 {
     fork &top = rootPath.back();
     node_ptr node = rootPath.back().node;
@@ -644,7 +644,7 @@ NODE_CASE_LEAF
 
     for (top.leafIter = begin; top.leafIter != end; ++top.leafIter)
     {
-        iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath));
+        iter_ptr->reset(new tree_iterator_impl(shared_from_this(), rootPath));
         return;
     }
 
@@ -665,7 +665,7 @@ NODE_CASE_INT
 NODE_CASE_END
 }
 
-void tree_impl::seekRec(treepath_t &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr)
+void tree_impl::seekRec(treepath_t &rootPath, itemcount_t n, tree_iterator_impl_ptr *iter_ptr)
 {
     fork &top = rootPath.back();
     node_ptr node = rootPath.back().node;
@@ -674,7 +674,7 @@ NODE_CASE_LEAF
     if (n < leaf->pairCount())
     {
         top.leafIter = leaf->get_at(n);
-        iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath));
+        iter_ptr->reset(new tree_iterator_impl(shared_from_this(), rootPath));
         return;
     }
 
@@ -691,7 +691,7 @@ NODE_CASE_OVERFLOW
     if (n < overflow->valueCount())
     {
         top.index = n;
-        iter_ptr->reset(new query_iterator_impl(shared_from_this(), rootPath));
+        iter_ptr->reset(new tree_iterator_impl(shared_from_this(), rootPath));
         return;
     }
 
@@ -828,11 +828,11 @@ int tree_impl::pendingRankDelta(const internalnode_ptr &internal, fork &top, nod
     return delta;
 }
 
-query_iterator_impl_ptr tree_impl::begin()
+tree_iterator_impl_ptr tree_impl::begin()
 {
     treepath_t rootPath;
     rootPath.push_back(fork(root(), memslice(), memslice()));
-    query_iterator_impl_ptr it;
+    tree_iterator_impl_ptr it;
     findRec(rootPath, NULL, &it);
     return it;
 }

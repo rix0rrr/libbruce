@@ -9,7 +9,7 @@
 #include <libbruce/types.h>
 #include <libbruce/mutation.h>
 #include "internal_node.h"
-#include "query_iterator_impl.h"
+#include "tree_iterator_impl.h"
 #include "leaf_node.h"
 #include "nodes.h"
 #include "priv_types.h"
@@ -34,9 +34,9 @@ struct tree_impl : public boost::enable_shared_from_this<tree_impl>
     mutation write();
 
     bool get(const memslice &key, memslice *value);
-    query_iterator_impl_ptr find(const memslice &key);
-    query_iterator_impl_ptr seek(itemcount_t n);
-    query_iterator_impl_ptr begin();
+    tree_iterator_impl_ptr find(const memslice &key);
+    tree_iterator_impl_ptr seek(itemcount_t n);
+    tree_iterator_impl_ptr begin();
 
     itemcount_t rank(treepath_t &rootPath);
 
@@ -90,8 +90,8 @@ private:
     be::blockidlist_t findBlocksToFetch(const internalnode_ptr &internal);
     void loadBlocksToEdit(const internalnode_ptr &internal);
 
-    void findRec(treepath_t &rootPath, const memslice *key, query_iterator_impl_ptr *iter_ptr);
-    void seekRec(treepath_t &rootPath, itemcount_t n, query_iterator_impl_ptr *iter_ptr);
+    void findRec(treepath_t &rootPath, const memslice *key, tree_iterator_impl_ptr *iter_ptr);
+    void seekRec(treepath_t &rootPath, itemcount_t n, tree_iterator_impl_ptr *iter_ptr);
     bool isGuaranteed(const editlist_t::iterator &cur, const editlist_t::iterator &end);
     itemcount_t rankRec(const treepath_t &rootPath, unsigned i);
     int pendingRankDelta(const internalnode_ptr &node, fork &top, node_branch &branch);

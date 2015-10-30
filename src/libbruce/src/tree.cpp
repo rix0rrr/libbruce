@@ -1,7 +1,7 @@
 #include <libbruce/tree.h>
 
 #include "tree_impl.h"
-#include "query_iterator_impl.h"
+#include "tree_iterator_impl.h"
 
 namespace libbruce {
 
@@ -40,25 +40,25 @@ bool tree_unsafe::get(const memslice &key, memslice *value)
     return m_impl->get(key, value);
 }
 
-query_iterator_unsafe tree_unsafe::find(const memslice &key)
+tree_iterator_unsafe tree_unsafe::find(const memslice &key)
 {
-    return query_iterator_unsafe(m_impl->find(key));
+    return tree_iterator_unsafe(m_impl->find(key));
 }
 
-query_iterator_unsafe tree_unsafe::seek(itemcount_t n)
+tree_iterator_unsafe tree_unsafe::seek(itemcount_t n)
 {
-    return query_iterator_unsafe(m_impl->seek(n));
+    return tree_iterator_unsafe(m_impl->seek(n));
 }
 
-query_iterator_unsafe tree_unsafe::begin()
+tree_iterator_unsafe tree_unsafe::begin()
 {
-    return query_iterator_unsafe(m_impl->begin());
+    return tree_iterator_unsafe(m_impl->begin());
 }
 
-query_iterator_unsafe tree_unsafe::end()
+tree_iterator_unsafe tree_unsafe::end()
 {
     // Return an invalid iterator
-    return query_iterator_unsafe(query_iterator_impl_ptr());
+    return tree_iterator_unsafe(tree_iterator_impl_ptr());
 }
 
 }

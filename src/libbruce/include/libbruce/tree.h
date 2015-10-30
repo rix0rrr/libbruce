@@ -26,7 +26,7 @@
 #include <libbruce/traits.h>
 #include <boost/make_shared.hpp>
 
-#include <libbruce/query_iterator.h>
+#include <libbruce/tree_iterator.h>
 
 namespace libbruce {
 
@@ -46,10 +46,10 @@ struct tree_unsafe
     mutation write();
 
     bool get(const memslice &key, memslice *value);
-    query_iterator_unsafe find(const memslice &key);
-    query_iterator_unsafe seek(itemcount_t n);
-    query_iterator_unsafe begin();
-    query_iterator_unsafe end();
+    tree_iterator_unsafe find(const memslice &key);
+    tree_iterator_unsafe seek(itemcount_t n);
+    tree_iterator_unsafe begin();
+    tree_iterator_unsafe end();
 private:
     tree_impl_ptr m_impl;
 };
@@ -62,7 +62,7 @@ struct tree
 {
     typedef typename boost::shared_ptr<tree<K, V> > ptr;
     typedef typename boost::optional<V> maybe_v;
-    typedef query_iterator<K, V> iterator;
+    typedef tree_iterator<K, V> iterator;
 
     tree(const maybe_nodeid &id, be::be &be)
         : m_unsafe(id, be, m_mempool, fns) { }
@@ -103,22 +103,22 @@ struct tree
 
     iterator find(const K &key)
     {
-        return query_iterator<K,V>(m_unsafe.find(traits::convert<K>::to_bytes(key, m_mempool)));
+        return iterator(m_unsafe.find(traits::convert<K>::to_bytes(key, m_mempool)));
     }
 
     iterator seek(itemcount_t n)
     {
-        return query_iterator<K,V>(m_unsafe.seek(n));
+        return iterator(m_unsafe.seek(n));
     }
 
     iterator begin()
     {
-        return query_iterator<K,V>(m_unsafe.begin());
+        return iterator(m_unsafe.begin());
     }
 
     iterator end()
     {
-        return query_iterator<K,V>(m_unsafe.end());
+        return iterator(m_unsafe.end());
     }
 
     static tree_functions fns;

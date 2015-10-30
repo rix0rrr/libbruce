@@ -16,8 +16,8 @@ add_library(bruce
     src/mutation.cpp
     src/nodes.cpp
     src/overflow_node.cpp
-    src/query_iterator.cpp
-    src/query_iterator_impl.cpp
+    src/tree_iterator.cpp
+    src/tree_iterator_impl.cpp
     src/serializing.cpp
     src/sha1-fast-64.S
     src/tree.cpp

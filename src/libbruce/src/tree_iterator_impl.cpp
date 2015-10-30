@@ -1,4 +1,4 @@
-#include "query_iterator_impl.h"
+#include "tree_iterator_impl.h"
 #include "tree_impl.h"
 
 #include "helpers.h"
@@ -30,12 +30,12 @@ overflownode_ptr fork::asOverflow() const
     return boost::static_pointer_cast<OverflowNode>(node);
 }
 
-query_iterator_impl::query_iterator_impl(tree_impl_ptr tree, const std::vector<fork> &rootPath)
+tree_iterator_impl::tree_iterator_impl(tree_impl_ptr tree, const std::vector<fork> &rootPath)
     : m_tree(tree), m_rootPath(rootPath)
 {
 }
 
-const fork &query_iterator_impl::leaf() const
+const fork &tree_iterator_impl::leaf() const
 {
     // Get the top leaf
     for (std::vector<fork>::const_reverse_iterator it = m_rootPath.rbegin(); it != m_rootPath.rend(); ++it)
@@ -44,7 +44,7 @@ const fork &query_iterator_impl::leaf() const
     return m_rootPath.back();
 }
 
-const memslice &query_iterator_impl::key() const
+const memslice &tree_iterator_impl::key() const
 {
     switch (current().nodeType())
     {
@@ -54,7 +54,7 @@ const memslice &query_iterator_impl::key() const
     }
 }
 
-const memslice &query_iterator_impl::value() const
+const memslice &tree_iterator_impl::value() const
 {
     switch (current().nodeType())
     {
@@ -64,12 +64,12 @@ const memslice &query_iterator_impl::value() const
     }
 }
 
-itemcount_t query_iterator_impl::rank() const
+itemcount_t tree_iterator_impl::rank() const
 {
     return m_tree->rank(m_rootPath);
 }
 
-bool query_iterator_impl::valid() const
+bool tree_iterator_impl::valid() const
 {
     if (!m_rootPath.size()) return false;
 
@@ -79,7 +79,7 @@ bool query_iterator_impl::valid() const
     return validIndex(current().index);
 }
 
-bool query_iterator_impl::validIndex(int i) const
+bool tree_iterator_impl::validIndex(int i) const
 {
     switch (current().nodeType())
     {
@@ -90,7 +90,7 @@ bool query_iterator_impl::validIndex(int i) const
     }
 }
 
-void query_iterator_impl::skip(int n)
+void tree_iterator_impl::skip(int n)
 {
     // Try to satisfy move by just moving index pointer
     switch (current().nodeType())
@@ -122,7 +122,7 @@ void query_iterator_impl::skip(int n)
     *this = *m_tree->seek(rank() + n);
 }
 
-bool query_iterator_impl::pastCurrentEnd() const
+bool tree_iterator_impl::pastCurrentEnd() const
 {
     switch (current().nodeType())
     {
@@ -132,7 +132,7 @@ bool query_iterator_impl::pastCurrentEnd() const
     }
 }
 
-void query_iterator_impl::next()
+void tree_iterator_impl::next()
 {
     if (current().nodeType() == TYPE_LEAF)
     {
@@ -144,7 +144,7 @@ void query_iterator_impl::next()
     if (pastCurrentEnd()) advanceCurrent();
 }
 
-void query_iterator_impl::advanceCurrent()
+void tree_iterator_impl::advanceCurrent()
 {
     // Move on to overflow chain
     if (current().nodeType() == TYPE_OVERFLOW && !current().asOverflow()->next.empty())
@@ -164,7 +164,7 @@ void query_iterator_impl::advanceCurrent()
     travelToNextLeaf();
 }
 
-void query_iterator_impl::popCurrentNode()
+void tree_iterator_impl::popCurrentNode()
 {
     m_rootPath.pop_back();
     if (!m_rootPath.size()) return;
@@ -172,7 +172,7 @@ void query_iterator_impl::popCurrentNode()
     m_rootPath.back().index++;
 }
 
-void query_iterator_impl::travelToNextLeaf()
+void tree_iterator_impl::travelToNextLeaf()
 {
     while (m_rootPath.size() && current().nodeType() == TYPE_INTERNAL)
     {
@@ -190,18 +190,18 @@ void query_iterator_impl::travelToNextLeaf()
     }
 }
 
-void query_iterator_impl::pushOverflow(const node_ptr &overflow)
+void tree_iterator_impl::pushOverflow(const node_ptr &overflow)
 {
     m_rootPath.push_back(fork(overflow, memslice(), memslice()));
 }
 
-void query_iterator_impl::popOverflows()
+void tree_iterator_impl::popOverflows()
 {
     while (current().nodeType() == TYPE_OVERFLOW)
         m_rootPath.pop_back();
 }
 
-bool query_iterator_impl::operator==(const query_iterator_impl &other) const
+bool tree_iterator_impl::operator==(const tree_iterator_impl &other) const
 {
     if (m_tree != other.m_tree) return false;
     if (m_rootPath.size() != other.m_rootPath.size()) return false;

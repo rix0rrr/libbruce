@@ -58,8 +58,8 @@ typedef boost::optional<nodeid_t> maybe_nodeid;
 class tree_impl;
 typedef boost::shared_ptr<tree_impl> tree_impl_ptr;
 
-class query_iterator_impl;
-typedef boost::shared_ptr<query_iterator_impl> query_iterator_impl_ptr;
+class tree_iterator_impl;
+typedef boost::shared_ptr<tree_iterator_impl> tree_iterator_impl_ptr;
 
 
 namespace fn {
