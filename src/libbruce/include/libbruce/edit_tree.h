@@ -41,7 +41,7 @@ struct edit_tree_unsafe
     void upsert(const memslice &key, const memslice &value, bool guaranteed);
     void remove(const memslice &key, bool guaranteed);
     void remove(const memslice &key, const memslice &value, bool guaranteed);
-    mutation flush();
+    mutation write();
 private:
     tree_impl_ptr m_tree;
 };
@@ -77,9 +77,9 @@ struct edit_tree
         m_unsafe.remove(traits::convert<K>::to_bytes(key, m_mempool), traits::convert<V>::to_bytes(value, m_mempool), guaranteed);
     }
 
-    mutation flush()
+    mutation write()
     {
-        return m_unsafe.flush();
+        return m_unsafe.write();
     }
 
     static tree_functions fns;

@@ -14,7 +14,7 @@ TEST_CASE("reading from a tree", "[query]")
     edit_tree<int, int> t(maybe_nodeid(), mem);
     t.insert(1, 1);
     t.insert(2, 2);
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     query_tree<int, int> q(*mut.newRootID(), mem);
     REQUIRE( *q.get(1) == 1 );
@@ -27,7 +27,7 @@ TEST_CASE("reading from a tree with queued insert", "[query]")
     be::mem mem(1024);
     edit_tree<int, int> t(maybe_nodeid(), mem);
     t.insert(0, 0);
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     query_tree<int, int> q(*mut.newRootID(), mem);
     q.queue_insert(1, 1);
@@ -39,7 +39,7 @@ TEST_CASE("reading from a tree with queued remove", "[query]")
     be::mem mem(1024);
     edit_tree<int, int> t(maybe_nodeid(), mem);
     t.insert(1, 1);
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     query_tree<int, int> q(*mut.newRootID(), mem);
     q.queue_remove(1, true);
@@ -51,7 +51,7 @@ TEST_CASE("reading from a tree with queued remove and insert", "[query]")
     be::mem mem(1024);
     edit_tree<int, int> t(maybe_nodeid(), mem);
     t.insert(0, 0);
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     query_tree<int, int> q(*mut.newRootID(), mem);
     q.queue_remove(1, true);
@@ -64,7 +64,7 @@ TEST_CASE("reading from a tree with queued insert and remove", "[query]")
     be::mem mem(1024);
     edit_tree<int, int> t(maybe_nodeid(), mem);
     t.insert(0, 0);
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     query_tree<int, int> q(*mut.newRootID(), mem);
     q.queue_insert(1, 1);

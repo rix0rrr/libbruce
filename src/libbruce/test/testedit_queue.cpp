@@ -27,23 +27,23 @@ TEST_CASE("tree with a flushable edit queue")
     REQUIRE( mem.blockCount() == 3 );
 
     // WHEN
-    SECTION("not enough changes to flush only flushes top block")
+    SECTION("not enough changes to write only flushes top block")
     {
         edit_tree<int, int> edit(root.nodeID, mem);
         for (int i = 0; i < 25; i++)
             edit.insert(i, i);
 
-        mutation mut = edit.flush();
+        mutation mut = edit.write();
         REQUIRE( mem.blockCount() == 4 );
     }
 
-    SECTION("large amount of changes causes a flush to all blocks")
+    SECTION("large amount of changes causes a write to all blocks")
     {
         edit_tree<int, int> edit(root.nodeID, mem);
         for (int i = 0; i < 33; i++)
             edit.insert(i, i);
 
-        mutation mut = edit.flush();
+        mutation mut = edit.write();
         REQUIRE( mem.blockCount() == 6 );
     }
 }
@@ -66,7 +66,7 @@ TEST_CASE("flushing edit queue causes a leaf node to split")
     for (int i = 0; i < 33; i++)
         edit.insert(i, i);
 
-    mutation mut = edit.flush();
+    mutation mut = edit.write();
     REQUIRE( mem.blockCount() == 6 ); // 3 + 1 new root + 2 new leaves
 
     // Verify that the new root has no more pending changes
@@ -78,7 +78,7 @@ TEST_CASE("splitting an internal node does not lose the edit queue")
 {
     be::mem mem(65 + 256, 256);
 
-    // GIVEN (a node that must split on flush)
+    // GIVEN (a node that must split on write)
     put_result root = make_internal()
         .brn(make_leaf(intToIntTree)
            .kv(1, 1)
@@ -95,7 +95,7 @@ TEST_CASE("splitting an internal node does not lose the edit queue")
 
     edit_tree<int, int> edit(root.nodeID, mem);
     edit.insert(6, 6); // Add an edit to force the node to update
-    mutation mut = edit.flush();
+    mutation mut = edit.write();
 
     // Verify that the changes are still in the tree (we don't care
     // about where they are)
@@ -111,7 +111,7 @@ TEST_CASE("finding with an edit queue")
 {
     be::mem mem(512, 256);
 
-    // GIVEN (a node that must split on flush)
+    // GIVEN (a node that must split on write)
     put_result root = make_internal()
         .brn(make_leaf(intToIntTree)
            .kv(1, 1)
@@ -136,7 +136,7 @@ TEST_CASE("seeking with an edit queue")
 {
     be::mem mem(512, 256);
 
-    // GIVEN (a node that must split on flush)
+    // GIVEN (a node that must split on write)
     put_result root = make_internal()
         .brn(make_leaf(intToIntTree)
            .kv(1, 1)

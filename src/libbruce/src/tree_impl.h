@@ -31,7 +31,7 @@ struct tree_impl : public boost::enable_shared_from_this<tree_impl>
      * Returns a mutation containing the IDs of the blocks that can be garbage
      * collected. After calling this, edit_tree_impl is frozen.
      */
-    mutation flush();
+    mutation write();
 
     bool get(const memslice &key, memslice *value);
     query_iterator_impl_ptr find(const memslice &key);

@@ -17,7 +17,7 @@ TEST_CASE("abort commit of empty tree should leave blockstore empty")
     intbruce::edit_ptr t = b.create();
     t->insert(1, 2);
     t->insert(2, 3);
-    mutation mut = t->flush();
+    mutation mut = t->write();
 
     b.finish(mut, false);
 
@@ -32,7 +32,7 @@ TEST_CASE("commit and abort")
     intbruce::edit_ptr t = b.create();
     t->insert(1, 2);
     t->insert(2, 3);
-    mutation mut = t->flush();
+    mutation mut = t->write();
 
     REQUIRE(mem.blockCount() == 1);
 
@@ -40,7 +40,7 @@ TEST_CASE("commit and abort")
     {
         intbruce::edit_ptr u = b.edit(*mut.newRootID());
         u->insert(3, 4);
-        mutation mut2 = u->flush();
+        mutation mut2 = u->write();
 
         b.finish(mut2, true);
 
@@ -51,7 +51,7 @@ TEST_CASE("commit and abort")
     {
         intbruce::edit_ptr u = b.edit(*mut.newRootID());
         u->insert(3, 4);
-        mutation mut2 = u->flush();
+        mutation mut2 = u->write();
 
         b.finish(mut2, false);
 

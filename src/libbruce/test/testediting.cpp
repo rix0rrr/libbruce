@@ -15,7 +15,7 @@ TEST_CASE("writing a new single leaf tree")
     tree_impl tree(mem, maybe_nodeid(), g_testPool, intToIntTree);
     tree.insert(one_r, two_r);
 
-    mutation mut = tree.flush();
+    mutation mut = tree.write();
 
     // Check that we wrote a page to storage, and that that page deserializes
     REQUIRE( mut.success() );
@@ -36,7 +36,7 @@ TEST_CASE("writing a new single leaf tree")
         tree_impl tree2(mem, mut.newRootID(), g_testPool, intToIntTree);
         tree2.insert(two_r, one_r);
 
-        mutation mut2 = tree2.flush();
+        mutation mut2 = tree2.write();
 
         THEN("it can still be deserialized")
         {
@@ -60,7 +60,7 @@ TEST_CASE("inserting a lot of keys leads to split nodes")
     for (uint32_t i = 0; i < 140; i++)
         tree.insert(intCopy(i), intCopy(i));
 
-    mutation mut = tree.flush();
+    mutation mut = tree.write();
 
     REQUIRE( mem.blockCount() == 3 );
 
@@ -89,7 +89,7 @@ TEST_CASE("split is kosher")
     for (uint32_t i = 0; i < 128; i++)
         tree.insert(intCopy(i), intCopy(i));
 
-    mutation mut = tree.flush();
+    mutation mut = tree.write();
 
     mempage rootPage = mem.get(*mut.newRootID());
     internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
@@ -121,7 +121,7 @@ TEST_CASE("inserting then deleting from a leaf")
     tree_impl tree(mem, maybe_nodeid(), g_testPool, intToIntTree);
     tree.insert(one_r, two_r);
     tree.remove(one_r, true);
-    mutation mut = tree.flush();
+    mutation mut = tree.write();
 
     THEN("it can be deserialized to an empty leaf")
     {
@@ -143,7 +143,7 @@ TEST_CASE("inserting then deleting from an internal node")
     {
         uint32_t x = 40;
         tree.remove(memslice(&x, sizeof(x)), true);
-        mutation mut = tree.flush();
+        mutation mut = tree.write();
 
         mempage rootPage = mem.get(*mut.newRootID());
         internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
@@ -154,7 +154,7 @@ TEST_CASE("inserting then deleting from an internal node")
     {
         uint32_t x = 80;
         tree.remove(memslice(&x, sizeof(x)), true);
-        mutation mut = tree.flush();
+        mutation mut = tree.write();
 
         mempage rootPage = mem.get(*mut.newRootID());
         internalnode_ptr rootNode = boost::dynamic_pointer_cast<InternalNode>(ParseNode(rootPage, intToIntTree));
@@ -172,7 +172,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
     SECTION("deleting a low key & value")
     {
         tree.remove(two_r, intCopy(40), true);
-        mutation mut = tree.flush();
+        mutation mut = tree.write();
 
         mempage rootPage = mem.get(*mut.newRootID());
         leafnode_ptr rootNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(rootPage, intToIntTree));
@@ -182,7 +182,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
     SECTION("deleting a high key & value")
     {
         tree.remove(two_r, intCopy(80), true);
-        mutation mut = tree.flush();
+        mutation mut = tree.write();
 
         mempage rootPage = mem.get(*mut.newRootID());
         leafnode_ptr rootNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(rootPage, intToIntTree));
@@ -192,7 +192,7 @@ TEST_CASE("inserting a bunch of values with the same key and selective removal w
     SECTION("deleting a nonexistent value")
     {
         tree.remove(two_r, intCopy(130), false);
-        mutation mut = tree.flush();
+        mutation mut = tree.write();
 
         mempage rootPage = mem.get(*mut.newRootID());
         leafnode_ptr rootNode = boost::dynamic_pointer_cast<LeafNode>(ParseNode(rootPage, intToIntTree));
@@ -208,7 +208,7 @@ TEST_CASE("write new pages, delete old ones")
         tree_impl tree(mem, maybe_nodeid(), g_testPool, intToIntTree);
         for (uint32_t i = 0; i < 128; i++)
             tree.insert(intCopy(i), intCopy(i));
-        mutation mut = tree.flush();
+        mutation mut = tree.write();
         REQUIRE( mem.blockCount() == 3 );
         treeID = mut.newRootID();
     }
@@ -216,7 +216,7 @@ TEST_CASE("write new pages, delete old ones")
     {
         tree_impl tree(mem, treeID, g_testPool, intToIntTree);
         tree.insert(intCopy(140), intCopy(140));
-        mutation mut = tree.flush();
+        mutation mut = tree.write();
         REQUIRE( mem.blockCount() == 5 );
         REQUIRE( mut.createdIDs().size() == 2 );
         REQUIRE( mut.obsoleteIDs().size() == 2 );
@@ -231,7 +231,7 @@ TEST_CASE("postfix a whole bunch of the same keys into anode")
         tree.insert(intCopy(i), intCopy(i));
     for (unsigned i = 50; i < 400; i++)
         tree.insert(intCopy(50), intCopy(i));
-    mutation mut = tree.flush();
+    mutation mut = tree.write();
 
     REQUIRE( mem.blockCount() == 3 ); // Expecting leaf and two overflows
 }
@@ -243,7 +243,7 @@ TEST_CASE("int to int tree")
 
     t.insert(1, 1);
     t.insert(2, 2);
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     mempage page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, intToIntTree));
@@ -261,7 +261,7 @@ TEST_CASE("string to int tree")
 
     t.insert("one", 1);
     t.insert("two", 2);
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     mempage page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, uint32_t>::fns));
@@ -279,7 +279,7 @@ TEST_CASE("in to string tree")
 
     t.insert(1, "one is one");
     t.insert(2, "two is two");
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     mempage page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<uint32_t, std::string>::fns));
@@ -297,7 +297,7 @@ TEST_CASE("binary to string tree")
 
     t.insert("one", binary("\x01\x00\x01", 3));
     t.insert("two", binary("\x02\x00\x02", 3));
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     mempage page = mem.get(*mut.newRootID());
     leafnode_ptr node = boost::dynamic_pointer_cast<LeafNode>(ParseNode(page, edit_tree<std::string, binary>::fns));
@@ -317,7 +317,7 @@ TEST_CASE("test inserting into overflow block", "[nodes]")
     for (int i = 0; i < 300; i++)
         t.insert(0, i);
 
-    mutation mut = t.flush();
+    mutation mut = t.write();
 
     REQUIRE( mem.blockCount() == 3 );
 
@@ -340,7 +340,7 @@ TEST_CASE("remove branch when empty")
 
     // WHEN
     edit.remove(1, true);
-    mutation mut = edit.flush();
+    mutation mut = edit.write();
 
     // THEN
     mempage page = mem.get(*mut.newRootID());
@@ -370,7 +370,7 @@ TEST_CASE("upserts")
     SECTION("upsert becomes an update")
     {
         edit.upsert(1, 2, true);
-        mutation mut = edit.flush();
+        mutation mut = edit.write();
 
         query_tree<int, int> query(*mut.newRootID(), mem);
         REQUIRE( query.find(1).value() == 2 );
@@ -383,7 +383,7 @@ TEST_CASE("upserts")
     SECTION("upsert becomes an insert")
     {
         edit.upsert(2, 2, true);
-        mutation mut = edit.flush();
+        mutation mut = edit.write();
 
         query_tree<int, int> query(*mut.newRootID(), mem);
         REQUIRE( query.find(1).value() == 1 );
@@ -413,7 +413,7 @@ TEST_CASE("inserting after overflow node")
 
     // WHEN
     edit.insert(4, 4);
-    mutation mut = edit.flush();
+    mutation mut = edit.write();
 
     // THEN
     leafnode_ptr node = loadLeaf(mem, *mut.newRootID());
@@ -444,7 +444,7 @@ TEST_CASE("inserting after overflow node too big to pull in")
 
     // WHEN
     edit.insert(4, 4);
-    mutation mut = edit.flush();
+    mutation mut = edit.write();
 
     // THEN
     internalnode_ptr internal = loadInternal(mem, *mut.newRootID());
@@ -476,7 +476,7 @@ TEST_CASE("root has to split because its too large")
 
     // WHEN
     edit.insert(4, 4);
-    mutation mut = edit.flush();
+    mutation mut = edit.write();
 
     // THEN
     internalnode_ptr internal = loadInternal(mem, *mut.newRootID());

@@ -118,7 +118,7 @@ int putKeyValue(stringbruce &b, Params &params)
     for (std::map<std::string, std::string>::const_iterator it = params.otherKVs.begin(); it != params.otherKVs.end(); ++it)
         edit->insert(it->first, it->second);
 
-    mutation mut = edit->flush();
+    mutation mut = edit->write();
 #ifndef PERFTEST
     b.finish(mut, true);
     if (!mut.success())

@@ -302,7 +302,7 @@ void tree_impl::validateKVSize(const memslice &key, const memslice &value)
                                  boost::lexical_cast<std::string>(maxSize));
 }
 
-mutation tree_impl::flush()
+mutation tree_impl::write()
 {
     // Root not loaded == no changes
     if (!m_root)

@@ -29,9 +29,9 @@ void edit_tree_unsafe::remove(const memslice &key, const memslice &value, bool g
     m_tree->remove(key, value, guaranteed);
 }
 
-mutation edit_tree_unsafe::flush()
+mutation edit_tree_unsafe::write()
 {
-    return m_tree->flush();
+    return m_tree->write();
 }
 
 }
