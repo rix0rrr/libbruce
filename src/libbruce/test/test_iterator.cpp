@@ -14,9 +14,9 @@ TEST_CASE("prefix and postfix increment")
         .kv(1, 1)
         .kv(3, 3)
         .put(mem);
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
-    query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+    tree<uint32_t, uint32_t>::iterator it = query.find(1);
     REQUIRE(it++.value() == 1);
 
     it = query.find(1);
@@ -32,9 +32,9 @@ TEST_CASE("arbitrary increment")
         .kv(5, 5)
         .kv(7, 7)
         .put(mem);
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
-    query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+    tree<uint32_t, uint32_t>::iterator it = query.find(1);
     it += 2;
 
     REQUIRE(it.value() == 5);
@@ -48,9 +48,9 @@ TEST_CASE("iterator for an empty tree")
     be::mem mem(1024);
     put_result root = make_leaf(intToIntTree)
         .put(mem);
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
-    query_tree<uint32_t, uint32_t>::iterator it = query.begin();
+    tree<uint32_t, uint32_t>::iterator it = query.begin();
     REQUIRE( !it );
 }
 
@@ -59,7 +59,7 @@ TEST_CASE("iterator compare")
     be::mem mem(1024);
     put_result root = make_leaf(intToIntTree)
         .put(mem);
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
     REQUIRE( query.begin() == query.end() );
     REQUIRE( query.end() == query.end() );
@@ -76,11 +76,11 @@ TEST_CASE("iteration crossing between leafs")
            .kv(5, 5).kv(7, 7).put(mem))
         .put(mem);
 
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
     SECTION("iterate over all")
     {
-        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it );
         REQUIRE( it++.value() == 1 );
         REQUIRE( it++.value() == 3 );
@@ -111,11 +111,11 @@ TEST_CASE("iteration across overflow nodes")
            .put(mem))
         .put(mem);
 
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
     SECTION("iterate over all")
     {
-        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it );
         REQUIRE( it++.value() == 1 );
         REQUIRE( it++.value() == 3 );
@@ -139,11 +139,11 @@ TEST_CASE("iteration ends after overflow")
             .put(mem))
         .put(mem);
 
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
     SECTION("iterate over all")
     {
-        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it );
         REQUIRE( it++.value() == 1 );
         REQUIRE( it++.value() == 3 );
@@ -175,11 +175,11 @@ TEST_CASE("tree 2 levels deep")
              .put(mem))
         .put(mem);
 
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
     SECTION("iterate over all")
     {
-        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it );
         REQUIRE( it++.value() == 1 );
         REQUIRE( it++.value() == 3 );
@@ -200,13 +200,13 @@ TEST_CASE("iteration with queued insert")
            .kv(5, 5).kv(7, 7).put(mem))
         .put(mem);
 
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
     SECTION("in first leaf")
     {
-        query.queue_insert(4, 4);
+        query.insert(4, 4);
 
-        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it++.value() == 1 );
         REQUIRE( it++.value() == 3 );
         REQUIRE( it++.value() == 4 );
@@ -217,9 +217,9 @@ TEST_CASE("iteration with queued insert")
 
     SECTION("in second leaf")
     {
-        query.queue_insert(6, 6);
+        query.insert(6, 6);
 
-        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it++.value() == 1 );
         REQUIRE( it++.value() == 3 );
         REQUIRE( it++.value() == 5 );
@@ -241,13 +241,13 @@ TEST_CASE("iteration with queued delete")
            .kv(5, 5).kv(7, 7).put(mem))
         .put(mem);
 
-    query_tree<uint32_t, uint32_t> query(root.nodeID, mem);
+    tree<uint32_t, uint32_t> query(root.nodeID, mem);
 
     SECTION("in first leaf")
     {
-        query.queue_remove(3, false);
+        query.remove(3, false);
 
-        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it++.value() == 1 );
         REQUIRE( it++.value() == 5 );
         REQUIRE( it++.value() == 7 );
@@ -256,9 +256,9 @@ TEST_CASE("iteration with queued delete")
 
     SECTION("in second leaf")
     {
-        query.queue_remove(5, false);
+        query.remove(5, false);
 
-        query_tree<uint32_t, uint32_t>::iterator it = query.find(1);
+        tree<uint32_t, uint32_t>::iterator it = query.find(1);
         REQUIRE( it++.value() == 1 );
         REQUIRE( it++.value() == 3 );
         REQUIRE( it++.value() == 7 );

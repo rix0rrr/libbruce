@@ -10,8 +10,7 @@
 #include <libbruce/be/be.h>
 #include <libbruce/be/mem.h>
 #include <libbruce/be/disk.h>
-#include <libbruce/edit_tree.h>
-#include <libbruce/query_tree.h>
+#include <libbruce/tree.h>
 
 namespace libbruce {
 
@@ -21,9 +20,8 @@ template<typename K, typename V>
 class bruce
 {
 public:
-    typedef typename query_tree<K, V>::ptr query_ptr;
-    typedef typename edit_tree<K, V>::ptr edit_ptr;
-    typedef typename query_tree<K, V>::iterator iterator;
+    typedef typename tree<K, V>::ptr tree_ptr;
+    typedef typename tree<K, V>::iterator iterator;
 
     bruce(be::be &blockEngine)
         : m_blockEngine(blockEngine)
@@ -36,25 +34,25 @@ public:
      * The empty tree will not be backed by any block, because that would be
      * silly.
      */
-    edit_ptr create()
+    tree_ptr create()
     {
-        return boost::make_shared<edit_tree<K,V> >(maybe_nodeid(), boost::ref(m_blockEngine));
+        return boost::make_shared<tree<K,V> >(maybe_nodeid(), boost::ref(m_blockEngine));
     }
 
     /**
      * Open an existing bruce tree
      */
-    edit_ptr edit(const nodeid_t &id)
+    tree_ptr edit(const nodeid_t &id)
     {
-        return boost::make_shared<edit_tree<K, V> >(id, boost::ref(m_blockEngine));
+        return boost::make_shared<tree<K, V> >(id, boost::ref(m_blockEngine));
     }
 
     /**
      * Query an existing bruce tree
      */
-    query_ptr query(const nodeid_t &id)
+    tree_ptr query(const nodeid_t &id)
     {
-        return boost::make_shared<query_tree<K,V> >(id, boost::ref(m_blockEngine));
+        return boost::make_shared<tree<K,V> >(id, boost::ref(m_blockEngine));
     }
 
     /**

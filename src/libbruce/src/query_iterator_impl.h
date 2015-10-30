@@ -2,7 +2,7 @@
 #ifndef QUERY_ITERATOR_IMPL_H
 #define QUERY_ITERATOR_IMPL_H
 
-#include <libbruce/query_tree.h>
+#include <libbruce/tree.h>
 
 #include "nodes.h"
 #include "leaf_node.h"

@@ -14,7 +14,7 @@ TEST_CASE("abort commit of empty tree should leave blockstore empty")
     be::mem mem(1024);
     intbruce b(mem);
 
-    intbruce::edit_ptr t = b.create();
+    intbruce::tree_ptr t = b.create();
     t->insert(1, 2);
     t->insert(2, 3);
     mutation mut = t->write();
@@ -29,7 +29,7 @@ TEST_CASE("commit and abort")
     be::mem mem(1024);
     intbruce b(mem);
 
-    intbruce::edit_ptr t = b.create();
+    intbruce::tree_ptr t = b.create();
     t->insert(1, 2);
     t->insert(2, 3);
     mutation mut = t->write();
@@ -38,7 +38,7 @@ TEST_CASE("commit and abort")
 
     SECTION("success commit should leave only new nodes")
     {
-        intbruce::edit_ptr u = b.edit(*mut.newRootID());
+        intbruce::tree_ptr u = b.edit(*mut.newRootID());
         u->insert(3, 4);
         mutation mut2 = u->write();
 
@@ -49,7 +49,7 @@ TEST_CASE("commit and abort")
 
     SECTION("abort commit should leave only old nodes")
     {
-        intbruce::edit_ptr u = b.edit(*mut.newRootID());
+        intbruce::tree_ptr u = b.edit(*mut.newRootID());
         u->insert(3, 4);
         mutation mut2 = u->write();
 

@@ -29,7 +29,7 @@ TEST_CASE("tree with a flushable edit queue")
     // WHEN
     SECTION("not enough changes to write only flushes top block")
     {
-        edit_tree<int, int> edit(root.nodeID, mem);
+        tree<int, int> edit(root.nodeID, mem);
         for (int i = 0; i < 25; i++)
             edit.insert(i, i);
 
@@ -39,7 +39,7 @@ TEST_CASE("tree with a flushable edit queue")
 
     SECTION("large amount of changes causes a write to all blocks")
     {
-        edit_tree<int, int> edit(root.nodeID, mem);
+        tree<int, int> edit(root.nodeID, mem);
         for (int i = 0; i < 33; i++)
             edit.insert(i, i);
 
@@ -62,7 +62,7 @@ TEST_CASE("flushing edit queue causes a leaf node to split")
            .put(mem)) // 1
         .put(mem); // 2
 
-    edit_tree<int, int> edit(root.nodeID, mem);
+    tree<int, int> edit(root.nodeID, mem);
     for (int i = 0; i < 33; i++)
         edit.insert(i, i);
 
@@ -93,7 +93,7 @@ TEST_CASE("splitting an internal node does not lose the edit queue")
         .edit(pending_edit(REMOVE_KEY, intCopy(5), memslice(), true))
         .put(mem);
 
-    edit_tree<int, int> edit(root.nodeID, mem);
+    tree<int, int> edit(root.nodeID, mem);
     edit.insert(6, 6); // Add an edit to force the node to update
     mutation mut = edit.write();
 
@@ -126,8 +126,8 @@ TEST_CASE("finding with an edit queue")
         .edit(pending_edit(REMOVE_KEY, intCopy(5), memslice(), true))
         .put(mem);
 
-    query_tree<int, int> q(root.nodeID, mem);
-    query_tree<int, int>::iterator it = q.find(3);
+    tree<int, int> q(root.nodeID, mem);
+    tree<int, int>::iterator it = q.find(3);
 
     REQUIRE( it.value() == 3 );
 }
@@ -151,8 +151,8 @@ TEST_CASE("seeking with an edit queue")
         .edit(pending_edit(REMOVE_KEY, intCopy(5), memslice(), true))
         .put(mem);
 
-    query_tree<int, int> q(root.nodeID, mem);
-    query_tree<int, int>::iterator it = q.seek(2);
+    tree<int, int> q(root.nodeID, mem);
+    tree<int, int>::iterator it = q.seek(2);
 
     REQUIRE( it.value() == 10 );
 }

@@ -26,6 +26,8 @@
 #include <libbruce/traits.h>
 #include <boost/make_shared.hpp>
 
+#include <libbruce/query_iterator.h>
+
 namespace libbruce {
 
 /**
@@ -33,28 +35,36 @@ namespace libbruce {
  *
  * This class is an implementation detail and should not be used directly.
  */
-struct edit_tree_unsafe
+struct tree_unsafe
 {
-    edit_tree_unsafe(const maybe_nodeid &id, be::be &be, mempool &mempool, tree_functions fns);
+    tree_unsafe(const maybe_nodeid &id, be::be &be, mempool &mempool, tree_functions fns);
 
     void insert(const memslice &key, const memslice &value);
     void upsert(const memslice &key, const memslice &value, bool guaranteed);
     void remove(const memslice &key, bool guaranteed);
     void remove(const memslice &key, const memslice &value, bool guaranteed);
     mutation write();
+
+    bool get(const memslice &key, memslice *value);
+    query_iterator_unsafe find(const memslice &key);
+    query_iterator_unsafe seek(itemcount_t n);
+    query_iterator_unsafe begin();
+    query_iterator_unsafe end();
 private:
-    tree_impl_ptr m_tree;
+    tree_impl_ptr m_impl;
 };
 
 /**
  * Typesafe tree
  */
 template<typename K, typename V>
-struct edit_tree
+struct tree
 {
-    typedef typename boost::shared_ptr<edit_tree<K, V> > ptr;
+    typedef typename boost::shared_ptr<tree<K, V> > ptr;
+    typedef typename boost::optional<V> maybe_v;
+    typedef query_iterator<K, V> iterator;
 
-    edit_tree(const maybe_nodeid &id, be::be &be)
+    tree(const maybe_nodeid &id, be::be &be)
         : m_unsafe(id, be, m_mempool, fns) { }
 
     void insert(const K &key, const V &value)
@@ -82,14 +92,43 @@ struct edit_tree
         return m_unsafe.write();
     }
 
+    maybe_v get(const K &key)
+    {
+        memslice value;
+        if (m_unsafe.get(traits::convert<K>::to_bytes(key, m_mempool), &value))
+            return traits::convert<V>::from_bytes(value);
+        else
+            return maybe_v();
+    }
+
+    iterator find(const K &key)
+    {
+        return query_iterator<K,V>(m_unsafe.find(traits::convert<K>::to_bytes(key, m_mempool)));
+    }
+
+    iterator seek(itemcount_t n)
+    {
+        return query_iterator<K,V>(m_unsafe.seek(n));
+    }
+
+    iterator begin()
+    {
+        return query_iterator<K,V>(m_unsafe.begin());
+    }
+
+    iterator end()
+    {
+        return query_iterator<K,V>(m_unsafe.end());
+    }
+
     static tree_functions fns;
 private:
-    edit_tree_unsafe m_unsafe;
+    tree_unsafe m_unsafe;
     mempool m_mempool;
 };
 
 template<typename K, typename V>
-tree_functions edit_tree<K, V>::fns(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size);
+tree_functions tree<K, V>::fns(&traits::convert<K>::compare, &traits::convert<V>::compare, &traits::convert<K>::size, &traits::convert<V>::size);
 
 }
 
