@@ -32,6 +32,8 @@ private:
     void del_one(delblock_t &block);
 };
 
+void register_disk_engine();
+
 
 }}
 

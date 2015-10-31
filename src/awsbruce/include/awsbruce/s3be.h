@@ -46,6 +46,8 @@ private:
     libbruce::mempage readGetOutcome(const libbruce::nodeid_t &id, Aws::S3::Model::GetObjectOutcome &outcome);
 };
 
+void register_s3_engine();
+
 }
 
 #endif

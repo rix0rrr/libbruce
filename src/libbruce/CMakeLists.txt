@@ -24,6 +24,7 @@ add_library(bruce
     src/tree_impl.cpp
     src/types.cpp
     src/util/blockcache.cpp
+    src/util/be_registry.cpp
     )
 
 target_include_directories(bruce PUBLIC

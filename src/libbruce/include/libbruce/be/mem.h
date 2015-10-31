@@ -36,6 +36,7 @@ private:
     uint32_t m_editQueueSize;
 };
 
+void register_mem_engine();
 
 }}
 

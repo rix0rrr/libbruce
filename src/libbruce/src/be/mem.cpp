@@ -1,4 +1,6 @@
 #include <libbruce/be/mem.h>
+#include <libbruce/util/be_registry.h>
+#include <boost/make_shared.hpp>
 
 #include <boost/lexical_cast.hpp>
 
@@ -73,6 +75,16 @@ uint32_t mem::maxBlockSize()
 uint32_t mem::editQueueSize()
 {
     return m_editQueueSize;
+}
+
+be_ptr create_mem_engine(const std::string &location, size_t block_size, size_t queue_size, const util::options_t &options)
+{
+    return boost::make_shared<mem>(block_size, queue_size);
+}
+
+void register_mem_engine()
+{
+    util::register_be_factory("mem", &create_mem_engine);
 }
 
 }}

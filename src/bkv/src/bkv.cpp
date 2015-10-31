@@ -1,17 +1,21 @@
 #include <libbruce/bruce.h>
+#include <libbruce/util/be_registry.h>
+
+#include <sys/time.h>
+#include <fstream>
+#include <cstdlib>
+
+using namespace libbruce;
+
+#ifdef HAVE_AWSBRUCE
 #include <awsbruce/awsbruce.h>
 
-#include <boost/iostreams/stream.hpp>
 #include <aws/core/utils/logging/AWSLogging.h>
 #include <aws/core/utils/logging/DefaultLogSystem.h>
 #include <aws/core/utils/logging/LogLevel.h>
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/core/http/HttpClientFactory.h>
 
-#include <sys/time.h>
-#include <fstream>
-
-using namespace libbruce;
 using namespace awsbruce;
 
 using namespace Aws::Auth;
@@ -19,16 +23,9 @@ using namespace Aws::Http;
 using namespace Aws::Client;
 using namespace Aws::S3;
 using namespace Aws::Utils;
-
-namespace io = boost::iostreams;
+#endif
 
 typedef bruce<std::string, std::string> stringbruce;
-
-const int KB = 1024;
-const int MB = 1024 * KB;
-
-#define S3_BUCKET "huijbers-test"
-#define S3_PREFIX "bruce/"
 
 struct Timer
 {
@@ -62,6 +59,7 @@ void noop(void *p)
 
 struct Params
 {
+    std::string be_spec;
     maybe_nodeid root;
     bool hasKey = false;
     std::string key;
@@ -73,13 +71,21 @@ struct Params
 
 bool parseParams(int argc, char* argv[], Params &ret)
 {
+    const char *be_spec = std::getenv("BRUCE_BE");
+    if (!be_spec)
+    {
+        std::cerr << "Set BRUCE_BE variable to block engine spec" << std::endl;
+        return false;
+    }
+    ret.be_spec = std::string(be_spec);
+
     if (argc == 1)
     {
         std::cout << "Usage:" << std::endl;
-        std::cout << "    s3kv '' KEY VALUE" << std::endl;
-        std::cout << "    s3kv ID" << std::endl;
-        std::cout << "    s3kv ID KEY" << std::endl;
-        std::cout << "    s3kv ID KEY VALUE [KEY VALUE [...]]" << std::endl;
+        std::cout << "    bkv '' KEY VALUE" << std::endl;
+        std::cout << "    bkv ID" << std::endl;
+        std::cout << "    bkv ID KEY" << std::endl;
+        std::cout << "    bkv ID KEY VALUE [KEY VALUE [...]]" << std::endl;
         return false;
     }
 
@@ -171,48 +177,52 @@ int fullScan(stringbruce &b, Params &params)
 
 int main(int argc, char* argv[])
 {
-    // Params
-    Params params;
-    if (!parseParams(argc, argv, params))
-        return 1;
+    be::register_disk_engine();
+    be::register_mem_engine();
+#ifdef HAVE_AWSBRUCE
+    awsbruce::register_s3_engine();
 
     std::shared_ptr<Aws::OStream> output(&std::cerr, noop);
     auto logger = std::make_shared<Aws::Utils::Logging::DefaultLogSystem>(Aws::Utils::Logging::LogLevel::Warn, output);
     Aws::Utils::Logging::InitializeAWSLogging(logger);
 
-    // Create a client
-    ClientConfiguration config;
-    config.region = Aws::Region::EU_WEST_1;
-    config.scheme = Scheme::HTTPS;
-    config.connectTimeoutMs = 10000;
-    config.requestTimeoutMs = 10000;
-
-    auto clientFactory = Aws::MakeShared<HttpClientFactory>(NULL);
-    auto s3 = Aws::MakeShared<S3Client>(NULL, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(NULL), config, clientFactory);
-#ifdef PERFTEST
-    be::disk be("temp/", 1 * MB, 300 * KB);
-#else
-    s3be be(s3, S3_BUCKET, S3_PREFIX, 1 * MB, 300 * KB, 100 * MB);
 #endif
-    stringbruce b(be);
 
-    int exit;
     try
     {
-        if (params.hasKey && params.hasValue)
-            exit = putKeyValue(b, params);
-        else if (params.hasKey)
-            exit = queryKey(b, params);
-        else
-            exit = fullScan(b, params);
+        // Params
+        Params params;
+        if (!parseParams(argc, argv, params))
+            return 1;
+
+        be::be_ptr be = util::create_be(params.be_spec);
+        stringbruce b(*be);
+
+        int exit;
+        try
+        {
+            if (params.hasKey && params.hasValue)
+                exit = putKeyValue(b, params);
+            else if (params.hasKey)
+                exit = queryKey(b, params);
+            else
+                exit = fullScan(b, params);
+        }
+        catch (std::runtime_error &e)
+        {
+            std::cerr << e.what();
+            exit = 1;
+        }
+
+#ifdef HAVE_AWSBRUCE
+        Aws::Utils::Logging::ShutdownAWSLogging();
+#endif
+
+        return exit;
     }
-    catch (std::runtime_error &e)
+    catch (std::exception &e)
     {
-        std::cerr << e.what();
-        exit = 1;
+        std::cerr << e.what() << std::endl;
+        return 1;
     }
-
-    Aws::Utils::Logging::ShutdownAWSLogging();
-
-    return exit;
 }

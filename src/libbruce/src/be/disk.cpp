@@ -1,4 +1,6 @@
 #include <libbruce/be/disk.h>
+#include <libbruce/util/be_registry.h>
+#include <boost/make_shared.hpp>
 #include <cstdio>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -128,6 +130,16 @@ uint32_t disk::maxBlockSize()
 uint32_t disk::editQueueSize()
 {
     return m_editQueueSize;
+}
+
+be_ptr create_disk_engine(const std::string &location, size_t block_size, size_t queue_size, const util::options_t &options)
+{
+    return boost::make_shared<disk>(location, block_size, queue_size);
+}
+
+void register_disk_engine()
+{
+    util::register_be_factory("file", &create_disk_engine);
 }
 
 }}

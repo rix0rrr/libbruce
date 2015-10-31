@@ -43,5 +43,6 @@ add_subdirectory(bstat)
 
 if (AwsCppSdk_FOUND AND OPENSSL_FOUND)
     add_subdirectory(awsbruce)
-    add_subdirectory(s3kv)
 endif()
+
+add_subdirectory(bkv)

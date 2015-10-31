@@ -1,5 +1,8 @@
 #include <awsbruce/s3be.h>
+#include <libbruce/util/be_registry.h>
 
+#include <aws/core/auth/AWSCredentialsProviderChain.h>
+#include <aws/core/http/HttpClientFactory.h>
 #include <aws/s3/model/GetObjectRequest.h>
 #include <aws/s3/model/PutObjectRequest.h>
 #include <aws/s3/model/DeleteObjectRequest.h>
@@ -13,6 +16,9 @@
 
 using namespace libbruce;
 using namespace libbruce::be;
+using namespace Aws::Auth;
+using namespace Aws::Http;
+using namespace Aws::Client;
 using namespace Aws::S3;
 using namespace Aws::S3::Model;
 
@@ -210,6 +216,30 @@ uint32_t s3be::maxBlockSize()
 uint32_t s3be::editQueueSize()
 {
     return m_editQueueSize;
+}
+
+be_ptr create_s3_engine(const std::string &location, size_t block_size, size_t queue_size, const util::options_t &options)
+{
+    ClientConfiguration config;
+    config.region = Aws::Region::EU_WEST_1;
+    config.scheme = Scheme::HTTPS;
+    config.connectTimeoutMs = options.get("timeout", 10000);
+    config.requestTimeoutMs = options.get("timeout", 10000);
+
+    auto clientFactory = Aws::MakeShared<HttpClientFactory>(NULL);
+    auto s3 = Aws::MakeShared<S3Client>(NULL, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(NULL), config, clientFactory);
+
+    int slash = location.find("/");
+    std::string bucket = location.substr(0, slash);
+    std::string prefix = slash == std::string::npos ? "" : location.substr(slash + 1);
+    size_t cache_size = options.get("cache", 100 * 1024 * 1024);
+
+    return boost::make_shared<s3be>(s3, bucket, prefix, block_size, queue_size, cache_size);
+}
+
+void register_s3_engine()
+{
+    util::register_be_factory("s3", &create_s3_engine);
 }
 
 }

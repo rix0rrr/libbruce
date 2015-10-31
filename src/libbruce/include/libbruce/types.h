@@ -61,6 +61,10 @@ typedef boost::shared_ptr<tree_impl> tree_impl_ptr;
 class tree_iterator_impl;
 typedef boost::shared_ptr<tree_iterator_impl> tree_iterator_impl_ptr;
 
+namespace be {
+class be;
+typedef boost::shared_ptr<be> be_ptr;
+}
 
 namespace fn {
 
