@@ -56,6 +56,10 @@ add_executable(testbruce
     test/testtypes.cpp
     )
 
+set_target_properties(testbruce PROPERTIES
+    CXX_STANDARD 11
+    )
+
 target_include_directories(testbruce
     PRIVATE src  # Testing private headers
     )
