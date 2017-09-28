@@ -6,6 +6,8 @@
 #include "overflow_node.h"
 #include "helpers.h"
 
+#include <set>
+
 namespace libbruce {
 
 tree_impl::tree_impl(be::be &be, maybe_nodeid rootID, mempool &mempool, const tree_functions &fns)
